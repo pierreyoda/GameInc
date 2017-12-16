@@ -27,14 +27,13 @@ public class Room : MonoBehaviour {
     private void Start() {
         id = INSTANCES_COUNT++;
 
-        transform.position = new Vector3(positionX, floorNumber, 0);
+        transform.position = new Vector3(positionX, 2 * floorNumber, 0);
 
         var spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
         spriteRenderer.sprite = sprite;
     }
 
     public void OnNewDay() {
-        Debug.Log("a");
         ++daysSinceConstructionStart;
     }
 }
