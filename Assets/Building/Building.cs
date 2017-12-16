@@ -20,7 +20,7 @@ public class Building : MonoBehaviour {
             for (uint x = 0; x < width; x++) {
                 var tileObject = new GameObject($"BuildingTile_{x}_{y}");
                 var tile = tileObject.AddComponent<BuildingTile>();
-                tileObject.transform.position = new Vector3(x, y, 0);
+                tileObject.transform.position = new Vector3(x, 2 * y, 0);
 
                 var tileRenderer = tileObject.AddComponent<SpriteRenderer>();
                 tileRenderer.sprite = EmptyTileSprite;
