@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 
+namespace Database {
+
 /// <summary>
 /// Loads from data files all the informations about the different game genres, themes
 /// and game platforms.
@@ -11,22 +13,32 @@ using UnityEngine;
 public class Database {
     private enum DataFileType {
         GamingPlatform,
+        Room,
     }
+
     private readonly List<Tuple<string, DataFileType>> dataFiles;
 
     [Serializable]
     public class DatabaseCollection<T> where T : DatabaseElement {
         public List<T> Collection = new List<T>();
     }
+
     public DatabaseCollection<Platform> Platforms { get; }
+    public DatabaseCollection<Room> Rooms { get;  }
 
     public Database() {
         dataFiles = new List<Tuple<string, DataFileType>>();
         Platforms = new DatabaseCollection<Platform>();
+        Rooms = new DatabaseCollection<Room>();
     }
 
     public Database AddPlatformsDataFile(string dataFile) {
         AddDataFile(dataFile, DataFileType.GamingPlatform);
+        return this;
+    }
+
+    public Database AddRoomsDataFile(string dataFile) {
+        AddDataFile(dataFile, DataFileType.Room);
         return this;
     }
 
@@ -47,7 +59,11 @@ public class Database {
     public bool Load() {
         foreach (var sourceFile in dataFiles) {
             if (sourceFile.Item2 == DataFileType.GamingPlatform) {
-                if (!LoadDataFile<Platform>(sourceFile.Item1, sourceFile.Item2, Platforms)) {
+                if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Platforms)) {
+                    return false;
+                }
+            } else if (sourceFile.Item2 == DataFileType.Room) {
+                if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Rooms)) {
                     return false;
                 }
             }
@@ -57,7 +73,7 @@ public class Database {
     }
 
     private bool LoadDataFile<T>(string dataFile, DataFileType dataType,
-            DatabaseCollection<T> existing) where T : DatabaseElement {
+        DatabaseCollection<T> existing) where T : DatabaseElement {
         string dataFileContent = File.ReadAllText(dataFile);
         DatabaseCollection<T> additions = JsonUtility.FromJson<DatabaseCollection<T>>(dataFileContent);
         if (additions == null) {
@@ -81,4 +97,6 @@ public class Database {
         Debug.Log($"Database - Added {count} {dataType} elements.");
         return true;
     }
+}
+
 }

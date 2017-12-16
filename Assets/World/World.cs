@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public class World : MonoBehaviour {
     public Building CompanyBuilding;
-    private Database database;
+    private Database.Database database;
 
     [SerializeField] [Range(100, 10000)] private int millisecondsPerDay = 1000;
 
@@ -23,11 +23,13 @@ public class World : MonoBehaviour {
 
     void Start() {
         Debug.Log("Loading the game database...", gameObject);
-        database = new Database();
+        database = new Database.Database();
         database.AddPlatformsDataFile("Assets/Resources/Core/platforms.json")
+            .AddRoomsDataFile("Assets/Resources/Core/rooms.json")
             .Load();
 
         Debug.Log("Instanciating the game world...", gameObject);
+        Debug.Log(database.Rooms.Collection[0].ConstructionTime);
 
         gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
         dayPercentage = 0f;

@@ -1,6 +1,8 @@
 ﻿using System;
 using UnityEngine;
 
+namespace Database {
+
 /// <summary>
 /// A gaming platform.
 /// </summary>
@@ -16,9 +18,12 @@ public class Platform : DatabaseElement {
     public DateTime ReleaseDate => ParseDate(releaseDate);
 
     public Platform(string id, string name, string manufacturerName,
-            string releaseDate) : base(id) {
+        string releaseDate) : base(id) {
         this.name = name;
         this.manufacturerName = manufacturerName;
-        this.releaseDate= releaseDate;
+        this.releaseDate = releaseDate;
     }
 }
+
+}
+
