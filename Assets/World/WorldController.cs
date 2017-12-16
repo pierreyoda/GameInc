@@ -10,4 +10,8 @@ public class WorldController : MonoBehaviour {
     public void ToggleSimulationSpeed() {
         world.ToggleSimulationSpeed();
     }
+
+    public void BuildRoom(string roomId) {
+        world.BuildNewRoom(roomId);
+    }
 }

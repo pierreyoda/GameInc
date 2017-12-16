@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class World : MonoBehaviour {
-    public Building CompanyBuilding;
+    [SerializeField] private Building companyBuilding;
     private Database.Database database;
 
     [SerializeField] [Range(100, 10000)] private int millisecondsPerDay = 1000;
@@ -20,6 +20,8 @@ public class World : MonoBehaviour {
 
     [SerializeField] private int simulationSpeedMultiplier = 1;
     [SerializeField] private Button speedButton;
+
+    [SerializeField] private BuildRoomSelectionMenu buildRoomSelectionMenu;
 
     void Start() {
         Debug.Log("Loading the game database...", gameObject);
@@ -51,7 +53,7 @@ public class World : MonoBehaviour {
         gameDateTime = gameDateTime.AddDays(1.0);
         Debug.Log("New day, date = " + gameDateTime.ToString("yyyy/MM/dd"));
 
-        CompanyBuilding.OnNewDay();
+        companyBuilding.OnNewDay();
     }
 
     public void ToggleSimulation() {
@@ -63,5 +65,20 @@ public class World : MonoBehaviour {
     public void ToggleSimulationSpeed() {
         speedButton.GetComponentInChildren<Text>().text = $"x{simulationSpeedMultiplier}";
         simulationSpeedMultiplier = simulationSpeedMultiplier == 1 ? 2 : 1;
+    }
+
+    public void ShowBuildRoomSelectionMenu() {
+        buildRoomSelectionMenu.OpenSelectionMenu(database.Rooms.Collection);
+    }
+
+    public void BuildNewRoom(string roomId) {
+        var roomInfo = database.Rooms.FindById(roomId);
+        if (roomInfo == null) {
+            Debug.LogError($"World.BuildNewRoom : invalid Room ID \"{roomId}\".");
+            return;
+        }
+
+        Debug.Log($"World.BuildNewRoom : build order for {roomInfo.Name}.");
+        buildRoomSelectionMenu.CloseSelectionMenu();
     }
 }

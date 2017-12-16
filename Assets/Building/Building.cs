@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using Debug = System.Diagnostics.Debug;
 
 public class Building : MonoBehaviour {
     /// First dimension : Y (horizontal), second dimension : X (vertical).
@@ -40,5 +41,8 @@ public class Building : MonoBehaviour {
         foreach (var room in rooms) {
             room.OnNewDay();
         }
+    }
+
+    public void BuildRoom(Database.Room roomInfo) {
     }
 }

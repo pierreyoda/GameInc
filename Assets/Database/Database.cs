@@ -11,7 +11,7 @@ namespace Database {
 /// and game platforms.
 /// </summary>
 public class Database {
-    private enum DataFileType {
+    public enum DataFileType {
         GamingPlatform,
         Room,
     }
@@ -21,6 +21,10 @@ public class Database {
     [Serializable]
     public class DatabaseCollection<T> where T : DatabaseElement {
         public List<T> Collection = new List<T>();
+
+        public T FindById(string id) {
+            return Collection.Find(e => e.Id == id);
+        }
     }
 
     public DatabaseCollection<Platform> Platforms { get; }
