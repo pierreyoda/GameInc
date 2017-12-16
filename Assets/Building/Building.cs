@@ -35,6 +35,7 @@ public class Building : MonoBehaviour {
         for (int i = 0; i < roomsParentObject.transform.childCount; i++) {
             rooms.Add(roomsParentObject.transform.GetChild(i).GetComponent<Room>());
         }
+        UpdateEmptyTiles();
     }
 
     public void OnNewDay() {
@@ -44,5 +45,16 @@ public class Building : MonoBehaviour {
     }
 
     public void BuildRoom(Database.Room roomInfo) {
+        // TODO
+        UpdateEmptyTiles();
+    }
+
+    private void UpdateEmptyTiles() {
+        foreach (var room in rooms) {
+            int y = room.FloorNumber;
+            for (int x = room.PositionX; x < room.PositionX + room.Width & 0 <= x && x < width; x++) {
+                tiles[y, x].Empty = false;
+            }
+        }
     }
 }
