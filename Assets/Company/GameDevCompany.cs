@@ -6,8 +6,5 @@ public class GameDevCompany : MonoBehaviour {
         set { money = value; }
     }
 
-    public string name {
-        get { return name;  }
-        set { name = value;  }
-    }
+    public string companyName;
 }
