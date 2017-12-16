@@ -2,7 +2,7 @@
 using UnityEngine;
 
 public class World : MonoBehaviour {
-    public Building companyBuilding;
+    public Building CompanyBuilding;
     private Database database;
 
     [SerializeField] [Range(100, 10000)]
@@ -46,5 +46,7 @@ public class World : MonoBehaviour {
     private void NewDay() {
         gameDateTime = gameDateTime.AddDays(1.0);
         Debug.Log("New day, date = " + gameDateTime.ToString("yyyy/MM/dd"));
+
+        CompanyBuilding.OnNewDay();
     }
 }
