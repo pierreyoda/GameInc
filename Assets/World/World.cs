@@ -6,8 +6,7 @@ public class World : MonoBehaviour {
     public Building CompanyBuilding;
     private Database database;
 
-    [SerializeField] [Range(100, 10000)]
-    private int millisecondsPerDay = 1000;
+    [SerializeField] [Range(100, 10000)] private int millisecondsPerDay = 1000;
 
     [SerializeField] [Range(1970, 2020)] private int gameStartYear = 1982;
     [SerializeField] [Range(1, 12)] private int gameStartMonth = 1;
@@ -18,6 +17,9 @@ public class World : MonoBehaviour {
 
     [SerializeField] private bool simulationRunning = true;
     [SerializeField] private Button pauseButton;
+
+    [SerializeField] private int simulationSpeedMultiplier = 1;
+    [SerializeField] private Button speedButton;
 
     void Start() {
         Debug.Log("Loading the game database...", gameObject);
@@ -37,7 +39,7 @@ public class World : MonoBehaviour {
         float elapsedTime = Time.deltaTime; // in s
 
         // time simulation advance
-        dayPercentage += 1000 * elapsedTime / millisecondsPerDay;
+        dayPercentage += simulationSpeedMultiplier * 1000 * elapsedTime / millisecondsPerDay;
         if (dayPercentage >= 1f) {
             NewDay();
             dayPercentage = 0f;
@@ -55,5 +57,10 @@ public class World : MonoBehaviour {
         dayPercentage = 0f;
         simulationRunning = !simulationRunning;
         pauseButton.GetComponentInChildren<Text>().text = simulationRunning ? "Pause" : "Resume";
+    }
+
+    public void ToggleSimulationSpeed() {
+        speedButton.GetComponentInChildren<Text>().text = $"x{simulationSpeedMultiplier}";
+        simulationSpeedMultiplier = simulationSpeedMultiplier == 1 ? 2 : 1;
     }
 }

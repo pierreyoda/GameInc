@@ -6,4 +6,8 @@ public class WorldController : MonoBehaviour {
     public void ToggleSimulationPause() {
         world.ToggleSimulation();
     }
+
+    public void ToggleSimulationSpeed() {
+        world.ToggleSimulationSpeed();
+    }
 }
