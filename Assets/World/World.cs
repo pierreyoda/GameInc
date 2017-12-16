@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class World : MonoBehaviour {
     public Building CompanyBuilding;
@@ -8,17 +9,15 @@ public class World : MonoBehaviour {
     [SerializeField] [Range(100, 10000)]
     private int millisecondsPerDay = 1000;
 
-    [SerializeField] [Range(1970, 2020)]
-    private int gameStartYear = 1982;
-    [SerializeField] [Range(1, 12)]
-    private int gameStartMonth = 1;
-    [SerializeField] [Range(1, 31)]
-    private int gameStartDay = 1;
+    [SerializeField] [Range(1970, 2020)] private int gameStartYear = 1982;
+    [SerializeField] [Range(1, 12)] private int gameStartMonth = 1;
+    [SerializeField] [Range(1, 31)] private int gameStartDay = 1;
 
-    [SerializeField]
-    private DateTime gameDateTime;
-    [SerializeField]
-    private float dayPercentage;
+    [SerializeField] private DateTime gameDateTime;
+    [SerializeField] private float dayPercentage;
+
+    [SerializeField] private bool simulationRunning = true;
+    [SerializeField] private Button pauseButton;
 
     void Start() {
         Debug.Log("Loading the game database...", gameObject);
@@ -33,6 +32,8 @@ public class World : MonoBehaviour {
     }
 
     void Update() {
+        if (!simulationRunning) return;
+
         float elapsedTime = Time.deltaTime; // in s
 
         // time simulation advance
@@ -48,5 +49,11 @@ public class World : MonoBehaviour {
         Debug.Log("New day, date = " + gameDateTime.ToString("yyyy/MM/dd"));
 
         CompanyBuilding.OnNewDay();
+    }
+
+    public void ToggleSimulation() {
+        dayPercentage = 0f;
+        simulationRunning = !simulationRunning;
+        pauseButton.GetComponentInChildren<Text>().text = simulationRunning ? "Pause" : "Resume";
     }
 }
