@@ -29,7 +29,6 @@ public class World : MonoBehaviour {
             .Load();
 
         Debug.Log("Instanciating the game world...", gameObject);
-        Debug.Log(database.Rooms.Collection[0].ConstructionTime);
 
         gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
         dayPercentage = 0f;
