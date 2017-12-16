@@ -244,7 +244,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 1, g: 0.99215686, b: 0.7490196, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
@@ -865,7 +865,6 @@ GameObject:
   - component: {fileID: 1756391267}
   - component: {fileID: 1756391266}
   - component: {fileID: 1756391265}
-  - component: {fileID: 1756391268}
   m_Layer: 5
   m_Name: SpeedButton
   m_TagString: Untagged
@@ -977,19 +976,6 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1756391263}
---- !u!114 &1756391268
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 0}
-  m_GameObject: {fileID: 1756391263}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7e2a51bc9e3d74f4fa168998e0d8921a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  NormalColor: {r: 1, g: 1, b: 1, a: 0}
-  HighlightedColor: {r: 1, g: 0.97647065, b: 0.16862746, a: 0}
 --- !u!1 &2069030188
 GameObject:
   m_ObjectHideFlags: 0
