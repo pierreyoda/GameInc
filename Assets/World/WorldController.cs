@@ -14,4 +14,8 @@ public class WorldController : MonoBehaviour {
     public void BuildRoom(string roomId) {
         world.BuildNewRoom(roomId);
     }
+
+    public void OnBuildingClicked() {
+        world.OnBuildingClicked();
+    }
 }

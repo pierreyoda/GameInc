@@ -1,16 +1,16 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
-using Debug = System.Diagnostics.Debug;
 
 public class Building : MonoBehaviour {
+    [SerializeField] private WorldController gameController;
+
     /// First dimension : Y (horizontal), second dimension : X (vertical).
-    private BuildingTile[,] tiles;
+    [HideInInspector] private BuildingTile[,] tiles;
 
     [SerializeField] private int width = 10;
-
     [SerializeField] private int height = 1;
 
-    public Sprite EmptyTileSprite;
+    [SerializeField] private Sprite EmptyTileSprite;
 
     [SerializeField] private List<Room> rooms = new List<Room>();
 
@@ -31,11 +31,18 @@ public class Building : MonoBehaviour {
             }
         }
 
+        var collider = gameObject.GetComponent<BoxCollider2D>();
+        collider.size = new Vector2(width, height);
+
         var roomsParentObject = transform.Find("Rooms").gameObject;
         for (int i = 0; i < roomsParentObject.transform.childCount; i++) {
             rooms.Add(roomsParentObject.transform.GetChild(i).GetComponent<Room>());
         }
         UpdateEmptyTiles();
+    }
+
+    public void OnMouseDown() {
+        gameController.OnBuildingClicked();
     }
 
     public void OnNewDay() {
@@ -44,15 +51,33 @@ public class Building : MonoBehaviour {
         }
     }
 
-    public void BuildRoom(Database.Room roomInfo) {
-        // TODO
+    public bool IsRoomBuildable(Room room) {
+        if (room.FloorNumber < 0 || room.FloorNumber >= height) return false;
+        for (int x = room.PositionX; x < (room.PositionX + room.Info.Width) & 0 <= x && x < width; x++) {
+            if (!tiles[room.FloorNumber, x].Empty)
+                return false;
+        }
+        return true;
+    }
+
+    public void BuildRoom(Room room) {
+        if (!IsRoomBuildable(room)) {
+            Debug.LogWarning($"Building.BuildRoom : Room (ID = {room.Id}) cannot be built over occupied tiles.");
+            return;
+        }
+
+        var roomsParentObject = transform.Find("Rooms").gameObject;
+        room.gameObject.transform.parent = roomsParentObject.transform;
+        rooms.Add(room);
         UpdateEmptyTiles();
+
+        Debug.Log($"Added new Room to the building (ID = {room.Id}).");
     }
 
     private void UpdateEmptyTiles() {
         foreach (var room in rooms) {
             int y = room.FloorNumber;
-            for (int x = room.PositionX; x < room.PositionX + room.Width & 0 <= x && x < width; x++) {
+            for (int x = room.PositionX; x < (room.PositionX + room.Info.Width) & 0 <= x && x < width; x++) {
                 tiles[y, x].Empty = false;
             }
         }

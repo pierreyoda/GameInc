@@ -8,9 +8,6 @@ namespace Database {
 /// </summary>
 [Serializable]
 public class Platform : DatabaseElement {
-    [SerializeField] private string name;
-    public string Name => name;
-
     [SerializeField] private string manufacturerName;
     public string ManufacturerName => manufacturerName;
 
@@ -18,8 +15,7 @@ public class Platform : DatabaseElement {
     public DateTime ReleaseDate => ParseDate(releaseDate);
 
     public Platform(string id, string name, string manufacturerName,
-        string releaseDate) : base(id) {
-        this.name = name;
+        string releaseDate) : base(id, name) {
         this.manufacturerName = manufacturerName;
         this.releaseDate = releaseDate;
     }

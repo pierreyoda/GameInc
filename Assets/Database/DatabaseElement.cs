@@ -9,10 +9,14 @@ public class DatabaseElement {
     [SerializeField] private string id;
     public string Id => id;
 
+    [SerializeField] private string name;
+    public string Name => name;
+
     protected static CultureInfo CultureInfo = CultureInfo.InvariantCulture;
 
-    protected DatabaseElement(string id) {
+    protected DatabaseElement(string id, string name) {
         this.id = id;
+        this.name = name;
     }
 
     public static DateTime ParseDate(string date) {

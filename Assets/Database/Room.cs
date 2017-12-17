@@ -8,8 +8,11 @@ namespace Database {
 /// </summary>
 [Serializable]
 public class Room : DatabaseElement {
-    [SerializeField] private string name;
-    public string Name => name;
+    [SerializeField] private string textureName;
+    public string TextureName => textureName;
+
+    [SerializeField] private int width;
+    public int Width => width;
 
     /// <summary>
     /// Upfront construction cost.
@@ -29,9 +32,9 @@ public class Room : DatabaseElement {
     [SerializeField] private float upkeep;
     public float Upkeep => upkeep;
 
-    public Room(string id, string name, float cost, int constructionTime,
-        float upkeep) : base(id) {
-        this.name = name;
+    public Room(string id, string name, string textureName, float cost,
+        int constructionTime, float upkeep) : base(name, id) {
+        this.textureName = textureName;
         this.cost = cost;
         this.constructionTime = constructionTime;
         this.upkeep = upkeep;

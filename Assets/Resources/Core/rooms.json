@@ -3,6 +3,8 @@
     {
         "id": "GameDevSimple",
         "name": "Game Developer Room",
+        "textureName" : "room_gamedev",
+        "width": 3,
         "cost": 10.0,
         "constructionTime": 3,
         "upkeep": 0.1
@@ -10,6 +12,8 @@
     {
         "id": "RestroomDouble",
         "name": "Restroom",
+        "textureName": "room_restroom",
+        "width": 2,
         "cost": 5.0,
         "constructionTime": 7,
         "upkeep": 0.1

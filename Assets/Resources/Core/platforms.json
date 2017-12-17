@@ -1,16 +1,16 @@
 {
 "Collection": [
     {
-        "id": "C64",
-        "name": "Commodore 64",
-        "manufacturerName": "CBM",
-        "releaseDate": "1982/01/01"
-    },
-    {
         "id": "PC",
         "name": "PC",
         "manufacturerName": "",
         "releaseDate": "1983/01/01"
+    },
+    {
+        "id": "NEP",
+        "name": "Nivendo Entertainment Package",
+        "manufacturerName": "Nivendo",
+        "releaseDate": "1985/01/01"
     }
 ]
 }

@@ -24,13 +24,18 @@ public class World : MonoBehaviour {
     [SerializeField] private GameMenu gameMenu;
     [SerializeField] private BuildRoomSelectionMenu buildRoomSelectionMenu;
 
-    private bool buildingMode = false;
+    [HideInInspector] private bool buildingMode = false;
+    [HideInInspector] private Room buildingRoom;
 
     void Start() {
         Debug.Log("Loading the game database...", gameObject);
         database = new Database.Database();
-        database.AddPlatformsDataFile("Assets/Resources/Core/platforms.json")
-            .AddRoomsDataFile("Assets/Resources/Core/rooms.json")
+        const string filesPrefix = "Assets/Resources/Core";
+        database.AddGenresDataFile($"{filesPrefix}/genres.json")
+            .AddThemesDataFile($"{filesPrefix}/themes.json")
+            .AddPlatformsDataFile($"{filesPrefix}/platforms.json")
+            .AddRoomsDataFile($"{filesPrefix}/rooms.json")
+            .AddObjectsDataFile($"{filesPrefix}/objects.json")
             .Load();
 
         Debug.Log("Instanciating the game world...", gameObject);
@@ -52,6 +57,11 @@ public class World : MonoBehaviour {
             NewDay();
             dayPercentage = 0f;
         }
+
+        // building mode : display a ghost of the required item under the mouse if possible
+        if (!buildingMode) return;
+        var targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        buildingRoom.UpdatePosition(Mathf.RoundToInt(targetPosition.x), Mathf.RoundToInt(targetPosition.y));
     }
 
     private void NewDay() {
@@ -84,8 +94,26 @@ public class World : MonoBehaviour {
             return;
         }
 
-        Debug.Log($"World.BuildNewRoom : build order for {roomInfo.Name}.");
-        gameMenu.HideMenu();
+        var roomGameObject = new GameObject();
+        var room = roomGameObject.AddComponent<Room>();
+        roomGameObject.name = $"Room_{room.Id}";
+        room.SetInfo(roomInfo);
+
+        buildingRoom = room;
         buildingMode = true;
+        gameMenu.HideMenu();
+        Debug.Log($"World.BuildNewRoom : build order for {roomInfo.Name}.");
+    }
+
+    public void OnBuildingClicked() {
+        if (!buildingMode) return;
+        if (!companyBuilding.IsRoomBuildable(buildingRoom)) return;
+        Debug.Log("can build!");
+
+        var targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        buildingRoom.UpdatePosition(Mathf.RoundToInt(targetPosition.x), Mathf.RoundToInt(targetPosition.y));
+        companyBuilding.BuildRoom(buildingRoom);
+        buildingMode = false;
+        buildingRoom = null;
     }
 }
