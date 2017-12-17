@@ -12,8 +12,11 @@ namespace Database {
 /// </summary>
 public class Database {
     public enum DataFileType {
+        GameGenre,
+        GameTheme,
         GamingPlatform,
         Room,
+        RoomObject,
     }
 
     private readonly List<Tuple<string, DataFileType>> dataFiles;
@@ -27,13 +30,29 @@ public class Database {
         }
     }
 
+    public DatabaseCollection<Genre> Genres { get; }
+    public DatabaseCollection<Theme> Themes { get; }
     public DatabaseCollection<Platform> Platforms { get; }
-    public DatabaseCollection<Room> Rooms { get;  }
+    public DatabaseCollection<Room> Rooms { get; }
+    public DatabaseCollection<Object> Objects { get; }
 
     public Database() {
         dataFiles = new List<Tuple<string, DataFileType>>();
+        Genres = new DatabaseCollection<Genre>();
+        Themes = new DatabaseCollection<Theme>();
         Platforms = new DatabaseCollection<Platform>();
         Rooms = new DatabaseCollection<Room>();
+        Objects = new DatabaseCollection<Object>();
+    }
+
+    public Database AddGenresDataFile(string dataFile) {
+        AddDataFile(dataFile, DataFileType.GameGenre);
+        return this;
+    }
+
+    public Database AddThemesDataFile(string dataFile) {
+        AddDataFile(dataFile, DataFileType.GameTheme);
+        return this;
     }
 
     public Database AddPlatformsDataFile(string dataFile) {
@@ -43,6 +62,11 @@ public class Database {
 
     public Database AddRoomsDataFile(string dataFile) {
         AddDataFile(dataFile, DataFileType.Room);
+        return this;
+    }
+
+    public Database AddObjectsDataFile(string dataFile) {
+        AddDataFile(dataFile, DataFileType.RoomObject);
         return this;
     }
 
@@ -62,14 +86,29 @@ public class Database {
     /// <returns>True if succesful, false otherwise</returns>
     public bool Load() {
         foreach (var sourceFile in dataFiles) {
-            if (sourceFile.Item2 == DataFileType.GamingPlatform) {
-                if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Platforms)) {
-                    return false;
-                }
-            } else if (sourceFile.Item2 == DataFileType.Room) {
-                if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Rooms)) {
-                    return false;
-                }
+            switch (sourceFile.Item2) {
+                case DataFileType.GameGenre:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Genres))
+                        return false;
+                    break;
+                case DataFileType.GameTheme:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Themes))
+                        return false;
+                    break;
+                case DataFileType.GamingPlatform:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Platforms))
+                        return false;
+                    break;
+                case DataFileType.Room:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Rooms))
+                        return false;
+                    break;
+                case DataFileType.RoomObject:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Objects))
+                        return false;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
         }
 

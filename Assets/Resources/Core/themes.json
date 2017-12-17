@@ -1,0 +1,104 @@
+{
+"Collection": [
+    {
+        "id": "LowFantasy",
+        "name": "Low Fantasy"
+    },
+    {
+        "id": "HighFantasy",
+        "name": "High Fantasy"
+    },
+    {
+        "id": "ScienceFiction",
+        "name": "Science Fiction"
+    },
+    {
+        "id": "Piracy",
+        "name": "Piracy"
+    },
+    {
+        "id": "Historical",
+        "name": "Historical"
+    },
+    {
+        "id": "City",
+        "name": "City"
+    },
+    {
+        "id": "Romance",
+        "name": "Romance"
+    },
+    {
+        "id": "Ninja",
+        "name": "Ninja"
+    },
+    {
+        "id": "Monster",
+        "name": "Monster"
+    },
+    {
+        "id": "Animal",
+        "name": "Animal"
+    },
+    {
+        "id": "Life",
+        "name": "Life"
+    },
+    {
+        "id": "Law",
+        "name": "Law"
+    },
+    {
+        "id": "Western",
+        "name": "Western"
+    },
+    {
+        "id": "Reversi",
+        "name": "Reversi"
+    },
+    {
+        "id": "Chess",
+        "name": "Chess"
+    },
+    {
+        "id": "Go",
+        "name": "Go"
+    },
+    {
+        "id": "Poker",
+        "name": "Poker"
+    },
+    {
+        "id": "PostApocalyptic",
+        "name": "Post-Apocalyptic"
+    },
+    {
+        "id": "Steampunk",
+        "name": "Steampunk"
+    },
+    {
+        "id": "Soccer",
+        "name": "Soccer"
+    },
+    {
+        "id": "Football",
+        "name": "Football"
+    },
+    {
+        "id": "Baseball",
+        "name": "Baseball"
+    },
+    {
+        "id": "Basketball",
+        "name": "Basketball"
+    },
+    {
+        "id": "Golf",
+        "name": "Golf"
+    },
+    {
+        "id": "Cycling",
+        "name": "Cycling"
+    }
+]
+}

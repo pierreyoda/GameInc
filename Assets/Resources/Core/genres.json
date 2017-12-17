@@ -1,0 +1,44 @@
+{
+"Collection": [
+    {
+        "id": "Action",
+        "name": "Action"
+    },
+    {
+        "id": "Adventure",
+        "name": "Adventure"
+    },
+    {
+        "id": "RPG",
+        "name": "Role-Playing Game"
+    },
+    {
+        "id": "Strategy",
+        "name": "Strategy"
+    },
+    {
+        "id": "Puzzle",
+        "name": "Puzzle"
+    },
+    {
+        "id": "Racing",
+        "name": "Racing"
+    },
+    {
+        "id": "Music",
+        "name": "Music"
+    },
+    {
+        "id": "CardGame",
+        "name": "Card Game"
+    },
+    {
+        "id": "Educational",
+        "name": "Educational"
+    },
+    {
+        "id": "SeriousGame",
+        "name": "Serious Game"
+    }
+]
+}
