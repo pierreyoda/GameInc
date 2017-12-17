@@ -3,30 +3,32 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class World : MonoBehaviour {
+    [Header("Game World")]
     [SerializeField] private WorldController worldController;
-
     [SerializeField] private GameDevCompany playerCompany;
     [SerializeField] private Building companyBuilding;
     private Database.Database database;
 
+    [Header("Date Simulation")]
     [SerializeField] [Range(100, 10000)] private int millisecondsPerDay = 1000;
-
     [SerializeField] [Range(1970, 2020)] private int gameStartYear = 1982;
     [SerializeField] [Range(1, 12)] private int gameStartMonth = 1;
     [SerializeField] [Range(1, 31)] private int gameStartDay = 1;
-
     [SerializeField] private DateTime gameDateTime;
     [SerializeField] private float dayPercentage;
 
+    [Header("Simulation Speed")]
     [SerializeField] private bool simulationRunning = true;
     [SerializeField] private Button pauseButton;
 
     [SerializeField] private int simulationSpeedMultiplier = 1;
     [SerializeField] private Button speedButton;
 
+    [Header("User Interface")]
     [SerializeField] private GameMenu gameMenu;
     [SerializeField] private BuildRoomSelectionMenu buildRoomSelectionMenu;
 
+    [Header("Construction")]
     [HideInInspector] private bool buildingMode = false;
     [HideInInspector] private Room buildingRoom;
 
