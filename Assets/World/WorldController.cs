@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 public class WorldController : MonoBehaviour {
     [SerializeField] private World world;
@@ -20,7 +21,11 @@ public class WorldController : MonoBehaviour {
         world.OnBuildingClicked();
     }
 
+    public void OnDateModified(DateTime gameDateTime) {
+        hudController.UpdateDateDisplay(gameDateTime);
+    }
+
     public void OnPlayerCompanyModified(GameDevCompany playerCompany) {
-        hudController.UpdateHud(playerCompany);
+        hudController.UpdateCompanyHud(playerCompany);
     }
 }

@@ -43,8 +43,9 @@ public class World : MonoBehaviour {
 
         Debug.Log("Instanciating the game world...", gameObject);
 
-        gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
         dayPercentage = 0f;
+        gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
+        worldController.OnDateModified(gameDateTime);
 
         playerCompany.Pay(100);
         worldController.OnPlayerCompanyModified(playerCompany);
@@ -75,6 +76,8 @@ public class World : MonoBehaviour {
         Debug.Log("New day, date = " + gameDateTime.ToString("yyyy/MM/dd"));
 
         companyBuilding.OnNewDay();
+
+        worldController.OnDateModified(gameDateTime);
     }
 
     public void ToggleSimulation() {
@@ -119,10 +122,11 @@ public class World : MonoBehaviour {
         var targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         buildingRoom.UpdatePosition(Mathf.RoundToInt(targetPosition.x), Mathf.RoundToInt(targetPosition.y));
         companyBuilding.BuildRoom(buildingRoom);
-        buildingMode = false;
-        buildingRoom = null;
 
         playerCompany.Charge(buildingRoom.Info.Cost);
         worldController.OnPlayerCompanyModified(playerCompany);
+
+        buildingMode = false;
+        buildingRoom = null;
     }
 }
