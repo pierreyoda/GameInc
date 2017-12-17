@@ -21,7 +21,10 @@ public class World : MonoBehaviour {
     [SerializeField] private int simulationSpeedMultiplier = 1;
     [SerializeField] private Button speedButton;
 
+    [SerializeField] private GameMenu gameMenu;
     [SerializeField] private BuildRoomSelectionMenu buildRoomSelectionMenu;
+
+    private bool buildingMode = false;
 
     void Start() {
         Debug.Log("Loading the game database...", gameObject);
@@ -34,6 +37,8 @@ public class World : MonoBehaviour {
 
         gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
         dayPercentage = 0f;
+
+        gameMenu.ShowMenu();
     }
 
     void Update() {
@@ -68,6 +73,7 @@ public class World : MonoBehaviour {
     }
 
     public void ShowBuildRoomSelectionMenu() {
+        gameMenu.ShowMenu();
         buildRoomSelectionMenu.OpenSelectionMenu(database.Rooms.Collection);
     }
 
@@ -79,6 +85,7 @@ public class World : MonoBehaviour {
         }
 
         Debug.Log($"World.BuildNewRoom : build order for {roomInfo.Name}.");
-        buildRoomSelectionMenu.CloseSelectionMenu();
+        gameMenu.HideMenu();
+        buildingMode = true;
     }
 }

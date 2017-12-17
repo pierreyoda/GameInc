@@ -1514,6 +1514,7 @@ MonoBehaviour:
   pauseButton: {fileID: 761103752}
   simulationSpeedMultiplier: 1
   speedButton: {fileID: 1756391265}
+  gameMenu: {fileID: 1775206632}
   buildRoomSelectionMenu: {fileID: 1229371446}
 --- !u!1 &1102229621
 GameObject:
@@ -2434,6 +2435,7 @@ GameObject:
   - component: {fileID: 1775206629}
   - component: {fileID: 1775206631}
   - component: {fileID: 1775206630}
+  - component: {fileID: 1775206632}
   m_Layer: 5
   m_Name: GameMenuPanel
   m_TagString: Untagged
@@ -2497,6 +2499,17 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1775206628}
+--- !u!114 &1775206632
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1775206628}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ca7d32daaa8b9b49815d70fd3168bb4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1877568624
 GameObject:
   m_ObjectHideFlags: 0
