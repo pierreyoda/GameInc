@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class World : MonoBehaviour {
+    [SerializeField] private WorldController worldController;
+
     [SerializeField] private GameDevCompany playerCompany;
     [SerializeField] private Building companyBuilding;
     private Database.Database database;
@@ -43,6 +45,9 @@ public class World : MonoBehaviour {
 
         gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
         dayPercentage = 0f;
+
+        playerCompany.Pay(100);
+        worldController.OnPlayerCompanyModified(playerCompany);
 
         gameMenu.ShowMenu();
     }
@@ -114,8 +119,10 @@ public class World : MonoBehaviour {
         var targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         buildingRoom.UpdatePosition(Mathf.RoundToInt(targetPosition.x), Mathf.RoundToInt(targetPosition.y));
         companyBuilding.BuildRoom(buildingRoom);
-        playerCompany.Charge(buildingRoom.Info.Cost);
         buildingMode = false;
         buildingRoom = null;
+
+        playerCompany.Charge(buildingRoom.Info.Cost);
+        worldController.OnPlayerCompanyModified(playerCompany);
     }
 }

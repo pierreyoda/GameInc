@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 
 public class WorldController : MonoBehaviour {
-    public World world;
+    [SerializeField] private World world;
+    [SerializeField] private GameHudController hudController;
 
     public void ToggleSimulationPause() {
         world.ToggleSimulation();
@@ -17,5 +18,9 @@ public class WorldController : MonoBehaviour {
 
     public void OnBuildingClicked() {
         world.OnBuildingClicked();
+    }
+
+    public void OnPlayerCompanyModified(GameDevCompany playerCompany) {
+        hudController.UpdateHud(playerCompany);
     }
 }
