@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 public class World : MonoBehaviour {
+    [SerializeField] private GameDevCompany playerCompany;
     [SerializeField] private Building companyBuilding;
     private Database.Database database;
 
@@ -113,6 +114,7 @@ public class World : MonoBehaviour {
         var targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         buildingRoom.UpdatePosition(Mathf.RoundToInt(targetPosition.x), Mathf.RoundToInt(targetPosition.y));
         companyBuilding.BuildRoom(buildingRoom);
+        playerCompany.Charge(buildingRoom.Info.Cost);
         buildingMode = false;
         buildingRoom = null;
     }
