@@ -140,16 +140,22 @@ public class EventsController : MonoBehaviour {
             if (we.CheckEvent(this, gameDate, playerCompany))
                 unactiveEventsIDs.Add(we.Info.Id);
         }
-
-        foreach (string unactiveID in unactiveEventsIDs) {
-            eventsObservingGameDate.RemoveAll(we => we.Info.Id == unactiveID);
-            eventsObservingPlayerCompany.RemoveAll(we => we.Info.Id == unactiveID);
-        }
+        ClearUnactivableWorldEvents(unactiveEventsIDs);
     }
 
     public void OnPlayerCompanyChanged(DateTime gameDate, GameDevCompany playerCompany) {
+        List<string> unactiveEventsIDs = new List<string>();
         foreach (WorldEvent we in eventsObservingPlayerCompany) {
-            we.CheckEvent(this, gameDate, playerCompany);
+            if (we.CheckEvent(this, gameDate, playerCompany))
+                unactiveEventsIDs.Add(we.Info.Id);
+        }
+        ClearUnactivableWorldEvents(unactiveEventsIDs);
+    }
+
+    private void ClearUnactivableWorldEvents(List<string> unactiveEventsIDs) {
+        foreach (string unactiveID in unactiveEventsIDs) {
+            eventsObservingGameDate.RemoveAll(we => we.Info.Id == unactiveID);
+            eventsObservingPlayerCompany.RemoveAll(we => we.Info.Id == unactiveID);
         }
     }
 
