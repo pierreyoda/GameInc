@@ -26,6 +26,9 @@ public class Event : DatabaseElement {
     [SerializeField] private string[] triggerActions;
     public string[] TriggerActions => triggerActions;
 
+    [SerializeField] private string triggerLimit;
+    public string TriggerLimit => triggerLimit;
+
     public string Title => Name;
 
     [SerializeField] private string description;
@@ -38,10 +41,11 @@ public class Event : DatabaseElement {
     public IReadOnlyList<string> ObservedObjects => observedObjects.AsReadOnly();
 
     public Event(string id, string name, string[] triggerConditions,
-        string[] triggerActions, string[] variables, string description)
-        : base(id, name) {
+        string[] triggerActions, string triggerLimit, string[] variables,
+        string description) : base(id, name) {
         this.triggerConditions = triggerConditions;
         this.triggerActions = triggerActions;
+        this.triggerLimit = triggerLimit;
         this.description = description;
         this.variables = variables;
     }
@@ -49,6 +53,10 @@ public class Event : DatabaseElement {
     public override bool IsValid() {
         observedObjects = new List<string>();
 
+        // Trigger limit check
+        if (!IsTriggerLimitValid()) return false;
+
+        // Description check
         if (description.Length == 0) {
             Debug.LogError($"Event with ID = {Id} : empty description or Text description ID.");
             return false;
@@ -62,6 +70,30 @@ public class Event : DatabaseElement {
                              && triggerActions.All(trigger => IsTriggerValid(trigger, false))
                              && variables.All(declaration => IsTriggerValid(declaration, false));
         return triggersValid && base.IsValid();
+    }
+
+    public bool IsTriggerLimitValid() {
+        // Game Variable or Event Variable
+        if (triggerLimit.StartsWith("$") || triggerLimit.StartsWith("@")) {
+            if (triggerLimit.Length == 1) {
+                Debug.LogError($"Event with ID = {Id} : empty variable name in trigger limit.");
+                return false;
+            }
+            string variableName = triggerLimit.Substring(1);
+            if (triggerLimit.StartsWith("$") && !SUPPORTED_VARIABLES.Contains(variableName)) {
+                Debug.LogError($"Event with ID = {Id} : unknown game variable \"{variableName}\".");
+                return false;
+            }
+            return true;
+        }
+
+        // Constant
+        int limit;
+        if (!int.TryParse(triggerLimit, out limit)) {
+            Debug.LogError($"Event with ID = {Id} : invalid trigger limit \"{triggerLimit}\".");
+            return false;
+        }
+        return true;
     }
 
     private bool IsTriggerValid(string trigger, bool isCondition) {

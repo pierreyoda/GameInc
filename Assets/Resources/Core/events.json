@@ -6,15 +6,17 @@
         "variables": [ "@Company.BailOut.Trigger = -200", "@Company.BailOut.Amount = 400" ],
         "triggerConditions" : [ "$Company.NeverBailedOut == true", "$Company.Money < @Company.BailOut.Trigger" ],
         "triggerActions" : [ "$Company.NeverBailedOut = false", "$Company.Money += @Company.BailOut.Amount" ],
+        "triggerLimit": "1",
         "description" : "$EVENT_COMPANY_BANKRUPCY"
     },
 
     {
         "id": "Test",
         "name": "Test !",
-        "variables": [ "@Test.Trigger = 5" ],
+        "variables": [ "@Test.Trigger = 5", "@Test.Limit = 2" ],
         "triggerConditions" : [ "$World.CurrentDate.Day == @Test.Trigger" ],
         "triggerActions" : [ "@Test.Trigger += 5" ],
+        "triggerLimit": "@Test.Limit",
         "description" : "Test event 2 triggered ! Trigger day variable = @Test.Trigger"
     },
 
@@ -28,6 +30,7 @@
             "$World.CurrentDate.Month >= 2"
         ],
         "triggerActions" : [ "Company.EnableFeature(Engine.CanDevelop)" ],
+        "triggerLimit": "1",
         "description" : "Having completed @Engine.CanDevelop.MinGames games, you can now develop your own Game Engine !"
     }
 ]

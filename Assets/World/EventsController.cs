@@ -30,15 +30,14 @@ public class EventsController : MonoBehaviour {
         }
     }
 
-    private delegate float VariableFloat(DateTime date, GameDevCompany company);
-    private delegate bool TriggerCondition(DateTime date, GameDevCompany company);
-    private delegate void TriggerAction(DateTime date, GameDevCompany company);
+    public delegate float VariableFloat(EventsController ec, DateTime d, GameDevCompany c);
+    public delegate bool TriggerCondition(EventsController ec, DateTime d, GameDevCompany c);
+    public delegate void TriggerAction(EventsController ec, DateTime d, GameDevCompany c);
 
-    private readonly List<Tuple<Event, Text, List<TriggerCondition>, List<TriggerAction>>> eventsTriggers =
-        new List<Tuple<Event, Text, List<TriggerCondition>, List<TriggerAction>>>();
+    [SerializeField] private List<WorldEvent> worldEvents = new List<WorldEvent>();
     [SerializeField] private List<EventVariable> eventsVariables = new List<EventVariable>();
-    [SerializeField] private List<Event> eventsObservingGameDate = new List<Event>();
-    [SerializeField] private List<Event> eventsObservingPlayerCompany = new List<Event>();
+    [SerializeField] private List<WorldEvent> eventsObservingGameDate = new List<WorldEvent>();
+    [SerializeField] private List<WorldEvent> eventsObservingPlayerCompany = new List<WorldEvent>();
 
     public void InitEvents(List<Event> events, List<Text> textsCollection) {
         foreach (Event e in events) {
@@ -94,15 +93,15 @@ public class EventsController : MonoBehaviour {
                 Debug.LogError($"EventsController - Invalid description ID for Event (ID = {e.Id}).");
                 continue;
             }
-            eventsTriggers.Add(new Tuple<Event, Text, List<TriggerCondition>, List<TriggerAction>>(
-                e, descriptionText, conditions, actions));
+            WorldEvent worldEvent = new WorldEvent(e, descriptionText, conditions, actions);
+            worldEvents.Add(worldEvent);
 
             // Sort by observed game object
             foreach (string gameObject in e.ObservedObjects) {
                 if (gameObject.StartsWith("World.CurrentDate"))
-                    eventsObservingGameDate.Add(e);
+                    eventsObservingGameDate.Add(worldEvent);
                 if (gameObject.StartsWith("Company"))
-                    eventsObservingPlayerCompany.Add(e);
+                    eventsObservingPlayerCompany.Add(worldEvent);
             }
         }
     }
@@ -112,7 +111,7 @@ public class EventsController : MonoBehaviour {
     /// </summary>
     public void InitVariables(DateTime d, GameDevCompany c) {
         foreach (EventVariable variable in eventsVariables) {
-            SetVariable(variable.Name, variable.Assignment(d, c));
+            SetVariable(variable.Name, variable.Assignment(this, d, c));
         }
     }
 
@@ -136,51 +135,25 @@ public class EventsController : MonoBehaviour {
     }
 
     public void OnGameDateChanged(DateTime gameDate, GameDevCompany playerCompany) {
-        foreach (Event e in eventsObservingGameDate) {
-            CheckEvent(e.Id, gameDate, playerCompany);
+        List<string> unactiveEventsIDs = new List<string>();
+        foreach (WorldEvent we in eventsObservingGameDate) {
+            if (we.CheckEvent(this, gameDate, playerCompany))
+                unactiveEventsIDs.Add(we.Info.Id);
+        }
+
+        foreach (string unactiveID in unactiveEventsIDs) {
+            eventsObservingGameDate.RemoveAll(we => we.Info.Id == unactiveID);
+            eventsObservingPlayerCompany.RemoveAll(we => we.Info.Id == unactiveID);
         }
     }
 
     public void OnPlayerCompanyChanged(DateTime gameDate, GameDevCompany playerCompany) {
-        foreach (Event e in eventsObservingPlayerCompany) {
-            CheckEvent(e.Id, gameDate, playerCompany);
+        foreach (WorldEvent we in eventsObservingPlayerCompany) {
+            we.CheckEvent(this, gameDate, playerCompany);
         }
     }
 
-    private void CheckEvent(string eventId, DateTime d, GameDevCompany c) {
-        var eventTriggers = eventsTriggers.Find(ea => ea.Item1.Id == eventId);
-        // condition check
-        bool triggered = true;
-        foreach (TriggerCondition condition in eventTriggers.Item3) {
-            if (!condition(d, c)) {
-                triggered = false;
-                break;
-            }
-        }
-        // action when triggered
-        if (!triggered) return;
-        Debug.Log($"EventsController - Event \"{eventId}\" triggered !");
-        foreach (TriggerAction action in eventTriggers.Item4) {
-            action(d, c);
-        }
-        string description = ComputeDescription(eventTriggers.Item2, d, c);
-        Debug.Log($"=== Event description:\n{description}\n===");
-    }
-
-    // TODO : support game variables (for instance "$Domain.MyVariable")
-    public string ComputeDescription(Text descriptionText, DateTime d,
-        GameDevCompany c) {
-        string description = "";
-        foreach (string line in descriptionText.TextEnglish) {
-            foreach (string token in line.Split(' ')) {
-                description += token.StartsWith("@") ? $" {GetVariable(token.Substring(1))}" : $" {token}";
-            }
-            description += "\n";
-        }
-        return description;
-    }
-
-    private EventVariable ParseVariableDeclaration(string declaration) {
+    private static EventVariable ParseVariableDeclaration(string declaration) {
         string[] tokens = declaration.Split(' ');
         if (tokens.Length != 3) return null;
         if (!tokens[0].StartsWith("@")) {
@@ -206,31 +179,31 @@ public class EventsController : MonoBehaviour {
         }
 
         VariableFloat variableValue = ParseOperandFloat(tokens[2].Trim());
-        VariableFloat variable = (d, c) => {
-            float value = variableValue(d, c);
-            SetVariable(variableName, value);
+        VariableFloat variable = (ec, d, c) => {
+            float value = variableValue(ec, d, c);
+            ec.SetVariable(variableName, value);
             return value;
         };
         return new EventVariable(variableName, variable);
     }
 
-    private TriggerCondition ParseTriggerCondition(string condition) {
+    private static TriggerCondition ParseTriggerCondition(string condition) {
         string[] tokens = condition.Split(' ');
         if (tokens.Length != 3) return null;
 
         VariableFloat leftValue = ParseOperandFloat(tokens[0].Trim());
         VariableFloat rightValue = ParseOperandFloat(tokens[2].Trim());
         switch (tokens[1].Trim()) {
-            case "<": return (d, c) => leftValue(d, c) < rightValue(d, c);
-            case "<=": return (d, c) => leftValue(d, c) <= rightValue(d, c);
-            case ">": return (d, c) => leftValue(d, c) > rightValue(d, c);
-            case ">=": return (d, c) => leftValue(d, c) >= rightValue(d, c);
-            case "==": return (d, c) => Math.Abs(leftValue(d, c) - rightValue(d, c)) < 0.00001;
+            case "<": return (ec, d, c) => leftValue(ec, d, c) < rightValue(ec, d, c);
+            case "<=": return (ec, d, c) => leftValue(ec, d, c) <= rightValue(ec, d, c);
+            case ">": return (ec, d, c) => leftValue(ec, d, c) > rightValue(ec, d, c);
+            case ">=": return (ec, d, c) => leftValue(ec, d, c) >= rightValue(ec, d, c);
+            case "==": return (ec, d, c) => Math.Abs(leftValue(ec, d, c) - rightValue(ec, d, c)) < 0.00001;
         }
         return null;
     }
 
-    private TriggerAction ParseTriggerAction(string action) {
+    private static TriggerAction ParseTriggerAction(string action) {
         string[] tokens = action.Split(' ');
         if (tokens.Length == 0) return null;
         string leftName = tokens[0].Trim();
@@ -246,7 +219,7 @@ public class EventsController : MonoBehaviour {
             }
 
             bool enable = leftName.StartsWith("Company.EnableFeature");
-            return (d, c) => c.SetFeature(featureName, enable);
+            return (ec, d, c) => c.SetFeature(featureName, enable);
         }
 
         if (tokens.Length != 3) return null;
@@ -258,13 +231,13 @@ public class EventsController : MonoBehaviour {
         if (leftName.StartsWith("$")) {
             switch (variableName) {
                 case "Company.Money":
-                    return (d, c) => {
+                    return (ec, d, c) => {
                         switch (operation) {
                             case "+=":
-                                c.Pay(rightValue(d, c));
+                                c.Pay(rightValue(ec, d, c));
                                 break;
                             case "-=":
-                                c.Charge(rightValue(d, c));
+                                c.Charge(rightValue(ec, d, c));
                                 break;
                         }
                     };
@@ -272,7 +245,7 @@ public class EventsController : MonoBehaviour {
                     if (operation != "=") {
                         Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported operation.");
                     }
-                    return (d, c) => c.NeverBailedOut = Math.Abs(rightValue(d, c) - 1f) < 0.000001;
+                    return (ec, d, c) => c.NeverBailedOut = Math.Abs(rightValue(ec, d, c) - 1f) < 0.000001;
                 default:
                     Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported variable.");
                     return null;
@@ -283,24 +256,24 @@ public class EventsController : MonoBehaviour {
         // TODO - get rid of GetVariable(.), using a new EventVariableFloat delegate ?
         if (leftName.StartsWith("@")) {
             switch (operation) {
-                case "=": return (d, c) => SetVariable(variableName, rightValue(d, c));
-                case "+=": return (d, c) => SetVariable(variableName, GetVariable(variableName) + rightValue(d, c));
-                case "-=": return (d, c) => SetVariable(variableName, GetVariable(variableName) - rightValue(d, c));
+                case "=": return (ec, d, c) => ec.SetVariable(variableName, rightValue(ec, d, c));
+                case "+=": return (ec, d, c) => ec.SetVariable(variableName, ec.GetVariable(variableName) + rightValue(ec, d, c));
+                case "-=": return (ec, d, c) => ec.SetVariable(variableName, ec.GetVariable(variableName) - rightValue(ec, d, c));
             }
         }
         return null;
     }
 
-    private VariableFloat ParseOperandFloat(string operand) {
+    public static VariableFloat ParseOperandFloat(string operand) {
         // Game variables
         if (operand.StartsWith("$")) {
             switch (operand.Substring(1)) {
-                case "World.CurrentDate.Year": return (d, c) => (float) d.Year;
-                case "World.CurrentDate.Month": return (d, c) => (float) d.Month;
-                case "World.CurrentDate.Day": return (d, c) => (float) d.Day;
-                case "Company.Money": return (d, c) => c.Money;
-                case "Company.NeverBailedOut" : return (d, c) => c.NeverBailedOut ? 1f : 0f;
-                case "Company.Projects.CompletedGames.Count": return (d, c) => c.CompletedProjects.Games.Count;
+                case "World.CurrentDate.Year": return (ec, d, c) => (float) d.Year;
+                case "World.CurrentDate.Month": return (ec, d, c) => (float) d.Month;
+                case "World.CurrentDate.Day": return (ec, d, c) => (float) d.Day;
+                case "Company.Money": return (ec, d, c) => c.Money;
+                case "Company.NeverBailedOut" : return (ec, d, c) => c.NeverBailedOut ? 1f : 0f;
+                case "Company.Projects.CompletedGames.Count": return (ec, d, c) => c.CompletedProjects.Games.Count;
                 default:
                     Debug.LogError($"EventsController.ParseOperandFloat(\"{operand}\") : unkown variable.");
                     return null;
@@ -308,13 +281,13 @@ public class EventsController : MonoBehaviour {
         }
         // Event variables
         if (operand.StartsWith("@")) {
-            return (d, c) => GetVariable(operand.Substring(1));
+            return (ec, d, c) => ec.GetVariable(operand.Substring(1));
         }
         // Boolean - TODO : improve handling
-        if (operand == "true") return (d, c) => 1f;
-        if (operand == "false") return (d, c) => 0f;
+        if (operand == "true") return (ec, d, c) => 1f;
+        if (operand == "false") return (ec, d, c) => 0f;
         // Constant
         float value = float.Parse(operand, CultureInfo.InvariantCulture.NumberFormat);
-        return (d, c) => value;
+        return (ec, d, c) => value;
     }
 }
