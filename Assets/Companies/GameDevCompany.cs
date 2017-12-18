@@ -1,8 +1,19 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Assertions;
 
 public class GameDevCompany : MonoBehaviour {
+    public static string[] SUPPORTED_FEATURES = {
+        "Engine.CanDevelop",
+    };
+
+    [SerializeField] private CompanyFeature[] features = new CompanyFeature[0];
+    public CompanyFeature[] Features => features;
+
+    [SerializeField] private ProjectsBacklog completedProjects = new ProjectsBacklog();
+    public ProjectsBacklog CompletedProjects => completedProjects;
+
     [SerializeField] private float money = 0;
     public float Money => money;
 
@@ -17,6 +28,24 @@ public class GameDevCompany : MonoBehaviour {
 
     public GameDevCompany(string name) {
         this.name = name;
+    }
+
+    private void Start() {
+        List<CompanyFeature> features = new List<CompanyFeature>();
+        foreach (string featureName in SUPPORTED_FEATURES) {
+            features.Add(new CompanyFeature(featureName, false));
+        }
+        this.features = features.ToArray();
+    }
+
+    public void SetFeature(string name, bool enabled) {
+        CompanyFeature feature = features.FirstOrDefault(f => f.Name == name);
+        if (feature == null) {
+            Debug.LogError($"GameDevCompany.SetFeature(\"{name}\", {enabled}) : unkown feature.");
+            return;
+        }
+        feature.Enabled = enabled;
+        Debug.Log($"GameDevCompany.Feature(\"{name}\") = {enabled}.");
     }
 
     public void Charge(float cost) {

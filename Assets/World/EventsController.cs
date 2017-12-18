@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using Database;
 using UnityEngine;
 using Event = Database.Event;
@@ -45,12 +46,12 @@ public class EventsController : MonoBehaviour {
             foreach (string declaration in e.VariablesDeclarations) {
                 EventVariable variable = ParseVariableDeclaration(declaration);
                 if (variable == null) {
-                    Debug.LogError($"EventsController - Event variable declaration parsing error for Event (ID = {e.Id}.");
+                    Debug.LogError($"EventsController - Event variable declaration parsing error for Event (ID = {e.Id}).");
                     break;
                 }
                 EventVariable existing = eventsVariables.Find(v => v.Name == variable.Name);
                 if (existing != null) {
-                    Debug.LogWarning($"EventsController - Event variable \"@{variable.Name}\" assignment erases a previous one.");
+                    Debug.LogWarning($"EventsController - Event variable \"@{variable.Name}\" assignment erases a previous one in Event of ID = {e.Id}.");
                     existing.Assignment = variable.Assignment;
                 }
                 else {
@@ -98,9 +99,9 @@ public class EventsController : MonoBehaviour {
 
             // Sort by observed game object
             foreach (string gameObject in e.ObservedObjects) {
-                if (gameObject == "World.CurrentDate")
+                if (gameObject.StartsWith("World.CurrentDate"))
                     eventsObservingGameDate.Add(e);
-                if (gameObject == "Company")
+                if (gameObject.StartsWith("Company"))
                     eventsObservingPlayerCompany.Add(e);
             }
         }
@@ -231,8 +232,24 @@ public class EventsController : MonoBehaviour {
 
     private TriggerAction ParseTriggerAction(string action) {
         string[] tokens = action.Split(' ');
-        if (tokens.Length != 3) return null;
+        if (tokens.Length == 0) return null;
         string leftName = tokens[0].Trim();
+
+        if (leftName.StartsWith("Company.EnableFeature") ||
+            leftName.StartsWith("Company.DisableFeature")) {
+            int posLeftParenthesis = leftName.IndexOf('(');
+            int posRightParenthesis = leftName.IndexOf(')');
+            string featureName = leftName.Substring(posLeftParenthesis + 1,
+                posRightParenthesis - posLeftParenthesis - 1);
+            if (!GameDevCompany.SUPPORTED_FEATURES.Contains(featureName)) {
+                Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported Company method.");
+            }
+
+            bool enable = leftName.StartsWith("Company.EnableFeature");
+            return (d, c) => c.SetFeature(featureName, enable);
+        }
+
+        if (tokens.Length != 3) return null;
         string variableName = leftName.Substring(1);
         string operation = tokens[1].Trim();
         VariableFloat rightValue = ParseOperandFloat(tokens[2].Trim());
@@ -261,6 +278,7 @@ public class EventsController : MonoBehaviour {
                     return null;
             }
         }
+
         // Event variable
         // TODO - get rid of GetVariable(.), using a new EventVariableFloat delegate ?
         if (leftName.StartsWith("@")) {
@@ -282,6 +300,7 @@ public class EventsController : MonoBehaviour {
                 case "World.CurrentDate.Day": return (d, c) => (float) d.Day;
                 case "Company.Money": return (d, c) => c.Money;
                 case "Company.NeverBailedOut" : return (d, c) => c.NeverBailedOut ? 1f : 0f;
+                case "Company.Projects.CompletedGames.Count": return (d, c) => c.CompletedProjects.Games.Count;
                 default:
                     Debug.LogError($"EventsController.ParseOperandFloat(\"{operand}\") : unkown variable.");
                     return null;

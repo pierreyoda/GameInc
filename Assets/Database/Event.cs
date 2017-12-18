@@ -17,6 +17,7 @@ public class Event : DatabaseElement {
         "World.CurrentDate.Day",
         "Company.Money",
         "Company.NeverBailedOut",
+        "Company.Projects.CompletedGames.Count",
     };
 
     [SerializeField] private string[] triggerConditions;
@@ -97,11 +98,28 @@ public class Event : DatabaseElement {
                     variableGroups.RemoveAt(variableGroups.Count - 1);
                     string observedObject = string.Join(".", variableGroups);
                     if (!observedObjects.Contains(observedObject))
-                        observedObjects.Add(string.Join(".", variableGroups));
+                        observedObjects.Add(observedObject);
                 }
             } else if (token.StartsWith("@") && token.Length == 1) { // event variable
                 Debug.LogError($"Event with ID = {Id} : empty event variable name.");
                 return false;
+            } else if (token.StartsWith("Company.EnableFeature") ||
+                       token.StartsWith("Company.DisableFeature")) {
+                int posLeftParenthesis = token.IndexOf('(');
+                int posRightParenthesis = token.IndexOf(')');
+                if (posLeftParenthesis == -1 || posRightParenthesis == -1
+                    || posLeftParenthesis > posRightParenthesis) {
+                    Debug.LogError($"Event with ID = {Id} : incorrect function call syntax.");
+                    return false;
+                }
+
+                string featureName = token.Substring(posLeftParenthesis + 1,
+                    posRightParenthesis - posLeftParenthesis - 1).Trim();
+                if (featureName.Length == 0 ||
+                    !GameDevCompany.SUPPORTED_FEATURES.Contains(featureName)) {
+                    Debug.LogError($"Event with ID = {Id} : unkown CompanyFeature name \"{featureName}\".");
+                    return false;
+                }
             }
         }
         return true;

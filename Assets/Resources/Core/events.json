@@ -1,28 +1,34 @@
 {
 "Collection": [
     {
-        "id": "Bankrupcy",
+        "id": "Company_Bankrupcy",
         "name": "Bankrupcy !",
         "variables": [ "@Company.BailOut.Trigger = -200", "@Company.BailOut.Amount = 400" ],
         "triggerConditions" : [ "$Company.NeverBailedOut == true", "$Company.Money < @Company.BailOut.Trigger" ],
         "triggerActions" : [ "$Company.NeverBailedOut = false", "$Company.Money += @Company.BailOut.Amount" ],
         "description" : "$EVENT_COMPANY_BANKRUPCY"
     },
+
     {
         "id": "Test",
         "name": "Test !",
-        "variables": [ "@Event.Test.Trigger1 = 100" ],
-        "triggerConditions" : [ "$Company.Money >= @Event.Test.Trigger1" ],
-        "triggerActions" : [ ],
-        "description" : "Test event 1 triggered !"
+        "variables": [ "@Test.Trigger = 5" ],
+        "triggerConditions" : [ "$World.CurrentDate.Day == @Test.Trigger" ],
+        "triggerActions" : [ "@Test.Trigger += 5" ],
+        "description" : "Test event 2 triggered ! Trigger day variable = @Test.Trigger"
     },
+
+
     {
-        "id": "Test2",
-        "name": "Test 2 !",
-        "variables": [ "@Event.Test.Trigger2 = 5" ],
-        "triggerConditions" : [ "$World.CurrentDate.Day == @Event.Test.Trigger2" ],
-        "triggerActions" : [ "@Event.Test.Trigger2 += 5" ],
-        "description" : "Test event 2 triggered ! Trigger day variable = @Event.Test.Trigger2"
+        "id": "Company_Engine_CanDevelop",
+        "name": "Custom Engine development unlocked !",
+        "variables": [ "@Engine.CanDevelop.MinGames = 0" ],
+        "triggerConditions" : [
+            "$Company.Projects.CompletedGames.Count >= @Engine.CanDevelop.MinGames",
+            "$World.CurrentDate.Month >= 2"
+        ],
+        "triggerActions" : [ "Company.EnableFeature(Engine.CanDevelop)" ],
+        "description" : "Having completed @Engine.CanDevelop.MinGames games, you can now develop your own Game Engine !"
     }
 ]
 }
