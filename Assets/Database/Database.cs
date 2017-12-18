@@ -153,7 +153,8 @@ public class Database {
     }
 
     private void PrintCollectionInfo<T>(DatabaseCollection<T> collection) where T : DatabaseElement {
-        Debug.Log($"Database - Loaded {collection.Collection.Count} {collection.Type}s.");
+        string plural = collection.Type == DataFileType.News ? "" : "s";
+        Debug.Log($"Database - Loaded {collection.Collection.Count} {collection.Type}{plural}.");
     }
 
     private bool LoadDataFile<T>(string dataFile, DataFileType dataType,
