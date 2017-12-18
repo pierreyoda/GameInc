@@ -20,6 +20,25 @@
         "description" : "Test event 2 triggered ! Trigger day variable = @Test.Trigger"
     },
 
+    {
+        "id": "Limit1",
+        "name": "Limit 1!",
+        "variables": ["@Limit = -1"],
+        "triggerConditions" : [ "$World.CurrentDate.DayOfWeek == 3" ],
+        "triggerActions" : [ "@Limit = 1" ],
+        "triggerLimit": "1",
+        "description" : "Limit 1 Event triggered ! Limit = @Limit ."
+    },
+    {
+        "id": "Limit2",
+        "name": "Limit 2",
+        "variables": [],
+        "triggerConditions" : [ "$World.CurrentDate.DayOfWeek <= 3" ],
+        "triggerActions" : [],
+        "triggerLimit": "@Limit",
+        "description" : "Limit 2 Event triggered ! Limit = @Limit ."
+    },
+
 
     {
         "id": "Company_Engine_CanDevelop",

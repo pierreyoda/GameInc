@@ -15,6 +15,7 @@ public class Event : DatabaseElement {
         "World.CurrentDate.Year",
         "World.CurrentDate.Month",
         "World.CurrentDate.Day",
+        "World.CurrentDate.DayOfWeek",
         "Company.Money",
         "Company.NeverBailedOut",
         "Company.Projects.CompletedGames.Count",

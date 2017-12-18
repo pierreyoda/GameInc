@@ -277,6 +277,7 @@ public class EventsController : MonoBehaviour {
                 case "World.CurrentDate.Year": return (ec, d, c) => (float) d.Year;
                 case "World.CurrentDate.Month": return (ec, d, c) => (float) d.Month;
                 case "World.CurrentDate.Day": return (ec, d, c) => (float) d.Day;
+                case "World.CurrentDate.DayOfWeek": return (ec, d, c) => (float) d.DayOfWeek;
                 case "Company.Money": return (ec, d, c) => c.Money;
                 case "Company.NeverBailedOut" : return (ec, d, c) => c.NeverBailedOut ? 1f : 0f;
                 case "Company.Projects.CompletedGames.Count": return (ec, d, c) => c.CompletedProjects.Games.Count;
