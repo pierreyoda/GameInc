@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace Database {
 
@@ -26,7 +28,14 @@ public class Database {
 
     [Serializable]
     public class DatabaseCollection<T> where T : DatabaseElement {
+        [SerializeField] private DataFileType type;
+        public DataFileType Type => type;
+
         public List<T> Collection = new List<T>();
+
+        public DatabaseCollection(DataFileType type) {
+            this.type = type;
+        }
 
         public T FindById(string id) {
             return Collection.Find(e => e.Id == id);
@@ -43,13 +52,13 @@ public class Database {
 
     public Database() {
         dataFiles = new List<Tuple<string, DataFileType>>();
-        Events = new DatabaseCollection<Event>();
-        Genres = new DatabaseCollection<Genre>();
-        Themes = new DatabaseCollection<Theme>();
-        Platforms = new DatabaseCollection<Platform>();
-        Rooms = new DatabaseCollection<Room>();
-        Objects = new DatabaseCollection<Object>();
-        News = new DatabaseCollection<News>();
+        Events = new DatabaseCollection<Event>(DataFileType.Event);
+        News = new DatabaseCollection<News>(DataFileType.News);
+        Genres = new DatabaseCollection<Genre>(DataFileType.GameGenre);
+        Themes = new DatabaseCollection<Theme>(DataFileType.GameTheme);
+        Platforms = new DatabaseCollection<Platform>(DataFileType.GamingPlatform);
+        Rooms = new DatabaseCollection<Room>(DataFileType.Room);
+        Objects = new DatabaseCollection<Object>(DataFileType.RoomObject);
     }
 
     public Database AddDataFile(string dataFile, DataFileType dataType) {
@@ -63,47 +72,69 @@ public class Database {
         return this;
     }
 
+    public Database AddDataFolder(string dataFolder, DataFileType dataType) {
+        string dataPath = new DirectoryInfo(Application.dataPath).Parent.ToString();
+        DirectoryInfo directoryInfo = new DirectoryInfo(dataPath + "/" + dataFolder);
+        foreach (FileInfo fileInfo in directoryInfo.EnumerateFiles("*.json")) {
+            AddDataFile($"{dataFolder}/{fileInfo.Name}", dataType);
+        }
+        return this;
+    }
+
     /// <summary>
     /// Try to load all the game data from the previously specified data source files.
     /// </summary>
     /// <returns>True if succesful, false otherwise</returns>
-    public bool Load() {
+    public Database Load() {
         foreach (var sourceFile in dataFiles) {
             switch (sourceFile.Item2) {
                 case DataFileType.Event:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Events))
-                        return false;
+                        return this;
                     break;
                 case DataFileType.News:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, News))
-                        return false;
+                        return this;
                     break;
                 case DataFileType.GameGenre:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Genres))
-                        return false;
+                        return this;
                     break;
                 case DataFileType.GameTheme:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Themes))
-                        return false;
+                        return this;
                     break;
                 case DataFileType.GamingPlatform:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Platforms))
-                        return false;
+                        return this;
                     break;
                 case DataFileType.Room:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Rooms))
-                        return false;
+                        return this;
                     break;
                 case DataFileType.RoomObject:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Objects))
-                        return false;
+                        return this;
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
+        return this;
+    }
 
-        return true;
+    public void PrintDatabaseInfo() {
+        PrintCollectionInfo(Events);
+        PrintCollectionInfo(News);
+        PrintCollectionInfo(Genres);
+        PrintCollectionInfo(Themes);
+        PrintCollectionInfo(Platforms);
+        PrintCollectionInfo(Rooms);
+        PrintCollectionInfo(Objects);
+    }
+
+    private void PrintCollectionInfo<T>(DatabaseCollection<T> collection) where T : DatabaseElement {
+        Debug.Log($"Database - Loaded {collection.Collection.Count} {collection.Type}s.");
     }
 
     private bool LoadDataFile<T>(string dataFile, DataFileType dataType,
@@ -116,7 +147,6 @@ public class Database {
             return false;
         }
 
-        int count = 0;
         foreach (var element in additions.Collection) {
             if (existing.Collection.Any(existingElement => element.Id == existingElement.Id)) {
                 Debug.LogWarning(
@@ -129,10 +159,7 @@ public class Database {
             }
 
             existing.Collection.Add(element);
-            ++count;
         }
-
-        Debug.Log($"Database - Added {count} {dataType} elements.");
         return true;
     }
 }

@@ -1,0 +1,11 @@
+{
+"Collection": [
+    {
+        "id": "USSR_Gorbachev_NewLeader",
+        "name": "USSR_Gorbachev_NewLeader",
+        "date": "1985/03/11",
+        "textEnglish" : "Mikhail Gorbachev replaces Konstantin Chernenko as Soviet leader.",
+        "country": "USSR"
+    }
+]
+}

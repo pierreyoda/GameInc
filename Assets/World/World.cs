@@ -38,13 +38,14 @@ public class World : MonoBehaviour {
         database = new Database.Database();
         const string filesPrefix = "Assets/Resources/Core";
         database.AddDataFile($"{filesPrefix}/events.json", DataFileType.Event)
-            .AddDataFile($"{filesPrefix}/news/america.json", DataFileType.News)
+            .AddDataFolder("Assets/Resources/Core/news", DataFileType.News)
             .AddDataFile($"{filesPrefix}/genres.json", DataFileType.GameGenre)
             .AddDataFile($"{filesPrefix}/themes.json", DataFileType.GameTheme)
             .AddDataFile($"{filesPrefix}/platforms.json", DataFileType.GamingPlatform)
             .AddDataFile($"{filesPrefix}/rooms.json", DataFileType.Room)
             .AddDataFile($"{filesPrefix}/objects.json", DataFileType.RoomObject)
-            .Load();
+            .Load()
+            .PrintDatabaseInfo();
         worldController.OnGameStarted(database.Events.Collection,
             database.News.Collection, gameDateTime, playerCompany);
 
