@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Database {
 
 [Serializable]
-public class DatabaseElement {
+public abstract class DatabaseElement {
     [SerializeField] private string id;
     public string Id => id;
 
@@ -17,6 +17,10 @@ public class DatabaseElement {
     protected DatabaseElement(string id, string name) {
         this.id = id;
         this.name = name;
+    }
+
+    public virtual bool IsValid() {
+        return true;
     }
 
     public static DateTime ParseDate(string date) {

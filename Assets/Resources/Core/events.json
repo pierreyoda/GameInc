@@ -1,0 +1,25 @@
+{
+"Collection": [
+    {
+        "id": "Bankrupcy",
+        "name": "Bankrupcy !",
+        "triggerConditions" : [ "$Company.NeverBailedOut == true", "$Company.Money < -200" ],
+        "triggerActions" : [ "$Company.NeverBailedOut = false", "$Company.Money += 500" ],
+        "descriptionId" : "EVENT_COMPANY_BANKRUPCY"
+    },
+    {
+        "id": "Test",
+        "name": "Test !",
+        "triggerConditions" : [ "$Company.Money >= 100" ],
+        "triggerActions" : [ ],
+        "descriptionId" : "EVENT_TEST_1"
+    },
+    {
+        "id": "Test2",
+        "name": "Test 2 !",
+        "triggerConditions" : [ "$World.CurrentDate.Day == 5" ],
+        "triggerActions" : [ "$Company.Money += 10" ],
+        "descriptionId" : "EVENT_TEST_2"
+    }
+]
+}

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Database {
@@ -12,6 +13,8 @@ namespace Database {
 /// </summary>
 public class Database {
     public enum DataFileType {
+        Event,
+        News,
         GameGenre,
         GameTheme,
         GamingPlatform,
@@ -30,54 +33,34 @@ public class Database {
         }
     }
 
+    public DatabaseCollection<Event> Events { get; }
     public DatabaseCollection<Genre> Genres { get; }
     public DatabaseCollection<Theme> Themes { get; }
     public DatabaseCollection<Platform> Platforms { get; }
     public DatabaseCollection<Room> Rooms { get; }
     public DatabaseCollection<Object> Objects { get; }
+    public DatabaseCollection<News> News { get; }
 
     public Database() {
         dataFiles = new List<Tuple<string, DataFileType>>();
+        Events = new DatabaseCollection<Event>();
         Genres = new DatabaseCollection<Genre>();
         Themes = new DatabaseCollection<Theme>();
         Platforms = new DatabaseCollection<Platform>();
         Rooms = new DatabaseCollection<Room>();
         Objects = new DatabaseCollection<Object>();
+        News = new DatabaseCollection<News>();
     }
 
-    public Database AddGenresDataFile(string dataFile) {
-        AddDataFile(dataFile, DataFileType.GameGenre);
-        return this;
-    }
-
-    public Database AddThemesDataFile(string dataFile) {
-        AddDataFile(dataFile, DataFileType.GameTheme);
-        return this;
-    }
-
-    public Database AddPlatformsDataFile(string dataFile) {
-        AddDataFile(dataFile, DataFileType.GamingPlatform);
-        return this;
-    }
-
-    public Database AddRoomsDataFile(string dataFile) {
-        AddDataFile(dataFile, DataFileType.Room);
-        return this;
-    }
-
-    public Database AddObjectsDataFile(string dataFile) {
-        AddDataFile(dataFile, DataFileType.RoomObject);
-        return this;
-    }
-
-    private void AddDataFile(string dataFile, DataFileType dataType) {
+    public Database AddDataFile(string dataFile, DataFileType dataType) {
         if (!File.Exists(dataFile)) {
             Debug.LogWarningFormat("Database - Cannot find data file \"{0}\".", dataFile);
-            return;
+            return this;
         }
 
         dataFiles.Add(new Tuple<string, DataFileType>(dataFile, dataType));
         Debug.Log($"Database - Added {dataType} data file \"{dataFile}\".");
+        return this;
     }
 
     /// <summary>
@@ -87,6 +70,14 @@ public class Database {
     public bool Load() {
         foreach (var sourceFile in dataFiles) {
             switch (sourceFile.Item2) {
+                case DataFileType.Event:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Events))
+                        return false;
+                    break;
+                case DataFileType.News:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, News))
+                        return false;
+                    break;
                 case DataFileType.GameGenre:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Genres))
                         return false;
@@ -130,6 +121,10 @@ public class Database {
             if (existing.Collection.Any(existingElement => element.Id == existingElement.Id)) {
                 Debug.LogWarning(
                     $"Database - {dataType} element of ID \"{element.Id}\" already exists.");
+                continue;
+            }
+            if (!element.IsValid()) {
+                Debug.LogWarning($"Database - {dataType} element of ID \"{element.Id}\" is invalid.");
                 continue;
             }
 

@@ -500,7 +500,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1877568625}
   m_Direction: 2
   m_Value: 1
-  m_Size: 0.6666667
+  m_Size: 0.66666657
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1427,6 +1427,8 @@ Transform:
   m_LocalPosition: {x: -10, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
+  - {fileID: 1730790484}
+  - {fileID: 1514514858}
   - {fileID: 1288497912}
   m_Father: {fileID: 0}
   m_RootOrder: 1
@@ -1443,6 +1445,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   world: {fileID: 1082800133}
+  playerCompany: {fileID: 1709252436}
+  eventsController: {fileID: 1730790485}
+  newsController: {fileID: 1514514859}
   hudController: {fileID: 1288497913}
 --- !u!1 &1082710076
 GameObject:
@@ -1586,9 +1591,9 @@ MonoBehaviour:
   playerCompany: {fileID: 1709252436}
   companyBuilding: {fileID: 2069030189}
   millisecondsPerDay: 1000
-  gameStartYear: 1982
+  gameStartYear: 1984
   gameStartMonth: 1
-  gameStartDay: 1
+  gameStartDay: 22
   dayPercentage: 0
   simulationRunning: 1
   pauseButton: {fileID: 761103752}
@@ -1954,7 +1959,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1068444074}
-  m_RootOrder: 0
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1288497913
 MonoBehaviour:
@@ -2307,6 +2312,47 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1420685486}
+--- !u!1 &1514514857
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 1514514858}
+  - component: {fileID: 1514514859}
+  m_Layer: 0
+  m_Name: NewsController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1514514858
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1514514857}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1068444074}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1514514859
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1514514857}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18082b3a7e52cc543a21afb0a249ced6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  news: []
 --- !u!4 &1527037054 stripped
 Transform:
   m_PrefabParentObject: {fileID: 4425330996365600, guid: ceff1e7566acc1849af11b2cbb8f68d7,
@@ -2612,7 +2658,50 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   money: 100
+  neverBailedOut: 1
   name: Game Inc. Studios
+--- !u!1 &1730790483
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 1730790484}
+  - component: {fileID: 1730790485}
+  m_Layer: 0
+  m_Name: EventsController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1730790484
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1730790483}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1068444074}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1730790485
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1730790483}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4a1b0e6b370452d880d61c3dc7ec85d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  eventsObservingGameDate: []
+  eventsObservingPlayerCompany: []
 --- !u!1 &1756391263
 GameObject:
   m_ObjectHideFlags: 0

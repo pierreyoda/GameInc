@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 using UnityEngine.UI;
+using static Database.Database;
 
 public class World : MonoBehaviour {
     [Header("Game World")]
@@ -36,12 +37,16 @@ public class World : MonoBehaviour {
         Debug.Log("Loading the game database...", gameObject);
         database = new Database.Database();
         const string filesPrefix = "Assets/Resources/Core";
-        database.AddGenresDataFile($"{filesPrefix}/genres.json")
-            .AddThemesDataFile($"{filesPrefix}/themes.json")
-            .AddPlatformsDataFile($"{filesPrefix}/platforms.json")
-            .AddRoomsDataFile($"{filesPrefix}/rooms.json")
-            .AddObjectsDataFile($"{filesPrefix}/objects.json")
+        database.AddDataFile($"{filesPrefix}/events.json", DataFileType.Event)
+            .AddDataFile($"{filesPrefix}/news/america.json", DataFileType.News)
+            .AddDataFile($"{filesPrefix}/genres.json", DataFileType.GameGenre)
+            .AddDataFile($"{filesPrefix}/themes.json", DataFileType.GameTheme)
+            .AddDataFile($"{filesPrefix}/platforms.json", DataFileType.GamingPlatform)
+            .AddDataFile($"{filesPrefix}/rooms.json", DataFileType.Room)
+            .AddDataFile($"{filesPrefix}/objects.json", DataFileType.RoomObject)
             .Load();
+        worldController.OnGameStarted(database.Events.Collection,
+            database.News.Collection, gameDateTime, playerCompany);
 
         Debug.Log("Instanciating the game world...", gameObject);
 
@@ -50,7 +55,7 @@ public class World : MonoBehaviour {
         worldController.OnDateModified(gameDateTime);
 
         playerCompany.Pay(100);
-        worldController.OnPlayerCompanyModified(playerCompany);
+        worldController.OnPlayerCompanyModified(gameDateTime);
 
         gameMenu.ShowMenu();
     }
@@ -65,6 +70,8 @@ public class World : MonoBehaviour {
         if (dayPercentage >= 1f) {
             NewDay();
             dayPercentage = 0f;
+            playerCompany.Charge(100);
+            worldController.OnPlayerCompanyModified(gameDateTime);
         }
 
         // building mode : display a ghost of the required item under the mouse if possible
@@ -75,7 +82,6 @@ public class World : MonoBehaviour {
 
     private void NewDay() {
         gameDateTime = gameDateTime.AddDays(1.0);
-        Debug.Log("New day, date = " + gameDateTime.ToString("yyyy/MM/dd"));
 
         companyBuilding.OnNewDay();
 
@@ -126,7 +132,7 @@ public class World : MonoBehaviour {
         companyBuilding.BuildRoom(buildingRoom);
 
         playerCompany.Charge(buildingRoom.Info.Cost);
-        worldController.OnPlayerCompanyModified(playerCompany);
+        worldController.OnPlayerCompanyModified(gameDateTime);
 
         buildingMode = false;
         buildingRoom = null;

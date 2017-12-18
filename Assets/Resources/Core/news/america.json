@@ -1,0 +1,18 @@
+{
+"Collection": [
+    {
+        "id": "Mapple_Mapintosh",
+        "name": "Mapple_Mapintosh",
+        "date": "1984/01/24",
+        "textEnglish" : "Mapple Computer Inc unveils its revolutionary Mapintosh personal computer.",
+        "country": "USA"
+    },
+    {
+        "id": "Canada_PierreTrudeau_StepsDown",
+        "name": "Canada_PierreTrudeau_StepsDown",
+        "date": "1984/02/29",
+        "textEnglish": "Pierre Trudeau annouces that he will step down as Canada's Prime Minister.",
+        "country": "Canada"
+    }
+]
+}
