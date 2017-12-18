@@ -30,6 +30,7 @@ public class WorldController : MonoBehaviour {
     public void OnGameStarted(List<Event> events, List<News> news, DateTime gameDateTime, GameDevCompany playerCompany) {
         this.playerCompany = playerCompany;
         eventsController.InitEvents(events);
+        eventsController.InitVariables(gameDateTime, playerCompany);
         newsController.InitNews(news, gameDateTime);
     }
 

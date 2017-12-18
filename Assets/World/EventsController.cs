@@ -5,24 +5,65 @@ using UnityEngine;
 using Event = Database.Event;
 
 public class EventsController : MonoBehaviour {
+    [Serializable]
+    private class EventVariable {
+        [SerializeField] private string name;
+        public string Name => name;
+
+        [SerializeField] private VariableFloat assignment;
+        public VariableFloat Assignment {
+            get { return assignment; }
+            set { assignment = value; }
+        }
+
+        [SerializeField] private float value = 0f;
+        public float Value {
+            get { return value; }
+            set { this.value = value; }
+        }
+
+        public EventVariable(string name, VariableFloat assignment) {
+            this.name = name;
+            this.assignment = assignment;
+        }
+    }
+
     private delegate float VariableFloat(DateTime date, GameDevCompany company);
     private delegate bool TriggerCondition(DateTime date, GameDevCompany company);
     private delegate void TriggerAction(DateTime date, GameDevCompany company);
 
     private readonly List<Tuple<Event, List<TriggerCondition>, List<TriggerAction>>> eventsTriggers =
         new List<Tuple<Event, List<TriggerCondition>, List<TriggerAction>>>();
+    [SerializeField] private List<EventVariable> eventsVariables = new List<EventVariable>();
     [SerializeField] private List<Event> eventsObservingGameDate = new List<Event>();
     [SerializeField] private List<Event> eventsObservingPlayerCompany = new List<Event>();
 
     public void InitEvents(List<Event> events) {
         foreach (Event e in events) {
+            // Parse the variable declarations
+            foreach (string declaration in e.VariablesDeclarations) {
+                EventVariable variable = ParseVariableDeclaration(declaration);
+                if (variable == null) {
+                    Debug.LogError($"EventsController - Event variable declaration parsing error for Event (ID = {e.Id}.");
+                    break;
+                }
+                EventVariable existing = eventsVariables.Find(v => v.Name == variable.Name);
+                if (existing != null) {
+                    Debug.LogWarning($"EventsController - Event variable \"@{variable.Name}\" assignment erases a previous one.");
+                    existing.Assignment = variable.Assignment;
+                }
+                else {
+                    eventsVariables.Add(variable);
+                }
+            }
+
             // Parse the trigger conditions and actions
             List<TriggerCondition> conditions = new List<TriggerCondition>();
             List<TriggerAction> actions = new List<TriggerAction>();
             foreach (string condition in e.TriggerConditions) {
                 TriggerCondition trigger = ParseTriggerCondition(condition);
                 if (trigger == null) {
-                    Debug.LogError($"EventsController - Parsing error for Event (ID = {e.Id}).");
+                    Debug.LogError($"EventsController - Condition parsing error for Event (ID = {e.Id}).");
                     break;
                 }
                 conditions.Add(trigger);
@@ -30,7 +71,7 @@ public class EventsController : MonoBehaviour {
             foreach (string action in e.TriggerActions) {
                 TriggerAction trigger = ParseTriggerAction(action);
                 if (trigger == null) {
-                    Debug.LogError($"EventsController - Parsing error for Event (ID = {e.Id}).");
+                    Debug.LogError($"EventsController - Action parsing error for Event (ID = {e.Id}).");
                     break;
                 }
                 actions.Add(trigger);
@@ -45,6 +86,34 @@ public class EventsController : MonoBehaviour {
                     eventsObservingPlayerCompany.Add(e);
             }
         }
+    }
+
+    /// <summary>
+    /// Initialize the event variables.
+    /// </summary>
+    public void InitVariables(DateTime d, GameDevCompany c) {
+        foreach (EventVariable variable in eventsVariables) {
+            SetVariable(variable.Name, variable.Assignment(d, c));
+        }
+    }
+
+    public float GetVariable(string variableName) {
+        var variable = eventsVariables.Find(v => v.Name == variableName);
+        if (variable == null) {
+            Debug.LogError($"EventsController.GetVariable(\"{variableName}\") : unkown event variable.");
+            return 0f;
+        }
+        return variable.Value;
+    }
+
+    public void SetVariable(string variableName, float value) {
+        var variable = eventsVariables.Find(v => v.Name == variableName);
+        if (variable == null) {
+            Debug.LogError($"EventsController.SetVariable(\"{variableName}\", {value}) : unkown event variable.");
+            return;
+        }
+        variable.Value = value;
+        Debug.Log($"EventsController : @{variableName} = {value}");
     }
 
     public void OnGameDateChanged(DateTime gameDate, GameDevCompany playerCompany) {
@@ -77,6 +146,40 @@ public class EventsController : MonoBehaviour {
         }
     }
 
+    private EventVariable ParseVariableDeclaration(string declaration) {
+        string[] tokens = declaration.Split(' ');
+        if (tokens.Length != 3) return null;
+        if (!tokens[0].StartsWith("@")) {
+            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : must assign an event variable (\"@variable\").");
+            return null;
+        }
+        string variableName = tokens[0].Trim().Substring(1);
+        if (variableName.Length == 0) {
+            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : empty event variable name.");
+            return null;
+        }
+
+        string operation = tokens[1].Trim();
+        if (operation != "=") {
+            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : can only assign the variable value.");
+            return null;
+        }
+
+        string rightValue = tokens[2].Trim();
+        if (rightValue == $"@{variableName}") {
+            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : illegal assignment.");
+            return null;
+        }
+
+        VariableFloat variableValue = ParseOperandFloat(tokens[2].Trim());
+        VariableFloat variable = (d, c) => {
+            float value = variableValue(d, c);
+            SetVariable(variableName, value);
+            return value;
+        };
+        return new EventVariable(variableName, variable);
+    }
+
     private TriggerCondition ParseTriggerCondition(string condition) {
         string[] tokens = condition.Split(' ');
         if (tokens.Length != 3) return null;
@@ -96,31 +199,49 @@ public class EventsController : MonoBehaviour {
     private TriggerAction ParseTriggerAction(string action) {
         string[] tokens = action.Split(' ');
         if (tokens.Length != 3) return null;
-        if (!tokens[0].StartsWith("$")) return null;
-
+        string leftName = tokens[0].Trim();
+        string variableName = leftName.Substring(1);
         string operation = tokens[1].Trim();
         VariableFloat rightValue = ParseOperandFloat(tokens[2].Trim());
-        switch (tokens[0].Trim().Substring(1)) {
-            case "Company.Money":
-                return (d, c) => {
-                    switch (operation) {
-                        case "+=": c.Pay(rightValue(d, c)); break;
-                        case "-=": c.Charge(rightValue(d, c)); break;
+
+        // Game variable
+        if (leftName.StartsWith("$")) {
+            switch (variableName) {
+                case "Company.Money":
+                    return (d, c) => {
+                        switch (operation) {
+                            case "+=":
+                                c.Pay(rightValue(d, c));
+                                break;
+                            case "-=":
+                                c.Charge(rightValue(d, c));
+                                break;
+                        }
+                    };
+                case "Company.NeverBailedOut":
+                    if (operation != "=") {
+                        Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported operation.");
                     }
-                };
-            case "Company.NeverBailedOut":
-                if (operation != "=") {
-                    Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported operation.");
-                }
-                return (d, c) => c.NeverBailedOut = Math.Abs(rightValue(d, c) - 1f) < 0.000001;
-           default:
-               Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported variable.");
-               return null;
+                    return (d, c) => c.NeverBailedOut = Math.Abs(rightValue(d, c) - 1f) < 0.000001;
+                default:
+                    Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported variable.");
+                    return null;
+            }
         }
+        // Event variable
+        // TODO - get rid of GetVariable(.), using a new EventVariableFloat delegate ?
+        if (leftName.StartsWith("@")) {
+            switch (operation) {
+                case "=": return (d, c) => SetVariable(variableName, rightValue(d, c));
+                case "+=": return (d, c) => SetVariable(variableName, GetVariable(variableName) + rightValue(d, c));
+                case "-=": return (d, c) => SetVariable(variableName, GetVariable(variableName) - rightValue(d, c));
+            }
+        }
+        return null;
     }
 
     private VariableFloat ParseOperandFloat(string operand) {
-        // Variable
+        // Game variables
         if (operand.StartsWith("$")) {
             switch (operand.Substring(1)) {
                 case "World.CurrentDate.Year": return (d, c) => (float) d.Year;
@@ -132,6 +253,10 @@ public class EventsController : MonoBehaviour {
                     Debug.LogError($"EventsController.ParseOperandFloat(\"{operand}\") : unkown variable.");
                     return null;
             }
+        }
+        // Event variables
+        if (operand.StartsWith("@")) {
+            return (d, c) => GetVariable(operand.Substring(1));
         }
         // Boolean - TODO : improve handling
         if (operand == "true") return (d, c) => 1f;

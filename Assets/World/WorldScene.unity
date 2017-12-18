@@ -2700,6 +2700,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4a1b0e6b370452d880d61c3dc7ec85d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  eventsVariables: []
   eventsObservingGameDate: []
   eventsObservingPlayerCompany: []
 --- !u!1 &1756391263

@@ -11,7 +11,7 @@ namespace Database {
 /// </summary>
 [Serializable]
 public class Event : DatabaseElement {
-    private static readonly string[] SUPPORTED_VARIABLES = {
+    public static readonly string[] SUPPORTED_VARIABLES = {
         "World.CurrentDate.Year",
         "World.CurrentDate.Month",
         "World.CurrentDate.Day",
@@ -30,20 +30,26 @@ public class Event : DatabaseElement {
     [SerializeField] private string descriptionId;
     public string DescriptionId => descriptionId;
 
+    [SerializeField] private string[] variables;
+    public string[] VariablesDeclarations => variables;
+
     private List<string> observedObjects;
     public IReadOnlyList<string> ObservedObjects => observedObjects.AsReadOnly();
 
     public Event(string id, string name, string[] triggerConditions,
-        string[] triggerActions, string descriptionId) : base(id, name) {
+        string[] triggerActions, string[] variables, string descriptionId)
+        : base(id, name) {
         this.triggerConditions = triggerConditions;
         this.triggerActions = triggerActions;
         this.descriptionId = descriptionId;
+        this.variables = variables;
     }
 
     public override bool IsValid() {
         observedObjects = new List<string>();
         bool triggersValid = triggerConditions.All(trigger => IsTriggerValid(trigger, true))
-                             && triggerActions.All(trigger => IsTriggerValid(trigger, false));
+                             && triggerActions.All(trigger => IsTriggerValid(trigger, false))
+                             && variables.All(declaration => IsTriggerValid(declaration, false));
         return triggersValid && base.IsValid();
     }
 
@@ -83,6 +89,9 @@ public class Event : DatabaseElement {
                     if (!observedObjects.Contains(observedObject))
                         observedObjects.Add(string.Join(".", variableGroups));
                 }
+            } else if (token.StartsWith("@") && token.Length == 1) { // event variable
+                Debug.LogError($"Event with ID = {Id} : empty event variable name.");
+                return false;
             }
         }
         return true;
