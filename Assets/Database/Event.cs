@@ -27,8 +27,8 @@ public class Event : DatabaseElement {
 
     public string Title => Name;
 
-    [SerializeField] private string descriptionId;
-    public string DescriptionId => descriptionId;
+    [SerializeField] private string description;
+    public string Description => description;
 
     [SerializeField] private string[] variables;
     public string[] VariablesDeclarations => variables;
@@ -37,16 +37,26 @@ public class Event : DatabaseElement {
     public IReadOnlyList<string> ObservedObjects => observedObjects.AsReadOnly();
 
     public Event(string id, string name, string[] triggerConditions,
-        string[] triggerActions, string[] variables, string descriptionId)
+        string[] triggerActions, string[] variables, string description)
         : base(id, name) {
         this.triggerConditions = triggerConditions;
         this.triggerActions = triggerActions;
-        this.descriptionId = descriptionId;
+        this.description = description;
         this.variables = variables;
     }
 
     public override bool IsValid() {
         observedObjects = new List<string>();
+
+        if (description.Length == 0) {
+            Debug.LogError($"Event with ID = {Id} : empty description or Text description ID.");
+            return false;
+        }
+        if (description.StartsWith("$") && description.Length == 1) {
+            Debug.LogError($"Event with ID = {Id} : empty Text description ID.");
+            return false;
+        }
+
         bool triggersValid = triggerConditions.All(trigger => IsTriggerValid(trigger, true))
                              && triggerActions.All(trigger => IsTriggerValid(trigger, false))
                              && variables.All(declaration => IsTriggerValid(declaration, false));

@@ -22,6 +22,7 @@ public class Database {
         GamingPlatform,
         Room,
         RoomObject,
+        Text,
     }
 
     private readonly List<Tuple<string, DataFileType>> dataFiles;
@@ -49,6 +50,7 @@ public class Database {
     public DatabaseCollection<Room> Rooms { get; }
     public DatabaseCollection<Object> Objects { get; }
     public DatabaseCollection<News> News { get; }
+    public DatabaseCollection<Text> Texts { get; }
 
     public Database() {
         dataFiles = new List<Tuple<string, DataFileType>>();
@@ -59,6 +61,7 @@ public class Database {
         Platforms = new DatabaseCollection<Platform>(DataFileType.GamingPlatform);
         Rooms = new DatabaseCollection<Room>(DataFileType.Room);
         Objects = new DatabaseCollection<Object>(DataFileType.RoomObject);
+        Texts = new DatabaseCollection<Text>(DataFileType.Text);
     }
 
     public Database AddDataFile(string dataFile, DataFileType dataType) {
@@ -116,6 +119,21 @@ public class Database {
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Objects))
                         return this;
                     break;
+                case DataFileType.Text:
+                    List<Text> texts = Text.LoadTextsFile(sourceFile.Item1);
+                    if (texts == null) return this;
+                    foreach (Text text in texts) {
+                        if (Texts.Collection.Any(t => t.Id == text.Id)) {
+                            Debug.LogWarning($"Database - {sourceFile.Item2} element of ID \"{text.Id}\" already exists.");
+                            continue;
+                        }
+                        if (!text.IsValid()) {
+                            Debug.LogWarning($"Database - {sourceFile.Item2} element of ID \"{text.Id}\" is invalid.");
+                            continue;
+                        }
+                        Texts.Collection.Add(text);
+                    }
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -131,6 +149,7 @@ public class Database {
         PrintCollectionInfo(Platforms);
         PrintCollectionInfo(Rooms);
         PrintCollectionInfo(Objects);
+        PrintCollectionInfo(Texts);
     }
 
     private void PrintCollectionInfo<T>(DatabaseCollection<T> collection) where T : DatabaseElement {

@@ -44,10 +44,10 @@ public class World : MonoBehaviour {
             .AddDataFile($"{filesPrefix}/platforms.json", DataFileType.GamingPlatform)
             .AddDataFile($"{filesPrefix}/rooms.json", DataFileType.Room)
             .AddDataFile($"{filesPrefix}/objects.json", DataFileType.RoomObject)
+            .AddDataFile($"{filesPrefix}/texts.txt", DataFileType.Text)
             .Load()
             .PrintDatabaseInfo();
-        worldController.OnGameStarted(database.Events.Collection,
-            database.News.Collection, gameDateTime, playerCompany);
+        worldController.OnGameStarted(database, gameDateTime, playerCompany);
 
         Debug.Log("Instanciating the game world...", gameObject);
 

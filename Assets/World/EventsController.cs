@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using Database;
 using UnityEngine;
 using Event = Database.Event;
 
@@ -32,13 +33,13 @@ public class EventsController : MonoBehaviour {
     private delegate bool TriggerCondition(DateTime date, GameDevCompany company);
     private delegate void TriggerAction(DateTime date, GameDevCompany company);
 
-    private readonly List<Tuple<Event, List<TriggerCondition>, List<TriggerAction>>> eventsTriggers =
-        new List<Tuple<Event, List<TriggerCondition>, List<TriggerAction>>>();
+    private readonly List<Tuple<Event, Text, List<TriggerCondition>, List<TriggerAction>>> eventsTriggers =
+        new List<Tuple<Event, Text, List<TriggerCondition>, List<TriggerAction>>>();
     [SerializeField] private List<EventVariable> eventsVariables = new List<EventVariable>();
     [SerializeField] private List<Event> eventsObservingGameDate = new List<Event>();
     [SerializeField] private List<Event> eventsObservingPlayerCompany = new List<Event>();
 
-    public void InitEvents(List<Event> events) {
+    public void InitEvents(List<Event> events, List<Text> textsCollection) {
         foreach (Event e in events) {
             // Parse the variable declarations
             foreach (string declaration in e.VariablesDeclarations) {
@@ -76,7 +77,24 @@ public class EventsController : MonoBehaviour {
                 }
                 actions.Add(trigger);
             }
-            eventsTriggers.Add(new Tuple<Event, List<TriggerCondition>, List<TriggerAction>>(e, conditions, actions));
+
+            // Get the description (if starts with '$' : try to load from associated Text in database)
+            Text descriptionText = null;
+            if (!e.Description.StartsWith("$")) {
+                descriptionText = new Text($"_GENERATED_DESCRIPTION_FOR_EVENT_{e.Id}",
+                    new[] {e.Description});
+            } else {
+                string descriptionId = e.Description.Substring(1);
+                descriptionText = textsCollection.Find(t => t.Id == descriptionId);
+            }
+
+            // Store the event and its computed informations
+            if (descriptionText == null) {
+                Debug.LogError($"EventsController - Invalid description ID for Event (ID = {e.Id}).");
+                continue;
+            }
+            eventsTriggers.Add(new Tuple<Event, Text, List<TriggerCondition>, List<TriggerAction>>(
+                e, descriptionText, conditions, actions));
 
             // Sort by observed game object
             foreach (string gameObject in e.ObservedObjects) {
@@ -128,12 +146,12 @@ public class EventsController : MonoBehaviour {
         }
     }
 
-    private void CheckEvent(string eventId, DateTime g, GameDevCompany c) {
+    private void CheckEvent(string eventId, DateTime d, GameDevCompany c) {
         var eventTriggers = eventsTriggers.Find(ea => ea.Item1.Id == eventId);
         // condition check
         bool triggered = true;
-        foreach (TriggerCondition condition in eventTriggers.Item2) {
-            if (!condition(g, c)) {
+        foreach (TriggerCondition condition in eventTriggers.Item3) {
+            if (!condition(d, c)) {
                 triggered = false;
                 break;
             }
@@ -141,9 +159,24 @@ public class EventsController : MonoBehaviour {
         // action when triggered
         if (!triggered) return;
         Debug.Log($"EventsController - Event \"{eventId}\" triggered !");
-        foreach (TriggerAction action in eventTriggers.Item3) {
-            action(g, c);
+        foreach (TriggerAction action in eventTriggers.Item4) {
+            action(d, c);
         }
+        string description = ComputeDescription(eventTriggers.Item2, d, c);
+        Debug.Log($"=== Event description:\n{description}\n===");
+    }
+
+    // TODO : support game variables (for instance "$Domain.MyVariable")
+    public string ComputeDescription(Text descriptionText, DateTime d,
+        GameDevCompany c) {
+        string description = "";
+        foreach (string line in descriptionText.TextEnglish) {
+            foreach (string token in line.Split(' ')) {
+                description += token.StartsWith("@") ? $" {GetVariable(token.Substring(1))}" : $" {token}";
+            }
+            description += "\n";
+        }
+        return description;
     }
 
     private EventVariable ParseVariableDeclaration(string declaration) {

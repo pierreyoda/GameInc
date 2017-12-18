@@ -3,10 +3,10 @@
     {
         "id": "Bankrupcy",
         "name": "Bankrupcy !",
-        "variables": [ "@Company.BailOut.Trigger = -200", "@Company.BailOut.Amount = 500" ],
+        "variables": [ "@Company.BailOut.Trigger = -200", "@Company.BailOut.Amount = 400" ],
         "triggerConditions" : [ "$Company.NeverBailedOut == true", "$Company.Money < @Company.BailOut.Trigger" ],
         "triggerActions" : [ "$Company.NeverBailedOut = false", "$Company.Money += @Company.BailOut.Amount" ],
-        "descriptionId" : "EVENT_COMPANY_BANKRUPCY"
+        "description" : "$EVENT_COMPANY_BANKRUPCY"
     },
     {
         "id": "Test",
@@ -14,7 +14,7 @@
         "variables": [ "@Event.Test.Trigger1 = 100" ],
         "triggerConditions" : [ "$Company.Money >= @Event.Test.Trigger1" ],
         "triggerActions" : [ ],
-        "descriptionId" : "EVENT_TEST_1"
+        "description" : "Test event 1 triggered !"
     },
     {
         "id": "Test2",
@@ -22,7 +22,7 @@
         "variables": [ "@Event.Test.Trigger2 = 5" ],
         "triggerConditions" : [ "$World.CurrentDate.Day == @Event.Test.Trigger2" ],
         "triggerActions" : [ "@Event.Test.Trigger2 += 5" ],
-        "descriptionId" : "EVENT_TEST_2"
+        "description" : "Test event 2 triggered ! Trigger day variable = @Event.Test.Trigger2"
     }
 ]
 }

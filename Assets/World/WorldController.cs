@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using Database;
 using UnityEngine;
-using Event = Database.Event;
 
 public class WorldController : MonoBehaviour {
     [SerializeField] private World world;
@@ -27,11 +24,11 @@ public class WorldController : MonoBehaviour {
         world.OnBuildingClicked();
     }
 
-    public void OnGameStarted(List<Event> events, List<News> news, DateTime gameDateTime, GameDevCompany playerCompany) {
+    public void OnGameStarted(Database.Database database, DateTime gameDateTime, GameDevCompany playerCompany) {
         this.playerCompany = playerCompany;
-        eventsController.InitEvents(events);
+        eventsController.InitEvents(database.Events.Collection, database.Texts.Collection);
         eventsController.InitVariables(gameDateTime, playerCompany);
-        newsController.InitNews(news, gameDateTime);
+        newsController.InitNews(database.News.Collection, gameDateTime);
     }
 
     public void OnDateModified(DateTime gameDateTime) {
