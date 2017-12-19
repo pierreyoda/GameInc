@@ -32,7 +32,7 @@ public class Event : DatabaseElement {
 
     public string TitleEnglish => Name;
 
-    [SerializeField] private string descriptionEnglish;
+    [SerializeField] [MultilineAttribute] private string descriptionEnglish;
     public string DescriptionEnglish => descriptionEnglish;
 
     [SerializeField] private string[] variables;
