@@ -12,7 +12,7 @@ public class GameHudController : MonoBehaviour {
     }
 
     public void UpdateCompanyHud(GameDevCompany playerCompany) {
-        playerCompanyNameText.text = $"{playerCompany.Name}";
+        playerCompanyNameText.text = $"{playerCompany.CompanyName}";
         playerCompanyMoneyText.text = $"{playerCompany.Money} k";
     }
 }

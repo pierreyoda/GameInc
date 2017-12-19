@@ -23,11 +23,11 @@ public class GameDevCompany : MonoBehaviour {
         set { neverBailedOut = value; }
     }
 
-    [SerializeField] private string name;
-    public string Name => name;
+    [SerializeField] private string companyName;
+    public string CompanyName => companyName;
 
-    public GameDevCompany(string name) {
-        this.name = name;
+    public GameDevCompany(string companyName) {
+        this.companyName = companyName;
     }
 
     private void Start() {
