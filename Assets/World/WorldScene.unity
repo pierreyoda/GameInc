@@ -2657,9 +2657,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57dcea2cbd9df6045ab0af6abf3eec8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  features: []
   money: 100
   neverBailedOut: 1
-  name: Game Inc. Studios
+  companyName: Game Inc. Studios
 --- !u!1 &1730790483
 GameObject:
   m_ObjectHideFlags: 0
@@ -2700,6 +2701,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4a1b0e6b370452d880d61c3dc7ec85d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  worldEvents: []
   eventsVariables: []
   eventsObservingGameDate: []
   eventsObservingPlayerCompany: []
