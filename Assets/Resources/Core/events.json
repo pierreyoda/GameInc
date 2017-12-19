@@ -1,5 +1,7 @@
 {
+// Events Collection
 "Collection": [
+    // Company money-related events
     {
         "id": "Company_Bankrupcy",
         "name": "Bankrupcy !",
@@ -10,16 +12,19 @@
         "description" : "$EVENT_COMPANY_BANKRUPCY"
     },
 
+    // Test events
     {
         "id": "Test",
         "name": "Test !",
-        "variables": [ "@Test.Trigger = 5", "@Test.Limit = 2" ],
+        "variables": [
+            "@Test.Trigger = 5", // test comment
+            "@Test.Limit = 2"
+        ],
         "triggerConditions" : [ "$World.CurrentDate.Day == @Test.Trigger" ],
         "triggerActions" : [ "@Test.Trigger += 5" ],
         "triggerLimit": "@Test.Limit",
         "description" : "Test event 2 triggered ! Trigger day variable = @Test.Trigger"
     },
-
     {
         "id": "Limit1",
         "name": "Limit 1!",
@@ -39,7 +44,7 @@
         "description" : "Limit 2 Event triggered ! Limit = @Limit ."
     },
 
-
+    // Engine-related events
     {
         "id": "Company_Engine_CanDevelop",
         "name": "Custom Engine development unlocked !",

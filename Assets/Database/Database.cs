@@ -157,9 +157,9 @@ public class Database {
         Debug.Log($"Database - Loaded {collection.Collection.Count} {collection.Type}{plural}.");
     }
 
-    private bool LoadDataFile<T>(string dataFile, DataFileType dataType,
+    private static bool LoadDataFile<T>(string dataFile, DataFileType dataType,
         DatabaseCollection<T> existing) where T : DatabaseElement {
-        string dataFileContent = File.ReadAllText(dataFile);
+        string dataFileContent = FormatJSON(File.ReadAllText(dataFile));
         DatabaseCollection<T> additions = JsonUtility.FromJson<DatabaseCollection<T>>(dataFileContent);
         if (additions == null) {
             Debug.LogWarning(
@@ -181,6 +181,33 @@ public class Database {
             existing.Collection.Add(element);
         }
         return true;
+    }
+
+    /// <summary>
+    /// Format the given JSON data file to strip it of any unsupported feature :
+    /// - Single-line comments (exemple : "// comment").
+    ///
+    /// </summary>
+    /// <param name="json">The clean JSON file.</param>
+    /// <returns></returns>
+    private static string FormatJSON(string json) {
+        string cleaned = "";
+
+        foreach (string line in json.Split('\n')) {
+            string lineTrimmed = line.Trim();
+            if (lineTrimmed.Length == 0) continue;
+
+            // Ignore single-line comments
+            int commentStart = lineTrimmed.IndexOf("//", StringComparison.Ordinal);
+            if (commentStart != -1) {
+                cleaned += lineTrimmed.Substring(0, commentStart).TrimEnd() + "\n";
+                continue;
+            }
+
+            cleaned += $"{lineTrimmed}\n";
+        }
+
+        return cleaned;
     }
 }
 
