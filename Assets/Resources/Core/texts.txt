@@ -1,7 +1,0 @@
-=EVENT_COMPANY_BANKRUPCY
-.English
-Looks like you're in troubles !
-
-Just this once, the government will bail you out with @Company.BailOut.Amount k.
-
-Be careful now, next time will be game over...

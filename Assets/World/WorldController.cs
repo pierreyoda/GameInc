@@ -26,7 +26,7 @@ public class WorldController : MonoBehaviour {
 
     public void OnGameStarted(Database.Database database, DateTime gameDateTime, GameDevCompany playerCompany) {
         this.playerCompany = playerCompany;
-        eventsController.InitEvents(database.Events.Collection, database.Texts.Collection);
+        eventsController.InitEvents(database.Events.Collection);
         eventsController.InitVariables(gameDateTime, playerCompany);
         newsController.InitNews(database.News.Collection, gameDateTime);
     }

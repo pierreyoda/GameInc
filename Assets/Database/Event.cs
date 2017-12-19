@@ -30,10 +30,10 @@ public class Event : DatabaseElement {
     [SerializeField] private string triggerLimit;
     public string TriggerLimit => triggerLimit;
 
-    public string Title => Name;
+    public string TitleEnglish => Name;
 
-    [SerializeField] private string description;
-    public string Description => description;
+    [SerializeField] private string descriptionEnglish;
+    public string DescriptionEnglish => descriptionEnglish;
 
     [SerializeField] private string[] variables;
     public string[] VariablesDeclarations => variables;
@@ -43,11 +43,11 @@ public class Event : DatabaseElement {
 
     public Event(string id, string name, string[] triggerConditions,
         string[] triggerActions, string triggerLimit, string[] variables,
-        string description) : base(id, name) {
+        string descriptionEnglish) : base(id, name) {
         this.triggerConditions = triggerConditions;
         this.triggerActions = triggerActions;
         this.triggerLimit = triggerLimit;
-        this.description = description;
+        this.descriptionEnglish = descriptionEnglish;
         this.variables = variables;
     }
 
@@ -58,12 +58,8 @@ public class Event : DatabaseElement {
         if (!IsTriggerLimitValid()) return false;
 
         // Description check
-        if (description.Length == 0) {
+        if (descriptionEnglish.Length == 0) {
             Debug.LogError($"Event with ID = {Id} : empty description or Text description ID.");
-            return false;
-        }
-        if (description.StartsWith("$") && description.Length == 1) {
-            Debug.LogError($"Event with ID = {Id} : empty Text description ID.");
             return false;
         }
 

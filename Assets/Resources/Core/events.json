@@ -5,11 +5,17 @@
     {
         "id": "Company_Bankrupcy",
         "name": "Bankrupcy !",
+        "descriptionEnglish" : """"
+Looks like you're in troubles !
+
+Just this once, the government will bail you out with @Company.BailOut.Amount k.
+
+Be careful now, next time will be game over...
+""",
         "variables": [ "@Company.BailOut.Trigger = -200", "@Company.BailOut.Amount = 400" ],
         "triggerConditions" : [ "$Company.NeverBailedOut == true", "$Company.Money < @Company.BailOut.Trigger" ],
         "triggerActions" : [ "$Company.NeverBailedOut = false", "$Company.Money += @Company.BailOut.Amount" ],
-        "triggerLimit": "1",
-        "description" : "$EVENT_COMPANY_BANKRUPCY"
+        "triggerLimit": "1"
     },
 
     // Test events
@@ -23,7 +29,7 @@
         "triggerConditions" : [ "$World.CurrentDate.Day == @Test.Trigger" ],
         "triggerActions" : [ "@Test.Trigger += 5" ],
         "triggerLimit": "@Test.Limit",
-        "description" : "Test event 2 triggered ! Trigger day variable = @Test.Trigger"
+        "descriptionEnglish" : "Test event 2 triggered ! Trigger day variable = @Test.Trigger"
     },
     {
         "id": "Limit1",
@@ -32,7 +38,7 @@
         "triggerConditions" : [ "$World.CurrentDate.DayOfWeek == 3" ],
         "triggerActions" : [ "@Limit = 1" ],
         "triggerLimit": "1",
-        "description" : "Limit 1 Event triggered ! Limit = @Limit ."
+        "descriptionEnglish" : "Limit 1 Event triggered ! Limit = @Limit ."
     },
     {
         "id": "Limit2",
@@ -41,7 +47,7 @@
         "triggerConditions" : [ "$World.CurrentDate.DayOfWeek <= 3" ],
         "triggerActions" : [],
         "triggerLimit": "@Limit",
-        "description" : "Limit 2 Event triggered ! Limit = @Limit ."
+        "descriptionEnglish" : "Limit 2 Event triggered ! Limit = @Limit ."
     },
 
     // Engine-related events
@@ -55,7 +61,7 @@
         ],
         "triggerActions" : [ "Company.EnableFeature(Engine.CanDevelop)" ],
         "triggerLimit": "1",
-        "description" : "Having completed @Engine.CanDevelop.MinGames games, you can now develop your own Game Engine !"
+        "descriptionEnglish" : "Having completed @Engine.CanDevelop.MinGames games, you can now develop your own Game Engine !"
     }
 ]
 }

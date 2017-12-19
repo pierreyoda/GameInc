@@ -39,7 +39,7 @@ public class EventsController : MonoBehaviour {
     [SerializeField] private List<WorldEvent> eventsObservingGameDate = new List<WorldEvent>();
     [SerializeField] private List<WorldEvent> eventsObservingPlayerCompany = new List<WorldEvent>();
 
-    public void InitEvents(List<Event> events, List<Text> textsCollection) {
+    public void InitEvents(List<Event> events) {
         foreach (Event e in events) {
             // Parse the variable declarations
             foreach (string declaration in e.VariablesDeclarations) {
@@ -78,22 +78,8 @@ public class EventsController : MonoBehaviour {
                 actions.Add(trigger);
             }
 
-            // Get the description (if starts with '$' : try to load from associated Text in database)
-            Text descriptionText = null;
-            if (!e.Description.StartsWith("$")) {
-                descriptionText = new Text($"_GENERATED_DESCRIPTION_FOR_EVENT_{e.Id}",
-                    new[] {e.Description});
-            } else {
-                string descriptionId = e.Description.Substring(1);
-                descriptionText = textsCollection.Find(t => t.Id == descriptionId);
-            }
-
-            // Store the event and its computed informations
-            if (descriptionText == null) {
-                Debug.LogError($"EventsController - Invalid description ID for Event (ID = {e.Id}).");
-                continue;
-            }
-            WorldEvent worldEvent = new WorldEvent(e, descriptionText, conditions, actions);
+            // Store the WorldEvent and its computed metadata
+            WorldEvent worldEvent = new WorldEvent(e, conditions, actions);
             worldEvents.Add(worldEvent);
 
             // Sort by observed game object

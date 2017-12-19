@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
 
 namespace Database {
 
@@ -22,7 +19,6 @@ public class Database {
         GamingPlatform,
         Room,
         RoomObject,
-        Text,
     }
 
     private readonly List<Tuple<string, DataFileType>> dataFiles;
@@ -50,7 +46,6 @@ public class Database {
     public DatabaseCollection<Room> Rooms { get; }
     public DatabaseCollection<Object> Objects { get; }
     public DatabaseCollection<News> News { get; }
-    public DatabaseCollection<Text> Texts { get; }
 
     public Database() {
         dataFiles = new List<Tuple<string, DataFileType>>();
@@ -61,7 +56,6 @@ public class Database {
         Platforms = new DatabaseCollection<Platform>(DataFileType.GamingPlatform);
         Rooms = new DatabaseCollection<Room>(DataFileType.Room);
         Objects = new DatabaseCollection<Object>(DataFileType.RoomObject);
-        Texts = new DatabaseCollection<Text>(DataFileType.Text);
     }
 
     public Database AddDataFile(string dataFile, DataFileType dataType) {
@@ -119,21 +113,6 @@ public class Database {
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Objects))
                         return this;
                     break;
-                case DataFileType.Text:
-                    List<Text> texts = Text.LoadTextsFile(sourceFile.Item1);
-                    if (texts == null) return this;
-                    foreach (Text text in texts) {
-                        if (Texts.Collection.Any(t => t.Id == text.Id)) {
-                            Debug.LogWarning($"Database - {sourceFile.Item2} element of ID \"{text.Id}\" already exists.");
-                            continue;
-                        }
-                        if (!text.IsValid()) {
-                            Debug.LogWarning($"Database - {sourceFile.Item2} element of ID \"{text.Id}\" is invalid.");
-                            continue;
-                        }
-                        Texts.Collection.Add(text);
-                    }
-                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -149,7 +128,6 @@ public class Database {
         PrintCollectionInfo(Platforms);
         PrintCollectionInfo(Rooms);
         PrintCollectionInfo(Objects);
-        PrintCollectionInfo(Texts);
     }
 
     private void PrintCollectionInfo<T>(DatabaseCollection<T> collection) where T : DatabaseElement {
@@ -159,7 +137,11 @@ public class Database {
 
     private static bool LoadDataFile<T>(string dataFile, DataFileType dataType,
         DatabaseCollection<T> existing) where T : DatabaseElement {
-        string dataFileContent = FormatJSON(File.ReadAllText(dataFile));
+        string dataFileContent = FormatJson(File.ReadAllText(dataFile));
+        if (dataFileContent == null) {
+            Debug.LogWarning($"Database - Invalid {dataType} JSON format in \"{dataFile}\" data file.");
+            return false;
+        }
         DatabaseCollection<T> additions = JsonUtility.FromJson<DatabaseCollection<T>>(dataFileContent);
         if (additions == null) {
             Debug.LogWarning(
@@ -185,21 +167,64 @@ public class Database {
 
     /// <summary>
     /// Format the given JSON data file to strip it of any unsupported feature :
-    /// - Single-line comments (exemple : "// comment").
+    /// - Single-line comments (example : "// comment").
+    /// - Multi-lines strings. Example :
+    /// {
+    ///     "text" : """
+    /// my
+    /// multi
+    /// lines
+    /// string
+    /// """,
+    ///     "value" : 0,
+    /// }
+    ///
     ///
     /// </summary>
     /// <param name="json">The clean JSON file.</param>
     /// <returns></returns>
-    private static string FormatJSON(string json) {
+    private static string FormatJson(string json) {
         string cleaned = "";
 
+        int multistringStart = -1;
+        List<string> multistrings = new List<string>();
         foreach (string line in json.Split('\n')) {
             string lineTrimmed = line.Trim();
-            if (lineTrimmed.Length == 0) continue;
+            // Empty line : count only inside multi-lines string
+            if (lineTrimmed.Length == 0 && multistringStart == -1) continue;
 
-            // Ignore single-line comments
+            // Process multi-lines string literals
+            int multistringDelimiterIndex = lineTrimmed.IndexOf("\"\"\"", StringComparison.Ordinal); // NB : position of last double quote
+            if (multistringStart == -1 && multistringDelimiterIndex != -1) { // start
+                multistringStart = multistringDelimiterIndex;
+                multistrings.Add(lineTrimmed.Substring(0, multistringStart - 1));
+                continue;
+            }
+            if (multistringStart != -1 && multistringDelimiterIndex != -1) { // end
+                if (multistringDelimiterIndex >= 2)
+                    multistrings.Add(lineTrimmed.Substring(0, multistringDelimiterIndex - 2));
+                string comma = lineTrimmed.EndsWith(",") ? "," : "";
+
+                if (multistrings.Count == 0) {
+                    Debug.LogError("Database.FormatJson : invalid multi-lines string.");
+                    return null;
+                }
+                string start = multistrings.First();
+                string literal = string.Join("\\n", multistrings.Skip(1));
+                cleaned += $"{start} \"{literal}\"{comma}\n";
+
+                multistrings.Clear();
+                multistringStart = -1;
+                continue;
+            }
+            if (multistringStart >= 0) { // middle
+                multistrings.Add(lineTrimmed);
+                continue;
+            }
+
+            // Ignore single-line comments (except in multi-line strings)
             int commentStart = lineTrimmed.IndexOf("//", StringComparison.Ordinal);
-            if (commentStart != -1) {
+            if (multistringStart == -1 && commentStart != -1) {
                 cleaned += lineTrimmed.Substring(0, commentStart).TrimEnd() + "\n";
                 continue;
             }

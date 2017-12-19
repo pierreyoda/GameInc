@@ -9,9 +9,6 @@ public class WorldEvent {
     [SerializeField] private Event info;
     public Event Info => info;
 
-    [SerializeField] private Text description;
-    public Text Description => description;
-
     [SerializeField] private int triggersCount = 0;
     public int TriggersCount => triggersCount;
 
@@ -20,11 +17,10 @@ public class WorldEvent {
     [SerializeField] private List<EventsController.TriggerCondition> conditions;
     [SerializeField] private List<EventsController.TriggerAction> actions;
 
-    public WorldEvent(Event info, Text description,
+    public WorldEvent(Event info,
         List<EventsController.TriggerCondition> conditions,
         List<EventsController.TriggerAction> actions) {
         this.info = info;
-        this.description = description;
         this.conditions = conditions;
         this.actions = actions;
 
@@ -59,8 +55,8 @@ public class WorldEvent {
         foreach (EventsController.TriggerAction action in actions) {
             action(ec, d, c);
         }
-        string description = ComputeDescription(ec);
-        Debug.Log($"=== Event description:\n{description}\n===");
+        string desc = ComputeDescription(ec);
+        Debug.Log($"=== Event description:\n{desc}\n===");
 
         return false;
     }
@@ -68,7 +64,7 @@ public class WorldEvent {
     // TODO : support game variables (for instance "$Domain.MyVariable")
     private string ComputeDescription(EventsController ec) {
         string desc = "";
-        foreach (string line in description.TextEnglish) {
+        foreach (string line in info.DescriptionEnglish.Split('\n')) {
             foreach (string token in line.Split(' ')) {
                 desc += token.StartsWith("@") ? $" {ec.GetVariable(token.Substring(1))}" : $" {token}";
             }
