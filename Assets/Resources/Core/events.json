@@ -23,12 +23,12 @@ Be careful now, next time will be game over...
         "id": "Test",
         "name": "Test !",
         "variables": [
-            "@Test.Trigger = 5", // test comment
+            "@Test.Trigger = 2 * $World.CurrentDate.Month + 1e2 / 100 * 0.1 * 10 + 1 / 3 * (2 + 4 / 1 - 3)", // maths test
             "@Test.Limit = 2"
         ],
-        "triggerConditions" : [ "$World.CurrentDate.Day == @Test.Trigger" ],
-        "triggerActions" : [ "@Test.Trigger += 5" ],
-        "triggerLimit": "@Test.Limit",
+        "triggerConditions" : [ "$World.CurrentDate.Day == 2 * @Test.Trigger - 1 " ],
+        "triggerActions" : [ "@Test.Trigger += (4 + 2 * 3) / 2" ],
+        "triggerLimit": "2 * $World.CurrentDate.Month",
         "descriptionEnglish" : "Test event 2 triggered ! Trigger day variable = @Test.Trigger"
     },
     {
@@ -44,7 +44,7 @@ Be careful now, next time will be game over...
         "id": "Limit2",
         "name": "Limit 2",
         "variables": [],
-        "triggerConditions" : [ "$World.CurrentDate.DayOfWeek <= 3" ],
+        "triggerConditions" : [ "$World.CurrentDate.DayOfWeek <= 2 * 3 / 2" ],
         "triggerActions" : [],
         "triggerLimit": "@Limit",
         "descriptionEnglish" : "Limit 2 Event triggered ! Limit = @Limit ."

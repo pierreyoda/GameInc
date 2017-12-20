@@ -24,7 +24,7 @@ public class WorldEvent {
         this.conditions = conditions;
         this.actions = actions;
 
-        triggersLimit = EventsController.ParseOperandFloat(info.TriggerLimit);
+        triggersLimit = EventsController.ParseExpressionFloat(info.TriggerLimit.Split(' '));
         if (triggersLimit == null) {
             Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : trigger limit parsing error in \"{info.TriggerLimit}\".");
             triggersLimit = (ec, d, c) => -1; // -1 : no limit
@@ -50,7 +50,7 @@ public class WorldEvent {
         }
 
         // action when triggered
-        Debug.Log($"WorldEvent - Event \"{info.Id}\" triggered !");
+        Debug.Log($"WorldEvent - Event \"{info.Id}\" triggered ! Triggers count = {triggersCount}, limit = {limit}.");
         ++triggersCount;
         foreach (EventsController.TriggerAction action in actions) {
             action(ec, d, c);

@@ -3,10 +3,23 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Database;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Assertions;
 using Event = Database.Event;
 
 public class EventsController : MonoBehaviour {
+    [SerializeField]
+    private static char[] SPECIAL_OPERATORS = new char[] {
+        '+', '-', '*', '/', '(', ')'
+    };
+
+    private static readonly CultureInfo CULTURE_INFO_FLOAT =
+        CultureInfo.CreateSpecificCulture("en-US");
+
+    private static readonly NumberStyles NUMBER_STYLE_FLOAT =
+        NumberStyles.Float | NumberStyles.AllowThousands;
+
     [Serializable]
     private class EventVariable {
         [SerializeField] private string name;
@@ -147,30 +160,35 @@ public class EventsController : MonoBehaviour {
 
     private static EventVariable ParseVariableDeclaration(string declaration) {
         string[] tokens = declaration.Split(' ');
-        if (tokens.Length != 3) return null;
+        if (tokens.Length < 3) return null;
         if (!tokens[0].StartsWith("@")) {
             Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : must assign an event variable (\"@variable\").");
             return null;
         }
-        string variableName = tokens[0].Trim().Substring(1);
+        string variableName = tokens[0].Substring(1);
         if (variableName.Length == 0) {
             Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : empty event variable name.");
             return null;
         }
 
-        string operation = tokens[1].Trim();
+        string operation = tokens[1];
         if (operation != "=") {
             Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : can only assign the variable value.");
             return null;
         }
 
-        string rightValue = tokens[2].Trim();
+        string rightValue = tokens[2];
         if (rightValue == $"@{variableName}") {
             Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : illegal assignment.");
             return null;
         }
 
-        VariableFloat variableValue = ParseOperandFloat(tokens[2].Trim());
+        VariableFloat variableValue = ParseExpressionFloat(tokens.Skip(2));
+        if (variableValue == null) {
+            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : right operand parsing error.");
+            return null;
+        }
+
         VariableFloat variable = (ec, d, c) => {
             float value = variableValue(ec, d, c);
             ec.SetVariable(variableName, value);
@@ -181,11 +199,16 @@ public class EventsController : MonoBehaviour {
 
     private static TriggerCondition ParseTriggerCondition(string condition) {
         string[] tokens = condition.Split(' ');
-        if (tokens.Length != 3) return null;
+        if (tokens.Length < 3) return null;
 
-        VariableFloat leftValue = ParseOperandFloat(tokens[0].Trim());
-        VariableFloat rightValue = ParseOperandFloat(tokens[2].Trim());
-        switch (tokens[1].Trim()) {
+        VariableFloat leftValue = ParseScalarFloat(tokens[0]);
+        VariableFloat rightValue = ParseExpressionFloat(tokens.Skip(2));
+        if (rightValue == null) {
+            Debug.LogError($"EventsController.ParseTriggerCondition(\"{condition}\") : right operand parsing error.");
+            return null;
+        }
+
+        switch (tokens[1]) {
             case "<": return (ec, d, c) => leftValue(ec, d, c) < rightValue(ec, d, c);
             case "<=": return (ec, d, c) => leftValue(ec, d, c) <= rightValue(ec, d, c);
             case ">": return (ec, d, c) => leftValue(ec, d, c) > rightValue(ec, d, c);
@@ -214,10 +237,14 @@ public class EventsController : MonoBehaviour {
             return (ec, d, c) => c.SetFeature(featureName, enable);
         }
 
-        if (tokens.Length != 3) return null;
+        if (tokens.Length < 3) return null;
         string variableName = leftName.Substring(1);
         string operation = tokens[1].Trim();
-        VariableFloat rightValue = ParseOperandFloat(tokens[2].Trim());
+        VariableFloat rightValue = ParseExpressionFloat(tokens.Skip(2));
+        if (rightValue == null) {
+            Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : right operand parsing error.");
+            return null;
+        }
 
         // Game variable
         if (leftName.StartsWith("$")) {
@@ -256,10 +283,95 @@ public class EventsController : MonoBehaviour {
         return null;
     }
 
-    public static VariableFloat ParseOperandFloat(string operand) {
+    public static VariableFloat ParseExpressionFloat(IEnumerable<string> expressionTokens) {
+        Assert.IsTrue(expressionTokens.Count() > 0);
+
+        int count = 0;
+        DateTime temp = DateTime.Now;
+        // each "$i" where i is an uint will be replaced by the associated variable value
+        // we can do this since $ has special meaning otherwise
+        string expression = "";
+        List<VariableFloat> variables = new List<VariableFloat>();
+        foreach (string token in expressionTokens) {
+            if (token.Length == 0) continue;
+
+            if (token.Length == 1 && SPECIAL_OPERATORS.Contains(token[0])) {
+                expression += $"{token[0]} ";
+                continue;
+            }
+
+            string trueToken = token;
+            if (token[0] == '(' || token[0] == ')') {
+                expression += $"{token[0]} ";
+                trueToken = trueToken.Substring(1);
+            }
+
+            bool lastCharacterIsParenthesis = false;
+            if (trueToken.Length > 1 && (trueToken.Last() == '(' || trueToken.Last() == ')')) {
+                trueToken = trueToken.Substring(0, trueToken.Length - 1);
+                lastCharacterIsParenthesis = true;
+            }
+
+            bool isVariable;
+            VariableFloat scalar = ParseScalarFloat(trueToken, out isVariable);
+            if (scalar == null) {
+                Debug.LogError($"EventsController.ParseExpressionFloat : parsing error on token \"{trueToken}\".");
+                return null;
+            }
+
+            if (isVariable) {
+                variables.Add(scalar);
+                expression += $"${count++} ";
+            } else {
+                expression += scalar(null, temp, null) + " ";
+            }
+
+            if (lastCharacterIsParenthesis) {
+                expression += $" {token.Last()} ";
+            }
+        }
+
+        return (ec, d, c) => {
+            string computedExpression = "";
+            for (int i = 0; i < expression.Length; i++) {
+                char character = expression[i];
+                if (character != '$') {
+                    computedExpression += character;
+                    continue;
+                }
+
+                int variableIndexEnd = i;
+                for (int j = i + 1; j < expression.Length; j++) {
+                    if (expression[j] == ' ') {
+                        variableIndexEnd = j;
+                        break;
+                    }
+                }
+                Assert.IsTrue(variableIndexEnd > i);
+
+                int variableIndex;
+                Assert.IsTrue(int.TryParse(expression.Substring(i + 1, variableIndexEnd - i),
+                    out variableIndex));
+                Assert.IsTrue(0 <= variableIndex && variableIndex < variables.Count());
+
+
+                computedExpression += variables[variableIndex](ec, d, c) + " ";
+                i = variableIndexEnd;
+            }
+            return ExpressionEvaluator.Evaluate<float>(computedExpression);
+        };
+    }
+
+    public static VariableFloat ParseScalarFloat(string scalar) {
+        bool temp;
+        return ParseScalarFloat(scalar, out temp);
+    }
+
+    public static VariableFloat ParseScalarFloat(string scalar, out bool isVariable) {
         // Game variables
-        if (operand.StartsWith("$")) {
-            switch (operand.Substring(1)) {
+        if (scalar.StartsWith("$")) {
+            isVariable = true;
+            switch (scalar.Substring(1)) {
                 case "World.CurrentDate.Year": return (ec, d, c) => (float) d.Year;
                 case "World.CurrentDate.Month": return (ec, d, c) => (float) d.Month;
                 case "World.CurrentDate.Day": return (ec, d, c) => (float) d.Day;
@@ -268,19 +380,26 @@ public class EventsController : MonoBehaviour {
                 case "Company.NeverBailedOut" : return (ec, d, c) => c.NeverBailedOut ? 1f : 0f;
                 case "Company.Projects.CompletedGames.Count": return (ec, d, c) => c.CompletedProjects.Games.Count;
                 default:
-                    Debug.LogError($"EventsController.ParseOperandFloat(\"{operand}\") : unkown variable.");
+                    Debug.LogError($"EventsController.ParseScalarFloat(\"{scalar}\") : unkown variable.");
                     return null;
             }
         }
         // Event variables
-        if (operand.StartsWith("@")) {
-            return (ec, d, c) => ec.GetVariable(operand.Substring(1));
+        if (scalar.StartsWith("@")) {
+            isVariable = true;
+            return (ec, d, c) => ec.GetVariable(scalar.Substring(1));
         }
-        // Boolean - TODO : improve handling
-        if (operand == "true") return (ec, d, c) => 1f;
-        if (operand == "false") return (ec, d, c) => 0f;
+
+        isVariable = false;
+        // Boolean - TODO : improve handling (VariableBoolean ?)
+        if (scalar == "true") return (ec, d, c) => 1f;
+        if (scalar == "false") return (ec, d, c) => 0f;
         // Constant
-        float value = float.Parse(operand, CultureInfo.InvariantCulture.NumberFormat);
+        float value;
+        if (!float.TryParse(scalar, NUMBER_STYLE_FLOAT, CULTURE_INFO_FLOAT, out value)) {
+            Debug.LogError($"EventsController.ParseScalarFloat(\"{scalar}\") : cannot parse as float.");
+            return null;
+        }
         return (ec, d, c) => value;
     }
 }

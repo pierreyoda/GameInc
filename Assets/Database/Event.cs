@@ -70,27 +70,7 @@ public class Event : DatabaseElement {
     }
 
     public bool IsTriggerLimitValid() {
-        // Game Variable or Event Variable
-        if (triggerLimit.StartsWith("$") || triggerLimit.StartsWith("@")) {
-            if (triggerLimit.Length == 1) {
-                Debug.LogError($"Event with ID = {Id} : empty variable name in trigger limit.");
-                return false;
-            }
-            string variableName = triggerLimit.Substring(1);
-            if (triggerLimit.StartsWith("$") && !SUPPORTED_VARIABLES.Contains(variableName)) {
-                Debug.LogError($"Event with ID = {Id} : unknown game variable \"{variableName}\".");
-                return false;
-            }
-            return true;
-        }
-
-        // Constant
-        int limit;
-        if (!int.TryParse(triggerLimit, out limit)) {
-            Debug.LogError($"Event with ID = {Id} : invalid trigger limit \"{triggerLimit}\".");
-            return false;
-        }
-        return true;
+        return IsTriggerValid(triggerLimit, true);
     }
 
     private bool IsTriggerValid(string trigger, bool isCondition) {
