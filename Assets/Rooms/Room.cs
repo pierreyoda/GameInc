@@ -1,7 +1,9 @@
-﻿using UnityEngine;
+﻿using UnityEditor;
+using UnityEngine;
 
 public class Room : MonoBehaviour {
     private static int INSTANCES_COUNT = 0;
+    private static int PIXELS_PER_UNIT = 50;
 
     [HideInInspector] private int id;
     public int Id => id;
@@ -34,6 +36,7 @@ public class Room : MonoBehaviour {
         if (spriteRenderer == null)
             spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
         spriteRenderer.sprite = sprite;
+        spriteRenderer.sortingOrder = LayerMask.NameToLayer("Rooms");
     }
 
     public void SetInfo(Database.Room roomInfo) {
@@ -41,7 +44,8 @@ public class Room : MonoBehaviour {
         var spriteTexture = Resources.Load<Texture2D>($"Core/{info.TextureName}");
         sprite = Sprite.Create(spriteTexture,
             new Rect(0, 0, spriteTexture.width, spriteTexture.height),
-            new Vector2(0.5f, 0.5f));
+            new Vector2(0.5f, 0.5f),
+            PIXELS_PER_UNIT);
         if (spriteRenderer == null)
             spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
         spriteRenderer.sprite = sprite;

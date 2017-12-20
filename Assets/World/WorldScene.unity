@@ -499,8 +499,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1877568626}
   m_HandleRect: {fileID: 1877568625}
   m_Direction: 2
-  m_Value: 1
-  m_Size: 0.66666657
+  m_Value: 0.9999997
+  m_Size: 0.6666665
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1156,6 +1156,10 @@ Prefab:
       value: 
       objectReference: {fileID: 21300000, guid: 1a21a18e8b543a24da65d28145c6bb95,
         type: 3}
+    - target: {fileID: 1330540912670220, guid: ceff1e7566acc1849af11b2cbb8f68d7, type: 2}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: ceff1e7566acc1849af11b2cbb8f68d7, type: 2}
   m_IsPrefabParent: 0
@@ -2467,8 +2471,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 282.1, y: 168.42}
-  m_SizeDelta: {x: -564.2, y: -336.85}
+  m_AnchoredPosition: {x: 268.5, y: 159.53}
+  m_SizeDelta: {x: -537, y: -319.07}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1558184334
 MonoBehaviour:
@@ -3559,6 +3563,10 @@ Prefab:
     - target: {fileID: 1298748480710476, guid: 70d39aa078d4d8048bd74c6616c8efc6, type: 2}
       propertyPath: m_Name
       value: Room1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1298748480710476, guid: 70d39aa078d4d8048bd74c6616c8efc6, type: 2}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: 70d39aa078d4d8048bd74c6616c8efc6, type: 2}
