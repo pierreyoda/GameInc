@@ -1,7 +1,13 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.Assertions;
 
+[Serializable]
 public abstract class Project {
+    public enum ProjectType {
+        GameProject,
+    }
+
     private static int INSTANCES_COUNT = 0;
 
     [SerializeField] private int id;
@@ -22,5 +28,12 @@ public abstract class Project {
     protected Project(string name) {
         id = INSTANCES_COUNT++;
         this.name = name;
+    }
+
+    public abstract ProjectType Type();
+
+    public void AddCompletion(int added) {
+        Assert.IsTrue(added > 0);
+        completion += added;
     }
 }

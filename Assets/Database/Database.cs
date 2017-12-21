@@ -19,6 +19,7 @@ public class Database {
         GamingPlatform,
         Room,
         RoomObject,
+        EngineFeature,
     }
 
     private readonly List<Tuple<string, DataFileType>> dataFiles;
@@ -43,6 +44,7 @@ public class Database {
     public DatabaseCollection<Genre> Genres { get; }
     public DatabaseCollection<Theme> Themes { get; }
     public DatabaseCollection<Platform> Platforms { get; }
+    public DatabaseCollection<EngineFeature> EngineFeatures { get; }
     public DatabaseCollection<Room> Rooms { get; }
     public DatabaseCollection<Object> Objects { get; }
     public DatabaseCollection<News> News { get; }
@@ -54,6 +56,7 @@ public class Database {
         Genres = new DatabaseCollection<Genre>(DataFileType.GameGenre);
         Themes = new DatabaseCollection<Theme>(DataFileType.GameTheme);
         Platforms = new DatabaseCollection<Platform>(DataFileType.GamingPlatform);
+        EngineFeatures = new DatabaseCollection<EngineFeature>(DataFileType.EngineFeature);
         Rooms = new DatabaseCollection<Room>(DataFileType.Room);
         Objects = new DatabaseCollection<Object>(DataFileType.RoomObject);
     }
@@ -105,6 +108,10 @@ public class Database {
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Platforms))
                         return this;
                     break;
+                case DataFileType.EngineFeature:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, EngineFeatures))
+                        return this;
+                    break;
                 case DataFileType.Room:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Rooms))
                         return this;
@@ -126,6 +133,7 @@ public class Database {
         PrintCollectionInfo(Genres);
         PrintCollectionInfo(Themes);
         PrintCollectionInfo(Platforms);
+        PrintCollectionInfo(EngineFeatures);
         PrintCollectionInfo(Rooms);
         PrintCollectionInfo(Objects);
     }

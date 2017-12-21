@@ -16,7 +16,7 @@ TagManager:
   - Background
   - Building
   - Rooms
-  - 
+  - Actors
   - 
   - 
   - 
@@ -40,4 +40,7 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Actors
+    uniqueID: 175933735
     locked: 0

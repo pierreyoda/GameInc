@@ -15,6 +15,7 @@ public class World : MonoBehaviour {
     [SerializeField] [Range(1970, 2020)] private int gameStartYear = 1982;
     [SerializeField] [Range(1, 12)] private int gameStartMonth = 1;
     [SerializeField] [Range(1, 31)] private int gameStartDay = 1;
+    [SerializeField] private int previousDayMonth;
     [SerializeField] private DateTime gameDateTime;
     [SerializeField] private float dayPercentage;
 
@@ -42,6 +43,7 @@ public class World : MonoBehaviour {
             .AddDataFile($"{filesPrefix}/genres.json", DataFileType.GameGenre)
             .AddDataFile($"{filesPrefix}/themes.json", DataFileType.GameTheme)
             .AddDataFile($"{filesPrefix}/platforms.json", DataFileType.GamingPlatform)
+            .AddDataFile($"{filesPrefix}/engine_features.json", DataFileType.EngineFeature)
             .AddDataFile($"{filesPrefix}/rooms.json", DataFileType.Room)
             .AddDataFile($"{filesPrefix}/objects.json", DataFileType.RoomObject)
             .Load()
@@ -56,6 +58,32 @@ public class World : MonoBehaviour {
 
         playerCompany.Pay(100);
         worldController.OnPlayerCompanyModified(gameDateTime);
+
+        var employeesParentObject = transform.Find("Employees");
+        for (int i = 0; i < employeesParentObject.childCount; i++) {
+            playerCompany.AddEmployee(employeesParentObject.GetChild(i).GetComponent<Employee>());
+        }
+
+        GameEngine defaultEngine = new GameEngine("No Game Engine", new [] { "PC" });
+        defaultEngine.AddFeature("Graphics_2D_1");
+        defaultEngine.AddFeature("Audio_Mono");
+        playerCompany.AddGameEngine(defaultEngine);
+
+        for (int i = 1; i <= 5; i++) {
+            GameProject previousGame = new GameProject($"Previous Game {i}",
+                database.Genres.FindById("RPG"),
+                database.Themes.FindById("HighFantasy"),
+                defaultEngine);
+            playerCompany.StartProject(previousGame);
+            playerCompany.CompleteCurrentProject();
+            worldController.OnProjectCompleted(gameDateTime, playerCompany, previousGame);
+        }
+
+        GameProject game = new GameProject("Test Game",
+            database.Genres.FindById("RPG"),
+            database.Themes.FindById("HighFantasy"),
+            defaultEngine);
+        playerCompany.StartProject(game);
 
         gameMenu.ShowMenu();
     }
@@ -81,9 +109,13 @@ public class World : MonoBehaviour {
     }
 
     private void NewDay() {
+        previousDayMonth = gameDateTime.Month;
         gameDateTime = gameDateTime.AddDays(1.0);
 
         companyBuilding.OnNewDay();
+        playerCompany.OnNewDay();
+        if (gameDateTime.Month != previousDayMonth)
+            playerCompany.OnNewMonth(companyBuilding.Rent);
 
         worldController.OnDateModified(gameDateTime);
     }

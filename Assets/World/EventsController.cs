@@ -1,24 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using Database;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Assertions;
 using Event = Database.Event;
+using static ScriptParser;
 
 public class EventsController : MonoBehaviour {
-    [SerializeField]
-    private static char[] SPECIAL_OPERATORS = new char[] {
-        '+', '-', '*', '/', '(', ')'
-    };
-
-    private static readonly CultureInfo CULTURE_INFO_FLOAT =
-        CultureInfo.CreateSpecificCulture("en-US");
-
-    private static readonly NumberStyles NUMBER_STYLE_FLOAT =
-        NumberStyles.Float | NumberStyles.AllowThousands;
 
     [Serializable]
     private class EventVariable {
@@ -42,10 +29,6 @@ public class EventsController : MonoBehaviour {
             this.assignment = assignment;
         }
     }
-
-    public delegate float VariableFloat(EventsController ec, DateTime d, GameDevCompany c);
-    public delegate bool TriggerCondition(EventsController ec, DateTime d, GameDevCompany c);
-    public delegate void TriggerAction(EventsController ec, DateTime d, GameDevCompany c);
 
     [SerializeField] private List<WorldEvent> worldEvents = new List<WorldEvent>();
     [SerializeField] private List<EventVariable> eventsVariables = new List<EventVariable>();
@@ -72,10 +55,10 @@ public class EventsController : MonoBehaviour {
             }
 
             // Parse the trigger conditions and actions
-            List<TriggerCondition> conditions = new List<TriggerCondition>();
-            List<TriggerAction> actions = new List<TriggerAction>();
+            List<ScriptCondition> conditions = new List<ScriptCondition>();
+            List<ScriptAction> actions = new List<ScriptAction>();
             foreach (string condition in e.TriggerConditions) {
-                TriggerCondition trigger = ParseTriggerCondition(condition);
+                ScriptCondition trigger = ParseCondition(condition);
                 if (trigger == null) {
                     Debug.LogError($"EventsController - Condition parsing error for Event (ID = {e.Id}).");
                     break;
@@ -83,7 +66,7 @@ public class EventsController : MonoBehaviour {
                 conditions.Add(trigger);
             }
             foreach (string action in e.TriggerActions) {
-                TriggerAction trigger = ParseTriggerAction(action);
+                ScriptAction trigger = ParseAction(action);
                 if (trigger == null) {
                     Debug.LogError($"EventsController - Action parsing error for Event (ID = {e.Id}).");
                     break;
@@ -195,211 +178,5 @@ public class EventsController : MonoBehaviour {
             return value;
         };
         return new EventVariable(variableName, variable);
-    }
-
-    private static TriggerCondition ParseTriggerCondition(string condition) {
-        string[] tokens = condition.Split(' ');
-        if (tokens.Length < 3) return null;
-
-        VariableFloat leftValue = ParseScalarFloat(tokens[0]);
-        VariableFloat rightValue = ParseExpressionFloat(tokens.Skip(2));
-        if (rightValue == null) {
-            Debug.LogError($"EventsController.ParseTriggerCondition(\"{condition}\") : right operand parsing error.");
-            return null;
-        }
-
-        switch (tokens[1]) {
-            case "<": return (ec, d, c) => leftValue(ec, d, c) < rightValue(ec, d, c);
-            case "<=": return (ec, d, c) => leftValue(ec, d, c) <= rightValue(ec, d, c);
-            case ">": return (ec, d, c) => leftValue(ec, d, c) > rightValue(ec, d, c);
-            case ">=": return (ec, d, c) => leftValue(ec, d, c) >= rightValue(ec, d, c);
-            case "==": return (ec, d, c) => Math.Abs(leftValue(ec, d, c) - rightValue(ec, d, c)) < 0.00001;
-        }
-        return null;
-    }
-
-    private static TriggerAction ParseTriggerAction(string action) {
-        string[] tokens = action.Split(' ');
-        if (tokens.Length == 0) return null;
-        string leftName = tokens[0].Trim();
-
-        if (leftName.StartsWith("Company.EnableFeature") ||
-            leftName.StartsWith("Company.DisableFeature")) {
-            int posLeftParenthesis = leftName.IndexOf('(');
-            int posRightParenthesis = leftName.IndexOf(')');
-            string featureName = leftName.Substring(posLeftParenthesis + 1,
-                posRightParenthesis - posLeftParenthesis - 1);
-            if (!GameDevCompany.SUPPORTED_FEATURES.Contains(featureName)) {
-                Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported Company method.");
-            }
-
-            bool enable = leftName.StartsWith("Company.EnableFeature");
-            return (ec, d, c) => c.SetFeature(featureName, enable);
-        }
-
-        if (tokens.Length < 3) return null;
-        string variableName = leftName.Substring(1);
-        string operation = tokens[1].Trim();
-        VariableFloat rightValue = ParseExpressionFloat(tokens.Skip(2));
-        if (rightValue == null) {
-            Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : right operand parsing error.");
-            return null;
-        }
-
-        // Game variable
-        if (leftName.StartsWith("$")) {
-            switch (variableName) {
-                case "Company.Money":
-                    return (ec, d, c) => {
-                        switch (operation) {
-                            case "+=":
-                                c.Pay(rightValue(ec, d, c));
-                                break;
-                            case "-=":
-                                c.Charge(rightValue(ec, d, c));
-                                break;
-                        }
-                    };
-                case "Company.NeverBailedOut":
-                    if (operation != "=") {
-                        Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported operation.");
-                    }
-                    return (ec, d, c) => c.NeverBailedOut = Math.Abs(rightValue(ec, d, c) - 1f) < 0.000001;
-                default:
-                    Debug.LogError($"EventsController.ParseTriggerAction(\"{action}\") : unsupported variable.");
-                    return null;
-            }
-        }
-
-        // Event variable
-        // TODO - get rid of GetVariable(.), using a new EventVariableFloat delegate ?
-        if (leftName.StartsWith("@")) {
-            switch (operation) {
-                case "=": return (ec, d, c) => ec.SetVariable(variableName, rightValue(ec, d, c));
-                case "+=": return (ec, d, c) => ec.SetVariable(variableName, ec.GetVariable(variableName) + rightValue(ec, d, c));
-                case "-=": return (ec, d, c) => ec.SetVariable(variableName, ec.GetVariable(variableName) - rightValue(ec, d, c));
-            }
-        }
-        return null;
-    }
-
-    public static VariableFloat ParseExpressionFloat(IEnumerable<string> expressionTokens) {
-        Assert.IsTrue(expressionTokens.Count() > 0);
-
-        int count = 0;
-        DateTime temp = DateTime.Now;
-        // each "$i" where i is an uint will be replaced by the associated variable value
-        // we can do this since $ has special meaning otherwise
-        string expression = "";
-        List<VariableFloat> variables = new List<VariableFloat>();
-        foreach (string token in expressionTokens) {
-            if (token.Length == 0) continue;
-
-            if (token.Length == 1 && SPECIAL_OPERATORS.Contains(token[0])) {
-                expression += $"{token[0]} ";
-                continue;
-            }
-
-            string trueToken = token;
-            if (token[0] == '(' || token[0] == ')') {
-                expression += $"{token[0]} ";
-                trueToken = trueToken.Substring(1);
-            }
-
-            bool lastCharacterIsParenthesis = false;
-            if (trueToken.Length > 1 && (trueToken.Last() == '(' || trueToken.Last() == ')')) {
-                trueToken = trueToken.Substring(0, trueToken.Length - 1);
-                lastCharacterIsParenthesis = true;
-            }
-
-            bool isVariable;
-            VariableFloat scalar = ParseScalarFloat(trueToken, out isVariable);
-            if (scalar == null) {
-                Debug.LogError($"EventsController.ParseExpressionFloat : parsing error on token \"{trueToken}\".");
-                return null;
-            }
-
-            if (isVariable) {
-                variables.Add(scalar);
-                expression += $"${count++} ";
-            } else {
-                expression += scalar(null, temp, null) + " ";
-            }
-
-            if (lastCharacterIsParenthesis) {
-                expression += $" {token.Last()} ";
-            }
-        }
-
-        return (ec, d, c) => {
-            string computedExpression = "";
-            for (int i = 0; i < expression.Length; i++) {
-                char character = expression[i];
-                if (character != '$') {
-                    computedExpression += character;
-                    continue;
-                }
-
-                int variableIndexEnd = i;
-                for (int j = i + 1; j < expression.Length; j++) {
-                    if (expression[j] == ' ') {
-                        variableIndexEnd = j;
-                        break;
-                    }
-                }
-                Assert.IsTrue(variableIndexEnd > i);
-
-                int variableIndex;
-                Assert.IsTrue(int.TryParse(expression.Substring(i + 1, variableIndexEnd - i),
-                    out variableIndex));
-                Assert.IsTrue(0 <= variableIndex && variableIndex < variables.Count());
-
-
-                computedExpression += variables[variableIndex](ec, d, c) + " ";
-                i = variableIndexEnd;
-            }
-            return ExpressionEvaluator.Evaluate<float>(computedExpression);
-        };
-    }
-
-    public static VariableFloat ParseScalarFloat(string scalar) {
-        bool temp;
-        return ParseScalarFloat(scalar, out temp);
-    }
-
-    public static VariableFloat ParseScalarFloat(string scalar, out bool isVariable) {
-        // Game variables
-        if (scalar.StartsWith("$")) {
-            isVariable = true;
-            switch (scalar.Substring(1)) {
-                case "World.CurrentDate.Year": return (ec, d, c) => (float) d.Year;
-                case "World.CurrentDate.Month": return (ec, d, c) => (float) d.Month;
-                case "World.CurrentDate.Day": return (ec, d, c) => (float) d.Day;
-                case "World.CurrentDate.DayOfWeek": return (ec, d, c) => (float) d.DayOfWeek;
-                case "Company.Money": return (ec, d, c) => c.Money;
-                case "Company.NeverBailedOut" : return (ec, d, c) => c.NeverBailedOut ? 1f : 0f;
-                case "Company.Projects.CompletedGames.Count": return (ec, d, c) => c.CompletedProjects.Games.Count;
-                default:
-                    Debug.LogError($"EventsController.ParseScalarFloat(\"{scalar}\") : unkown variable.");
-                    return null;
-            }
-        }
-        // Event variables
-        if (scalar.StartsWith("@")) {
-            isVariable = true;
-            return (ec, d, c) => ec.GetVariable(scalar.Substring(1));
-        }
-
-        isVariable = false;
-        // Boolean - TODO : improve handling (VariableBoolean ?)
-        if (scalar == "true") return (ec, d, c) => 1f;
-        if (scalar == "false") return (ec, d, c) => 0f;
-        // Constant
-        float value;
-        if (!float.TryParse(scalar, NUMBER_STYLE_FLOAT, CULTURE_INFO_FLOAT, out value)) {
-            Debug.LogError($"EventsController.ParseScalarFloat(\"{scalar}\") : cannot parse as float.");
-            return null;
-        }
-        return (ec, d, c) => value;
     }
 }

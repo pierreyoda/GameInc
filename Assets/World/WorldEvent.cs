@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using Database;
 using UnityEngine;
 using Event = Database.Event;
+using static ScriptParser;
 
 [Serializable]
 public class WorldEvent {
@@ -12,19 +12,19 @@ public class WorldEvent {
     [SerializeField] private int triggersCount = 0;
     public int TriggersCount => triggersCount;
 
-    private EventsController.VariableFloat triggersLimit;
+    private VariableFloat triggersLimit;
 
-    [SerializeField] private List<EventsController.TriggerCondition> conditions;
-    [SerializeField] private List<EventsController.TriggerAction> actions;
+    [SerializeField] private List<ScriptCondition> conditions;
+    [SerializeField] private List<ScriptAction> actions;
 
     public WorldEvent(Event info,
-        List<EventsController.TriggerCondition> conditions,
-        List<EventsController.TriggerAction> actions) {
+        List<ScriptCondition> conditions,
+        List<ScriptAction> actions) {
         this.info = info;
         this.conditions = conditions;
         this.actions = actions;
 
-        triggersLimit = EventsController.ParseExpressionFloat(info.TriggerLimit.Split(' '));
+        triggersLimit = ParseExpressionFloat(info.TriggerLimit.Split(' '));
         if (triggersLimit == null) {
             Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : trigger limit parsing error in \"{info.TriggerLimit}\".");
             triggersLimit = (ec, d, c) => -1; // -1 : no limit
@@ -45,14 +45,14 @@ public class WorldEvent {
         }
 
         // condition check : all conditions must evaluate to True
-        foreach (EventsController.TriggerCondition condition in conditions) {
+        foreach (ScriptCondition condition in conditions) {
             if (!condition(ec, d, c)) return false;
         }
 
         // action when triggered
         Debug.Log($"WorldEvent - Event \"{info.Id}\" triggered ! Triggers count = {triggersCount}, limit = {limit}.");
         ++triggersCount;
-        foreach (EventsController.TriggerAction action in actions) {
+        foreach (ScriptAction action in actions) {
             action(ec, d, c);
         }
         string desc = ComputeDescription(ec);

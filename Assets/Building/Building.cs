@@ -4,6 +4,9 @@ using UnityEngine;
 public class Building : MonoBehaviour {
     [SerializeField] private WorldController gameController;
 
+    [SerializeField] private float rent;
+    public float Rent => rent;
+
     /// First dimension : Y (horizontal), second dimension : X (vertical).
     [HideInInspector] private BuildingTile[,] tiles;
 
