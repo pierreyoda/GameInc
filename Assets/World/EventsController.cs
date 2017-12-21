@@ -113,7 +113,7 @@ public class EventsController : MonoBehaviour {
             return;
         }
         variable.Value = value;
-        Debug.Log($"EventsController : @{variableName} = {value}");
+        //Debug.Log($"EventsController : @{variableName} = {value}"); // TODO : fix called twice bug
     }
 
     public void OnGameDateChanged(DateTime gameDate, GameDevCompany playerCompany) {

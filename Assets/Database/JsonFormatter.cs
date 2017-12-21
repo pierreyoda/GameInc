@@ -66,14 +66,12 @@ public class JsonFormatter {
             // Process multi-lines string literals
             int multistringDelimiterIndex =
                 lineTrimmed.IndexOf("\"\"\"", StringComparison.Ordinal); // NB : position of last double quote
-            if (multistringStart == -1 && multistringDelimiterIndex != -1) {
-                // start
+            if (multistringStart == -1 && multistringDelimiterIndex != -1) { // start
                 multistringStart = multistringDelimiterIndex;
                 multistrings.Add(lineTrimmed.Substring(0, multistringStart - 1));
                 continue;
             }
-            if (multistringStart != -1 && multistringDelimiterIndex != -1) {
-                // end
+            if (multistringStart != -1 && multistringDelimiterIndex != -1) { // end
                 if (multistringDelimiterIndex >= 2)
                     multistrings.Add(lineTrimmed.Substring(0, multistringDelimiterIndex - 2));
                 string comma = lineTrimmed.EndsWith(",") ? "," : "";
@@ -90,8 +88,7 @@ public class JsonFormatter {
                 multistringStart = -1;
                 continue;
             }
-            if (multistringStart >= 0) {
-                // middle
+            if (multistringStart >= 0) { // middle
                 multistrings.Add(lineTrimmed);
                 continue;
             }

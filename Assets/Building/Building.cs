@@ -13,6 +13,10 @@ public class Building : MonoBehaviour {
     [SerializeField] private int width = 10;
     [SerializeField] private int height = 1;
 
+    [SerializeField] private GameObject wallModelGameObject;
+    [SerializeField] private GameObject ceilingModelGameObject;
+    [SerializeField] private float ceilingHeight;
+
     [SerializeField] private Sprite EmptyTileSprite;
 
     [SerializeField] private List<Room> rooms = new List<Room>();
@@ -42,6 +46,31 @@ public class Building : MonoBehaviour {
             rooms.Add(roomsParentObject.transform.GetChild(i).GetComponent<Room>());
         }
         UpdateEmptyTiles();
+
+        var wallsParentObject = transform.Find("Walls").gameObject;
+        for (int y = 0; y < height; y++) {
+            var wallLeft = Instantiate(wallModelGameObject);
+            wallLeft.transform.position = new Vector3(-1, 2 * y, 0);
+            wallLeft.transform.parent = wallsParentObject.transform;
+
+            var wallRight = Instantiate(wallModelGameObject);
+            wallRight.transform.position = new Vector3(width + 1, 2 * y, 0);
+            wallRight.transform.parent = wallsParentObject.transform;
+        }
+        wallModelGameObject.SetActive(false);
+
+        float tile_height = EmptyTileSprite.textureRect.height;
+        ceilingHeight = ceilingModelGameObject.GetComponent<SpriteRenderer>()
+            .sprite.textureRect.height;
+        var ceilingsParentObject = transform.Find("Ceilings").gameObject;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                var ceiling = Instantiate(ceilingModelGameObject);
+                ceiling.transform.position = new Vector3(x, 2 * y + 1 + 0 * ceilingHeight / 50, 0);
+                ceiling.transform.parent = ceilingsParentObject.transform;
+            }
+        }
+        ceilingModelGameObject.SetActive(false);
     }
 
     public void OnMouseDown() {

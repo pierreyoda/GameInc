@@ -79,30 +79,4 @@ public class EngineFeaturesController : MonoBehaviour {
                 c.AllowEngineFeature(feature.Info.Id);
         }
     }
-
-    private static ScriptAction ParseEngineFeatureEffect(string effect) {
-        string[] tokens = effect.Split(' ');
-        if (tokens.Length < 3) return null;
-
-        string leftName = tokens[0];
-        if (!leftName.StartsWith("$Game.")) {
-            Debug.LogError($"EngineFeaturesController.ParseEngineFeatureEffect(\"{effect}\") : no game scores assignment.");
-            return null;
-        }
-
-        string operation = tokens[1];
-        if (operation != "+=" && operation != "-=") {
-            Debug.LogError($"EngineFeaturesController.ParseEngineFeatureEffect(\"{effect}\") : illegal operation.");
-            return null;
-        }
-
-        VariableFloat rightValue = ParseExpressionFloat(tokens.Skip(2));
-        if (rightValue == null) {
-            Debug.LogError($"EngineFeaturesController.ParseEngineFeatureEffect(\"{effect}\") : right operand parsing error.");
-            return null;
-        }
-
-        string affectedScore = leftName.Split('.')[1];
-        return (ec, d, c) => c.CurrentGame().ModifyScore(affectedScore, rightValue(ec, d, c));
-    }
 }

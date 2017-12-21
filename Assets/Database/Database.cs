@@ -150,7 +150,6 @@ public class Database {
     private static bool LoadDataFile<T>(string dataFile, DataFileType dataType,
         DatabaseCollection<T> existing) where T : DatabaseElement {
         string dataFileContent = JsonFormatter.Format(File.ReadAllText(dataFile));
-        Debug.LogWarning(dataFileContent);
         if (dataFileContent == null) {
             Debug.LogWarning($"Database - Invalid {dataType} JSON format in \"{dataFile}\" data file.");
             return false;
