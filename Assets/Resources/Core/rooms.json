@@ -7,7 +7,7 @@
         "width": 3,
         "cost": 10.0,
         "constructionTime": 3,
-        "upkeep": 0.1
+        "upkeep": 0.1,
     },
     {
         "id": "RestroomDouble",
@@ -16,7 +16,7 @@
         "width": 2,
         "cost": 5.0,
         "constructionTime": 7,
-        "upkeep": 0.1
-    }
-]
+        "upkeep": 0.1,
+    },
+],
 }

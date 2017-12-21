@@ -1,0 +1,43 @@
+{
+// Generation 4
+"Collection": [
+    // Home consoles
+    {
+        "id": "SuperGrafx-16",
+        "name": "NIC SuperGrafx-16",
+        "manufacturer": "NIC Corporation",
+        "releaseDate": "1989/08/29",
+    },
+    {
+        "id": "SNES",
+        "name": "Ninvendo Super NES",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "1991/08/23",
+    },
+    {
+        "id": "SegiSuperDrive",
+        "name": "Segi Super Drive",
+        "manufacturer": "Segi",
+        "releaseDate": "1989/08/14",
+    },
+    // Handheld consoles
+    {
+        "id": "GB",
+        "name": "Ninvendo Game Buddy",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "1989/07/31",
+    },
+    {
+        "id": "AtaroLynx",
+        "name": "Ataro Lynx",
+        "manufacturer": "Ataro",
+        "releaseDate": "1993/11/23",
+    },
+    {
+        "id": "GamingGear",
+        "name": "Segi Gaming Gear",
+        "manufacturer": "Segi",
+        "releaseDate": "1991/04/01", // release day ?
+    },
+],
+}

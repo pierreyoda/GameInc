@@ -2,43 +2,43 @@
 "Collection": [
     {
         "id": "Action",
-        "name": "Action"
+        "name": "Action",
     },
     {
         "id": "Adventure",
-        "name": "Adventure"
+        "name": "Adventure",
     },
     {
         "id": "RPG",
-        "name": "Role-Playing Game"
+        "name": "Role-Playing Game",
     },
     {
         "id": "Strategy",
-        "name": "Strategy"
+        "name": "Strategy",
     },
     {
         "id": "Puzzle",
-        "name": "Puzzle"
+        "name": "Puzzle",
     },
     {
         "id": "Racing",
-        "name": "Racing"
+        "name": "Racing",
     },
     {
         "id": "Music",
-        "name": "Music"
+        "name": "Music",
     },
     {
         "id": "CardGame",
-        "name": "Card Game"
+        "name": "Card Game",
     },
     {
         "id": "Educational",
-        "name": "Educational"
+        "name": "Educational",
     },
     {
         "id": "SeriousGame",
-        "name": "Serious Game"
-    }
-]
+        "name": "Serious Game",
+    },
+],
 }

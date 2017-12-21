@@ -1,0 +1,24 @@
+{
+// Generation 3
+"Collection": [
+    // Home consoles
+    {
+        "id": "NES",
+        "name": "Ninvendo Entertainment System",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "1983/01/01",
+    },
+    {
+        "id": "Ataro7800",
+        "name": "Ataro 7800",
+        "manufacturer": "Ataro",
+        "releaseDate": "1986/05/01",
+    },
+    {
+        "id": "SMS",
+        "name": "Segi Master System",
+        "manufacturer": "Segi",
+        "releaseDate": "1986/09/01",
+    },
+],
+}

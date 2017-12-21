@@ -1,0 +1,37 @@
+{
+// Generation 7
+"Collection": [
+    // Home consoles
+    {
+        "id": "NinvendoVii",
+        "name": "Ninvendo Vii",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "2006/11/19",
+    },
+    {
+        "id": "PS3",
+        "name": "Sonny PlaySystem 3",
+        "manufacturer": "Sonny",
+        "releaseDate": "2006/11/17",
+    },
+    {
+        "id": "Ybox180",
+        "name": "Macrosoft Ybox 180",
+        "manufacturer": "Macrosoft",
+        "releaseDate": "2005/11/22",
+    },
+    // Handheld consoles
+    {
+        "id": "NDS",
+        "name": "Ninvendo DoubleScreen",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "2004/11/21",
+    },
+    {
+        "id": "PSP",
+        "name": "Sonny PlaySystem Portable",
+        "manufacturer": "Sonny",
+        "releaseDate": "2004/05/11",
+    },
+],
+}

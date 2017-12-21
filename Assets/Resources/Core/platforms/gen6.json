@@ -1,0 +1,30 @@
+{
+// Generation 6
+"Collection": [
+    // Home consoles
+    {
+        "id": "SegiDreamcast",
+        "name": "Segi Dreamcast",
+        "manufacturer": "Segi",
+        "releaseDate": "1999/09/09",
+    },
+    {
+        "id": "PS2",
+        "name": "Sonny PlaySystem 2",
+        "manufacturer": "Sonny",
+        "releaseDate": "2000/11/26",
+    },
+    {
+        "id": "Ybox",
+        "name": "Macrosoft Ybox",
+        "manufacturer": "Macrosoft",
+        "releaseDate": "2001/11/15",
+    },
+    {
+        "id": "GameRectangle",
+        "name": "Ninvendo Game Rectangle",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "2001/11/18",
+    },
+],
+}

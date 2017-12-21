@@ -7,7 +7,7 @@
         "descriptionEnglish": "Crude 2D graphics.",
         "disables": [],
         "requirements": [],
-        "effects": ["$Game.Graphics += 5"]
+        "effects": ["$Game.Graphics += 5"],
     },
 
     // AUDIO
@@ -17,15 +17,15 @@
         "descriptionEnglish": "Mono audio.",
         "disables": ["Audio_Stereo"],
         "requirements": [],
-        "effects": ["$Game.Audio += 5"]
+        "effects": ["$Game.Audio += 5"],
     },
     {
         "id": "Audio_Stereo",
         "name": "2D Graphics V1",
         "descriptionEnglish": "Stereo audio.",
         "disables": ["Audio_Mono"],
-        "requirements": ["$Company.Projects.CompletedGames.WithEngineFeature(Audio_Mono).Count >= 2 * (1 - 0.5 + 1000 / 1e3) + @Test.EngineFeatureStereo"],
-        "effects": ["$Game.Audio += 10"]
+        "requirements": ["$Company.Projects.CompletedGames.WithEngineFeature(Audio_Mono).Count >= 5"],
+        "effects": ["$Game.Audio += 10"],
     },
     {
         "id": "Audio_Soundtrack",
@@ -33,7 +33,7 @@
         "descriptionEnglish": "Add a soundtrack to the game.",
         "disables": [],
         "requirements": ["$Company.Projects.CompletedGames.WithEngineFeature(Audio_Mono).Count >= 3"],
-        "effects": ["$Game.Audio += 5"]
-    }
-]
+        "effects": ["$Game.Audio += 5"],
+    },
+],
 }

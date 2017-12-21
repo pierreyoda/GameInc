@@ -1,0 +1,43 @@
+{
+// Generation 5
+"Collection": [
+    // Home consoles
+    {
+        "id": "N64",
+        "name": "Ninvendo 64",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "1996/09/29",
+    },
+    {
+        "id": "SegiNeptune",
+        "name": "Segi Neptune",
+        "manufacturer": "Segi",
+        "releaseDate": "1995/05/11",
+    },
+    {
+        "id": "PS1",
+        "name": "Sonny PlaySystem",
+        "manufacturer": "Sonny",
+        "releaseDate": "1994/12/03",
+    },
+    {
+        "id": "2DU",
+        "name": "2DU Interactive Multiplayer",
+        "manufacturer": "The 2DU Company",
+        "releaseDate": "1993/11/04",
+    },
+    {
+        "id": "AtaroJaguar",
+        "name": "Ataro Jaguar",
+        "manufacturer": "Ataro",
+        "releaseDate": "1993/11/23",
+    },
+    // Handhelf consoles
+    {
+        "id": "GBC",
+        "name": "Ninvendo Game Buddy Color",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "1998/11/18",
+    },
+],
+}

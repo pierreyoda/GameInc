@@ -10,6 +10,7 @@ namespace Database {
 /// Loads from data files all the informations about the different game genres, themes
 /// and game platforms.
 /// </summary>
+[Serializable]
 public class Database {
     public enum DataFileType {
         Event,
@@ -22,7 +23,7 @@ public class Database {
         EngineFeature,
     }
 
-    private readonly List<Tuple<string, DataFileType>> dataFiles;
+    private readonly List<Tuple<string, DataFileType>> dataFiles = new List<Tuple<string, DataFileType>>();
 
     [Serializable]
     public class DatabaseCollection<T> where T : DatabaseElement {
@@ -40,26 +41,29 @@ public class Database {
         }
     }
 
-    public DatabaseCollection<Event> Events { get; }
-    public DatabaseCollection<Genre> Genres { get; }
-    public DatabaseCollection<Theme> Themes { get; }
-    public DatabaseCollection<Platform> Platforms { get; }
-    public DatabaseCollection<EngineFeature> EngineFeatures { get; }
-    public DatabaseCollection<Room> Rooms { get; }
-    public DatabaseCollection<Object> Objects { get; }
-    public DatabaseCollection<News> News { get; }
+    private DatabaseCollection<Event> events = new DatabaseCollection<Event>(DataFileType.Event);
+    public DatabaseCollection<Event> Events => events;
 
-    public Database() {
-        dataFiles = new List<Tuple<string, DataFileType>>();
-        Events = new DatabaseCollection<Event>(DataFileType.Event);
-        News = new DatabaseCollection<News>(DataFileType.News);
-        Genres = new DatabaseCollection<Genre>(DataFileType.GameGenre);
-        Themes = new DatabaseCollection<Theme>(DataFileType.GameTheme);
-        Platforms = new DatabaseCollection<Platform>(DataFileType.GamingPlatform);
-        EngineFeatures = new DatabaseCollection<EngineFeature>(DataFileType.EngineFeature);
-        Rooms = new DatabaseCollection<Room>(DataFileType.Room);
-        Objects = new DatabaseCollection<Object>(DataFileType.RoomObject);
-    }
+    private DatabaseCollection<Genre> genres = new DatabaseCollection<Genre>(DataFileType.GameGenre);
+    public DatabaseCollection<Genre> Genres => genres;
+
+    private DatabaseCollection<Theme> themes = new DatabaseCollection<Theme>(DataFileType.GameTheme);
+    public DatabaseCollection<Theme> Themes => themes;
+
+    private DatabaseCollection<Platform> platforms = new DatabaseCollection<Platform>(DataFileType.GamingPlatform);
+    public DatabaseCollection<Platform> Platforms => platforms;
+
+    private DatabaseCollection<EngineFeature> engineFeatures = new DatabaseCollection<EngineFeature>(DataFileType.EngineFeature);
+    public DatabaseCollection<EngineFeature> EngineFeatures => engineFeatures;
+
+    private DatabaseCollection<Room> rooms = new DatabaseCollection<Room>(DataFileType.Room);
+    public DatabaseCollection<Room> Rooms => rooms;
+
+    private DatabaseCollection<Object> objects = new DatabaseCollection<Object>(DataFileType.RoomObject);
+    public DatabaseCollection<Object> Objects => objects;
+
+    private DatabaseCollection<News> news = new DatabaseCollection<News>(DataFileType.News);
+    public DatabaseCollection<News> News => news;
 
     public Database AddDataFile(string dataFile, DataFileType dataType) {
         if (!File.Exists(dataFile)) {
@@ -89,35 +93,35 @@ public class Database {
         foreach (var sourceFile in dataFiles) {
             switch (sourceFile.Item2) {
                 case DataFileType.Event:
-                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Events))
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, events))
                         return this;
                     break;
                 case DataFileType.News:
-                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, News))
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, news))
                         return this;
                     break;
                 case DataFileType.GameGenre:
-                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Genres))
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, genres))
                         return this;
                     break;
                 case DataFileType.GameTheme:
-                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Themes))
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, themes))
                         return this;
                     break;
                 case DataFileType.GamingPlatform:
-                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Platforms))
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, platforms))
                         return this;
                     break;
                 case DataFileType.EngineFeature:
-                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, EngineFeatures))
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, engineFeatures))
                         return this;
                     break;
                 case DataFileType.Room:
-                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Rooms))
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, rooms))
                         return this;
                     break;
                 case DataFileType.RoomObject:
-                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, Objects))
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, objects))
                         return this;
                     break;
                 default:
@@ -128,14 +132,14 @@ public class Database {
     }
 
     public void PrintDatabaseInfo() {
-        PrintCollectionInfo(Events);
-        PrintCollectionInfo(News);
-        PrintCollectionInfo(Genres);
-        PrintCollectionInfo(Themes);
-        PrintCollectionInfo(Platforms);
-        PrintCollectionInfo(EngineFeatures);
-        PrintCollectionInfo(Rooms);
-        PrintCollectionInfo(Objects);
+        PrintCollectionInfo(events);
+        PrintCollectionInfo(news);
+        PrintCollectionInfo(genres);
+        PrintCollectionInfo(themes);
+        PrintCollectionInfo(platforms);
+        PrintCollectionInfo(engineFeatures);
+        PrintCollectionInfo(rooms);
+        PrintCollectionInfo(objects);
     }
 
     private void PrintCollectionInfo<T>(DatabaseCollection<T> collection) where T : DatabaseElement {
@@ -145,7 +149,8 @@ public class Database {
 
     private static bool LoadDataFile<T>(string dataFile, DataFileType dataType,
         DatabaseCollection<T> existing) where T : DatabaseElement {
-        string dataFileContent = FormatJson(File.ReadAllText(dataFile));
+        string dataFileContent = JsonFormatter.Format(File.ReadAllText(dataFile));
+        Debug.LogWarning(dataFileContent);
         if (dataFileContent == null) {
             Debug.LogWarning($"Database - Invalid {dataType} JSON format in \"{dataFile}\" data file.");
             return false;
@@ -171,76 +176,6 @@ public class Database {
             existing.Collection.Add(element);
         }
         return true;
-    }
-
-    /// <summary>
-    /// Format the given JSON data file to strip it of any unsupported feature :
-    /// - Single-line comments (example : "// comment").
-    /// - Multi-lines strings. Example :
-    /// {
-    ///     "text" : """
-    /// my
-    /// multi
-    /// lines
-    /// string
-    /// """,
-    ///     "value" : 0,
-    /// }
-    ///
-    ///
-    /// </summary>
-    /// <param name="json">The clean JSON file.</param>
-    /// <returns></returns>
-    private static string FormatJson(string json) {
-        string cleaned = "";
-
-        int multistringStart = -1;
-        List<string> multistrings = new List<string>();
-        foreach (string line in json.Split('\n')) {
-            string lineTrimmed = line.Trim();
-            // Empty line : count only inside multi-lines string
-            if (lineTrimmed.Length == 0 && multistringStart == -1) continue;
-
-            // Process multi-lines string literals
-            int multistringDelimiterIndex = lineTrimmed.IndexOf("\"\"\"", StringComparison.Ordinal); // NB : position of last double quote
-            if (multistringStart == -1 && multistringDelimiterIndex != -1) { // start
-                multistringStart = multistringDelimiterIndex;
-                multistrings.Add(lineTrimmed.Substring(0, multistringStart - 1));
-                continue;
-            }
-            if (multistringStart != -1 && multistringDelimiterIndex != -1) { // end
-                if (multistringDelimiterIndex >= 2)
-                    multistrings.Add(lineTrimmed.Substring(0, multistringDelimiterIndex - 2));
-                string comma = lineTrimmed.EndsWith(",") ? "," : "";
-
-                if (multistrings.Count == 0) {
-                    Debug.LogError("Database.FormatJson : invalid multi-lines string.");
-                    return null;
-                }
-                string start = multistrings.First();
-                string literal = string.Join("\\n", multistrings.Skip(1));
-                cleaned += $"{start} \"{literal}\"{comma}\n";
-
-                multistrings.Clear();
-                multistringStart = -1;
-                continue;
-            }
-            if (multistringStart >= 0) { // middle
-                multistrings.Add(lineTrimmed);
-                continue;
-            }
-
-            // Ignore single-line comments (except in multi-line strings)
-            int commentStart = lineTrimmed.IndexOf("//", StringComparison.Ordinal);
-            if (multistringStart == -1 && commentStart != -1) {
-                cleaned += lineTrimmed.Substring(0, commentStart).TrimEnd() + "\n";
-                continue;
-            }
-
-            cleaned += $"{lineTrimmed}\n";
-        }
-
-        return cleaned;
     }
 }
 

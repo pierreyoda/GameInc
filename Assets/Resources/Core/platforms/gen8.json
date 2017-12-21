@@ -1,0 +1,37 @@
+{
+// Generation 8
+"Collection": [
+    // Home consoles
+    {
+        "id": "NinvendoViiU",
+        "name": "Ninvendo Vii U",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "2012/11/18",
+    },
+    {
+        "id": "PS4",
+        "name": "Ninvendo Vii",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "2013/11/15",
+    },
+    {
+        "id": "YboxUno",
+        "name": "Macrosoft Ybox Uno",
+        "manufacturer": "Macrosoft",
+        "releaseDate": "2013/11/22",
+    },
+    // Handheld consoles
+    {
+        "id": "N3DS",
+        "name": "Ninvendo 3DS",
+        "manufacturer": "Ninvendo",
+        "releaseDate": "2011/03/27",
+    },
+    {
+        "id": "PSVito",
+        "name": "Sonny PlaySystem Vito",
+        "manufacturer": "Sonny",
+        "releaseDate": "2012/02/22",
+    },
+],
+}

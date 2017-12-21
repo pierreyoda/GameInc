@@ -8,7 +8,7 @@ public class World : MonoBehaviour {
     [SerializeField] private WorldController worldController;
     [SerializeField] private GameDevCompany playerCompany;
     [SerializeField] private Building companyBuilding;
-    private Database.Database database;
+    [SerializeField] private Database.Database database;
 
     [Header("Date Simulation")]
     [SerializeField] [Range(100, 10000)] private int millisecondsPerDay = 1000;
@@ -42,7 +42,7 @@ public class World : MonoBehaviour {
             .AddDataFolder("Assets/Resources/Core/news", DataFileType.News)
             .AddDataFile($"{filesPrefix}/genres.json", DataFileType.GameGenre)
             .AddDataFile($"{filesPrefix}/themes.json", DataFileType.GameTheme)
-            .AddDataFile($"{filesPrefix}/platforms.json", DataFileType.GamingPlatform)
+            .AddDataFolder("Assets/Resources/Core/platforms", DataFileType.GamingPlatform)
             .AddDataFile($"{filesPrefix}/engine_features.json", DataFileType.EngineFeature)
             .AddDataFile($"{filesPrefix}/rooms.json", DataFileType.Room)
             .AddDataFile($"{filesPrefix}/objects.json", DataFileType.RoomObject)

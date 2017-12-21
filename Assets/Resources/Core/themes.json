@@ -2,103 +2,103 @@
 "Collection": [
     {
         "id": "LowFantasy",
-        "name": "Low Fantasy"
+        "name": "Low Fantasy",
     },
     {
         "id": "HighFantasy",
-        "name": "High Fantasy"
+        "name": "High Fantasy",
     },
     {
         "id": "ScienceFiction",
-        "name": "Science Fiction"
+        "name": "Science Fiction",
     },
     {
         "id": "Piracy",
-        "name": "Piracy"
+        "name": "Piracy",
     },
     {
         "id": "Historical",
-        "name": "Historical"
+        "name": "Historical",
     },
     {
         "id": "City",
-        "name": "City"
+        "name": "City",
     },
     {
         "id": "Romance",
-        "name": "Romance"
+        "name": "Romance",
     },
     {
         "id": "Ninja",
-        "name": "Ninja"
+        "name": "Ninja",
     },
     {
         "id": "Monster",
-        "name": "Monster"
+        "name": "Monster",
     },
     {
         "id": "Animal",
-        "name": "Animal"
+        "name": "Animal",
     },
     {
         "id": "Life",
-        "name": "Life"
+        "name": "Life",
     },
     {
         "id": "Law",
-        "name": "Law"
+        "name": "Law",
     },
     {
         "id": "Western",
-        "name": "Western"
+        "name": "Western",
     },
     {
         "id": "Reversi",
-        "name": "Reversi"
+        "name": "Reversi",
     },
     {
         "id": "Chess",
-        "name": "Chess"
+        "name": "Chess",
     },
     {
         "id": "Go",
-        "name": "Go"
+        "name": "Go",
     },
     {
         "id": "Poker",
-        "name": "Poker"
+        "name": "Poker",
     },
     {
         "id": "PostApocalyptic",
-        "name": "Post-Apocalyptic"
+        "name": "Post-Apocalyptic",
     },
     {
         "id": "Steampunk",
-        "name": "Steampunk"
+        "name": "Steampunk",
     },
     {
         "id": "Soccer",
-        "name": "Soccer"
+        "name": "Soccer",
     },
     {
         "id": "Football",
-        "name": "Football"
+        "name": "Football",
     },
     {
         "id": "Baseball",
-        "name": "Baseball"
+        "name": "Baseball",
     },
     {
         "id": "Basketball",
-        "name": "Basketball"
+        "name": "Basketball",
     },
     {
         "id": "Golf",
-        "name": "Golf"
+        "name": "Golf",
     },
     {
         "id": "Cycling",
-        "name": "Cycling"
-    }
-]
+        "name": "Cycling",
+    },
+],
 }
