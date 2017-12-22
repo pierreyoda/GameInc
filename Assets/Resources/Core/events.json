@@ -44,7 +44,7 @@ Be careful now, next time will be game over...
     {
         "id": "Limit2",
         "name": "Limit 2",
-        "descriptionEnglish" : "Limit 2 Event triggered ! Limit = @Limit .",
+        "descriptionEnglish" : "Limit 2 Event triggered ! Limit = {@Limit}.",
         "variables": [],
         "triggerConditions" : [ "$World.CurrentDate.DayOfWeek <= 2 * 3 / 2" ],
         "triggerActions" : [],
