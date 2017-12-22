@@ -20,6 +20,14 @@ public abstract class DatabaseElement {
     }
 
     public virtual bool IsValid() {
+        if (id.Trim() == "") {
+            Debug.LogError("DatabaseElement : empty ID.");
+            return false;
+        }
+        if (name.Trim() == "") {
+            Debug.LogError($"DatabaseElement(ID = {id}) : empty name.");
+            return false;
+        }
         return true;
     }
 
