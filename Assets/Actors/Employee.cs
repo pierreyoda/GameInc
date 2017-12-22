@@ -3,6 +3,8 @@ using UnityEngine;
 using UnityEngine.Assertions;
 
 public class Employee : MonoBehaviour {
+    private static int INSTANCES_COUNT = 0;
+
     [SerializeField] private int id;
     public int Id => id;
 
@@ -27,9 +29,9 @@ public class Employee : MonoBehaviour {
     [SerializeField] private Need relaxationNeed = new Need("Relaxation", 0);
     public Need RelaxationNeed => relaxationNeed;
 
-    public Employee(int id, string firstName, string lastName, float salary,
+    public Employee(string firstName, string lastName, float salary,
         DateTime hireDate, Skill[] skills) {
-        this.id = id;
+        id = INSTANCES_COUNT++;
         this.firstName = firstName;
         this.lastName = lastName;
         this.salary = salary;
