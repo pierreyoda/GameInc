@@ -115,7 +115,7 @@ public class World : MonoBehaviour {
         companyBuilding.OnNewDay();
         playerCompany.OnNewDay();
         if (gameDateTime.Month != previousDayMonth)
-            playerCompany.OnNewMonth(companyBuilding.Rent);
+            playerCompany.OnNewMonth(companyBuilding.Rent, companyBuilding.Upkeep());
 
         worldController.OnDateModified(gameDateTime);
     }

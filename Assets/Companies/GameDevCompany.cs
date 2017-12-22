@@ -112,11 +112,11 @@ public class GameDevCompany : MonoBehaviour {
     public void OnNewDay() {
     }
 
-    public void OnNewMonth(float rent) {
-        Assert.IsTrue(rent >= 0);
+    public void OnNewMonth(float rent, float upkeep) {
+        Assert.IsTrue(rent >= 0 && upkeep >= 0);
         float salaries = employees.Sum(employee => employee.Salary);
         money -= rent + salaries;
-        Debug.Log($"Company.OnNewMonth : monthly rent was {rent}k, monthly salaries was {salaries}k.");
+        Debug.Log($"Company.OnNewMonth : rent = {rent}k, upkeep = {upkeep}, salaries = {salaries}k.");
     }
 
     public GameProject CurrentGame() {

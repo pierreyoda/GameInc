@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Building : MonoBehaviour {
@@ -59,14 +60,13 @@ public class Building : MonoBehaviour {
         }
         wallModelGameObject.SetActive(false);
 
-        float tile_height = EmptyTileSprite.textureRect.height;
         ceilingHeight = ceilingModelGameObject.GetComponent<SpriteRenderer>()
             .sprite.textureRect.height;
         var ceilingsParentObject = transform.Find("Ceilings").gameObject;
         for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+            for (int x = -1; x < width + 1; x++) {
                 var ceiling = Instantiate(ceilingModelGameObject);
-                ceiling.transform.position = new Vector3(x, 2 * y + 1 + 0 * ceilingHeight / 50, 0);
+                ceiling.transform.position = new Vector3(x, 2 * y + 1 + 1/2 * y * ceilingHeight / 50, 0);
                 ceiling.transform.parent = ceilingsParentObject.transform;
             }
         }
@@ -104,6 +104,10 @@ public class Building : MonoBehaviour {
         UpdateEmptyTiles();
 
         Debug.Log($"Added new Room to the building (ID = {room.Id}).");
+    }
+
+    public float Upkeep() {
+        return rooms.Sum(room => room.Info.Upkeep);
     }
 
     private void UpdateEmptyTiles() {
