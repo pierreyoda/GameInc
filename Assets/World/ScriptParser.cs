@@ -49,7 +49,7 @@ public class ScriptParser {
 
         if (leftName.StartsWith("Company.EnableFeature") ||
             leftName.StartsWith("Company.DisableFeature")) {
-            string[] parameters = GetFunctionCallParameters(action);
+            string[] parameters = GetInnerParameters(action);
             if (parameters.Length != 1) {
                 Debug.LogError($"ScriptParser.ParseAction(\"{action}\") : wrong Company Feature method arity.");
                 return null;
@@ -191,7 +191,6 @@ public class ScriptParser {
                     out variableIndex));
                 Assert.IsTrue(0 <= variableIndex && variableIndex < variables.Count());
 
-
                 computedExpression += variables[variableIndex](ec, d, c) + " ";
                 i = variableIndexEnd;
             }
@@ -209,30 +208,8 @@ public class ScriptParser {
         // Game variables
         if (scalar.StartsWith("$")) {
             isVariable = true;
-
-            if (scalar.StartsWith("$Company.Projects.CompletedGames.WithEngineFeature(") &&
-                scalar.EndsWith(").Count")) {
-                string[] parameters = GetFunctionCallParameters(scalar);
-                if (parameters.Length != 1) {
-                    Debug.LogError($"ScriptParser.ParseScalarFloat(\"{scalar}\") : wrong function call arity.");
-                    return null;
-                }
-                string featureName = parameters[0];
-                return (ec, d, c) => c.CompletedProjects.GamesWithEngineFeature(featureName).Count;
-            }
-
-            switch (scalar.Substring(1)) {
-                case "World.CurrentDate.Year": return (ec, d, c) => (float) d.Year;
-                case "World.CurrentDate.Month": return (ec, d, c) => (float) d.Month;
-                case "World.CurrentDate.Day": return (ec, d, c) => (float) d.Day;
-                case "World.CurrentDate.DayOfWeek": return (ec, d, c) => (float) d.DayOfWeek;
-                case "Company.Money": return (ec, d, c) => c.Money;
-                case "Company.NeverBailedOut" : return (ec, d, c) => c.NeverBailedOut ? 1f : 0f;
-                case "Company.Projects.CompletedGames.Count": return (ec, d, c) => c.CompletedProjects.Games.Count;
-                default:
-                    Debug.LogError($"ScriptParser.ParseScalarFloat(\"{scalar}\") : unkown variable.");
-                    return null;
-            }
+            string variableName = scalar.Substring(1);
+            return (ec, d, c) => ec.GetGameVariable(variableName, d, c);
         }
         // Event variables
         if (scalar.StartsWith("@")) {
@@ -253,23 +230,26 @@ public class ScriptParser {
         return (ec, d, c) => value;
     }
 
-    public static string[] GetFunctionCallParameters(string functionCall) {
+    public static string[] GetInnerParameters(string functionCall,
+        string start = "(", string end = ")") {
         List<string> parameters = new List<string>();
 
-        int leftParenthesisIndex = functionCall.IndexOf('(');
-        int rightParenthesisIndex = functionCall.IndexOf(')');
-        if (leftParenthesisIndex == -1 || rightParenthesisIndex == -1 ||
-            leftParenthesisIndex > rightParenthesisIndex) {
+        int startIndex = functionCall.IndexOf(start, StringComparison.Ordinal);
+        int endIndex = functionCall.IndexOf(end, StringComparison.Ordinal);
+        if (startIndex == -1 || endIndex == -1 ||
+            startIndex > endIndex) {
             Debug.LogError($"ScriptParser.GetFunctionCallParameters(\"{functionCall}\") : syntax error.");
             return null;
         }
 
-        string call = functionCall.Substring(leftParenthesisIndex + 1,
-            rightParenthesisIndex - leftParenthesisIndex - 1);
+        string call = functionCall.Substring(startIndex + 1,
+            endIndex - startIndex - 1);
         foreach (string parameter in call.Split(',')) {
             parameters.Add(parameter.Trim());
         }
 
         return parameters.ToArray();
     }
+
+
 }

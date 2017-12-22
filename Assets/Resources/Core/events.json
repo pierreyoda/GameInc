@@ -8,7 +8,7 @@
         "descriptionEnglish" : """
 Looks like you're in troubles !
 
-Just this once, the government will bail you out with @Company.BailOut.Amount k.
+Just this once, the government will bail you out with {@Company.BailOut.Amount}k.
 
 Be careful now, next time will be game over...
 """,
@@ -22,7 +22,7 @@ Be careful now, next time will be game over...
     {
         "id": "Test",
         "name": "Test !",
-        "descriptionEnglish" : "Test event 2 triggered ! Trigger day variable = @Test.Trigger",
+        "descriptionEnglish" : "Test event 2 triggered ! Trigger day variable = {@Test.Trigger}.",
         "variables": [
             "@Test.EngineFeatureStereo = 2",
             "@Test.Trigger = 2 * $World.CurrentDate.Month + 1e2 / 100 * 0.1 * 10 + 1 / 3 * (2 + 4 / 1 - 3)", // maths test
@@ -35,7 +35,7 @@ Be careful now, next time will be game over...
     {
         "id": "Limit1",
         "name": "Limit 1!",
-        "descriptionEnglish" : "Limit 1 Event triggered ! Limit = @Limit .",
+        "descriptionEnglish" : "Limit 1 Event triggered ! Limit = {@Limit}.",
         "variables": ["@Limit = -1"],
         "triggerConditions" : [ "$World.CurrentDate.DayOfWeek == 3" ],
         "triggerActions" : [ "@Limit = 1" ],
@@ -55,7 +55,7 @@ Be careful now, next time will be game over...
     {
         "id": "Company_Engine_CanDevelop",
         "name": "Custom Engine development unlocked !",
-        "descriptionEnglish" : "Having completed @Engine.CanDevelop.MinGames games, you can now develop your own Game Engine !",
+        "descriptionEnglish" : "Having completed {@Engine.CanDevelop.MinGames} games, you can now develop your own Game Engine !",
         "variables": [ "@Engine.CanDevelop.MinGames = 0" ],
         "triggerConditions" : [
             "$Company.Projects.CompletedGames.Count >= @Engine.CanDevelop.MinGames",

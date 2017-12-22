@@ -106,6 +106,31 @@ public class EventsController : MonoBehaviour {
         return variable.Value;
     }
 
+    public float GetGameVariable(string variableName, DateTime d, GameDevCompany c) {
+        if (variableName.StartsWith("Company.Projects.CompletedGames.WithEngineFeature(") &&
+            variableName.EndsWith(").Count")) {
+            string[] parameters = GetInnerParameters(variableName);
+            if (parameters.Length != 1) {
+                Debug.LogError($"ScriptParser.ParseScalarFloat(\"{variableName}\") : wrong function call arity.");
+                return 0f;
+            }
+            string featureName = parameters[0];
+            return c.CompletedProjects.GamesWithEngineFeature(featureName).Count;
+        }
+        switch (variableName) {
+            case "World.CurrentDate.Year": return d.Year;
+            case "World.CurrentDate.Month": return d.Month;
+            case "World.CurrentDate.Day": return d.Day;
+            case "World.CurrentDate.DayOfWeek": return (float) d.DayOfWeek;
+            case "Company.Money": return c.Money;
+            case "Company.NeverBailedOut" : return c.NeverBailedOut ? 1f : 0f;
+            case "Company.Projects.CompletedGames.Count": return c.CompletedProjects.Games.Count;
+            default:
+                Debug.LogError($"ScriptParser.ParseScalarFloat(\"{variableName}\") : unkown game variable.");
+                return 0f;
+        }
+    }
+
     public void SetVariable(string variableName, float value) {
         var variable = eventsVariables.Find(v => v.Name == variableName);
         if (variable == null) {

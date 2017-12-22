@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NUnit.Framework;
 using UnityEngine;
 using Event = Database.Event;
 using static ScriptParser;
@@ -55,18 +56,49 @@ public class WorldEvent {
         foreach (ScriptAction action in actions) {
             action(ec, d, c);
         }
-        string desc = ComputeDescription(ec);
+        string desc = ComputeDescription(ec, d, c);
         Debug.Log($"=== Event description:\n{desc}\n===");
 
         return false;
     }
 
-    // TODO : support game variables (for instance "$Domain.MyVariable")
-    private string ComputeDescription(EventsController ec) {
+    private string ComputeDescription(EventsController ec, DateTime d, GameDevCompany c) {
         string desc = "";
         foreach (string line in info.DescriptionEnglish.Split('\n')) {
             foreach (string token in line.Split(' ')) {
-                desc += token.StartsWith("@") ? $" {ec.GetVariable(token.Substring(1))}" : $" {token}";
+                // Variable
+                if (token.StartsWith("{")) {
+                    string[] parameters = GetInnerParameters(token, "{", "}");
+                    if (parameters == null) {
+                        Debug.LogError($"WorldEvent.ComputeDescription (ID = {info.Id}) : variable reference parsing error.");
+                        desc += "{PARSING_ERROR} ";
+                        continue;
+                    }
+                    if (parameters.Length != 1) {
+                        Debug.LogError($"WorldEvent.ComputeDescription (ID = {info.Id}) : invalid variable reference.");
+                        desc += "{PARSING_ERROR} ";
+                        continue;
+                    }
+
+                    int referenceEnd = token.IndexOf('}');
+                    Assert.IsTrue(0 < referenceEnd && referenceEnd < token.Length);
+                    string variableReference = token.Substring(1, referenceEnd - 1);
+                    string postReference = token.Substring(referenceEnd + 1);
+
+                    string variableName = variableReference.Substring(1);
+                    if (variableReference.StartsWith("@")) { // Event variable
+                        desc += $"{ec.GetVariable(variableName)}{postReference} ";
+                    } else if (variableReference.StartsWith("$")) {
+                        // Game variable
+                        desc += $"{ec.GetGameVariable(variableName, d, c)}{postReference} ";
+                    } else {
+                        Debug.LogError($"WorldEvent.ComputeDescription (ID = {info.Id}) : invalid variable reference.");
+                        desc += "{PARSING_ERROR} ";
+                    }
+                    continue;
+                }
+                // Text
+                desc += $"{token} ";
             }
             desc += "\n";
         }
