@@ -50,6 +50,21 @@ Be careful now, next time will be game over...
         "triggerActions" : [],
         "triggerLimit": "@Limit",
     },
+    {
+        "id": "MathTest",
+        "name": "Math Functions Test Event",
+        "descriptionEnglish": """
+x = {@x} rad
+3 * x = {3 * @x} rad
+cos({@x}) = {Math.Cos(@x)}
+sin({@x}) = {Math.Sin(@x)}
+tan({@x}) = {Math.Tan(@x)}
+""",
+        "variables": [ "@x = 45 * 3.14159265359 / 180" ],
+        "triggerConditions" : [ "$World.CurrentDate.DayOfWeek == 5" ],
+        "triggerActions": [],
+        "triggerLimit": "1",
+    },
 
     // Engine-related events
     {
