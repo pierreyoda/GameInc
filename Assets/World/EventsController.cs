@@ -191,14 +191,14 @@ public class EventsController : MonoBehaviour {
             return null;
         }
 
-        VariableFloat variableValue = ParseExpressionFloat(tokens.Skip(2));
-        if (variableValue == null) {
+        ExpressionFloat variableExpression = ParseExpressionFloat(tokens.Skip(2));
+        if (variableExpression == null) {
             Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : right operand parsing error.");
             return null;
         }
 
         VariableFloat variable = (ec, d, c) => {
-            float value = variableValue(ec, d, c);
+            float value = variableExpression.Variable(ec, d, c);
             ec.SetVariable(variableName, value);
             return value;
         };

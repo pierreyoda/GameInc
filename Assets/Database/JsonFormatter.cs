@@ -34,7 +34,6 @@ public class JsonFormatter {
     /// <returns></returns>
     public static string Format(string json) {
         string cleaned = "";
-
         int multistringStart = -1;
         string[] lines = json.Split('\n');
         List<string> multistrings = new List<string>();
