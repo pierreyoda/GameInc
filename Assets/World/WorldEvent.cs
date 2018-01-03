@@ -127,6 +127,11 @@ public class WorldEvent {
     }
 
     private string ComputedDescription(EventsController ec, DateTime d, GameDevCompany c) {
+        List<float> expressionValues = new List<float>();
+        for (int i = 0; i < descriptionExpressions.Count; i++) {
+            expressionValues.Add(descriptionExpressions[i].Variable(ec, d, c));
+        }
+
         string output = "";
         for (int i = 0; i < cachedDescriptionEnglish.Length; i++) {
             char character = cachedDescriptionEnglish[i];
@@ -151,7 +156,7 @@ public class WorldEvent {
             Assert.IsTrue(int.TryParse(number, out expressionIndex));
             Assert.IsTrue(0 <= expressionIndex && expressionIndex < descriptionExpressions.Count);
 
-            output += descriptionExpressions[expressionIndex].Variable(ec, d, c);
+            output += expressionValues[expressionIndex];
         }
         return output;
     }
