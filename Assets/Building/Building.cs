@@ -53,7 +53,10 @@ public class Building : MonoBehaviour {
         // Collider
         var boxCollider = gameObject.GetComponent<BoxCollider2D>();
         boxCollider.size = new Vector2(width, 2 * height);
-        boxCollider.offset = new Vector2(width / 2, 0);
+        float tileHeight = wallModelGameObject.GetComponent<SpriteRenderer>()
+            .sprite.textureRect.height;
+        Debug.LogWarning("height="+tileHeight);
+        boxCollider.offset = new Vector2((float) width / 2, tileHeight / (2 * 50));
 
         // Walls
         var wallsParentObject = transform.Find("Walls").gameObject;
@@ -63,7 +66,7 @@ public class Building : MonoBehaviour {
             wallLeft.transform.parent = wallsParentObject.transform;
 
             var wallRight = Instantiate(wallModelGameObject);
-            wallRight.transform.position = new Vector3(width + 1, 2 * y, 0);
+            wallRight.transform.position = new Vector3(width, 2 * y, 0);
             wallRight.transform.parent = wallsParentObject.transform;
         }
         wallModelGameObject.SetActive(false);
