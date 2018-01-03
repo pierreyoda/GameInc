@@ -1,7 +1,7 @@
-﻿using UnityEditor;
+﻿using NUnit.Framework;
 using UnityEngine;
 
-public class Room : MonoBehaviour {
+public class Room : Buildable {
     private static int INSTANCES_COUNT = 0;
     private static int PIXELS_PER_UNIT = 50;
 
@@ -10,12 +10,6 @@ public class Room : MonoBehaviour {
 
     [SerializeField] private Database.Room info;
     public Database.Room Info => info;
-
-    [SerializeField] private int floorNumber = 0;
-    public int FloorNumber => floorNumber;
-
-    [SerializeField] private int positionX = 0;
-    public int PositionX => positionX;
 
     [SerializeField] private bool underConstruction = true;
     public bool UnderConstruction => underConstruction;
@@ -26,35 +20,30 @@ public class Room : MonoBehaviour {
     [SerializeField] private Sprite sprite;
     public Sprite Sprite => sprite;
 
-    private SpriteRenderer spriteRenderer;
-
     private void Start() {
         id = INSTANCES_COUNT++;
 
-        UpdatePosition(positionX, floorNumber);
+        UpdatePosition(PositionX, PositionY);
 
-        if (spriteRenderer == null)
-            spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
-        spriteRenderer.sprite = sprite;
-        spriteRenderer.sortingOrder = LayerMask.NameToLayer("Rooms");
+        if (SpriteRenderer == null)
+            SpriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+        SpriteRenderer.sprite = sprite;
+        SpriteRenderer.sortingOrder = LayerMask.NameToLayer("Rooms");
     }
 
     public void SetInfo(Database.Room roomInfo) {
         info = roomInfo;
+        infoId = info.Id;
+        width = info.Width;
         var spriteTexture = Resources.Load<Texture2D>($"Core/{info.TextureName}");
+        Assert.IsNotNull(spriteTexture);
         sprite = Sprite.Create(spriteTexture,
             new Rect(0, 0, spriteTexture.width, spriteTexture.height),
             new Vector2(0.5f, 0.5f),
             PIXELS_PER_UNIT);
-        if (spriteRenderer == null)
-            spriteRenderer = gameObject.AddComponent<SpriteRenderer>();
-        spriteRenderer.sprite = sprite;
-    }
-
-    public void UpdatePosition(int posX, int posY) {
-        positionX = posX;
-        floorNumber = posY;
-        transform.position = new Vector3(positionX, 2 * floorNumber, 0);
+        if (SpriteRenderer == null)
+            SpriteRenderer = gameObject.AddComponent<SpriteRenderer>();
+        SpriteRenderer.sprite = sprite;
     }
 
     public void OnNewDay() {

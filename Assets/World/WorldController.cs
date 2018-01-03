@@ -21,10 +21,6 @@ public class WorldController : MonoBehaviour {
         world.BuildNewRoom(roomId);
     }
 
-    public void OnBuildingClicked() {
-        world.OnBuildingClicked();
-    }
-
     public void OnGameStarted(Database.Database database, DateTime gameDateTime, GameDevCompany playerCompany) {
         this.playerCompany = playerCompany;
         engineFeaturesController.InitFeatures(database.EngineFeatures.Collection);
@@ -46,9 +42,13 @@ public class WorldController : MonoBehaviour {
     }
 
     public void OnProjectCompleted(DateTime gameDateTime,
-        GameDevCompany playerCompany, Project project) {
+        GameDevCompany company, Project project) {
         if (project.Type() == Project.ProjectType.GameProject)
             engineFeaturesController.CheckFeatures(eventsController,
-                gameDateTime, playerCompany);
+                gameDateTime, company);
+    }
+
+    public void OnConstructionStarted(float constructionCost) {
+        world.OnConstructionStarted(constructionCost);
     }
 }

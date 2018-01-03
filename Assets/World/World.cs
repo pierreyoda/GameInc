@@ -11,6 +11,7 @@ public class World : MonoBehaviour {
     [SerializeField] private Database.Database database;
 
     [Header("Date Simulation")]
+    [SerializeField] private bool firstDay = true;
     [SerializeField] [Range(100, 10000)] private int millisecondsPerDay = 1000;
     [SerializeField] [Range(1970, 2020)] private int gameStartYear = 1982;
     [SerializeField] [Range(1, 12)] private int gameStartMonth = 1;
@@ -20,7 +21,7 @@ public class World : MonoBehaviour {
     [SerializeField] private float dayPercentage;
 
     [Header("Simulation Speed")]
-    [SerializeField] private bool simulationRunning = true;
+    [SerializeField] private bool simulationRunning = false;
     [SerializeField] private Button pauseButton;
 
     [SerializeField] private int simulationSpeedMultiplier = 1;
@@ -30,11 +31,7 @@ public class World : MonoBehaviour {
     [SerializeField] private GameMenu gameMenu;
     [SerializeField] private BuildRoomSelectionMenu buildRoomSelectionMenu;
 
-    [Header("Construction")]
-    [HideInInspector] private bool buildingMode = false;
-    [HideInInspector] private Room buildingRoom;
-
-    void Start() {
+    private void Start() {
         Debug.Log("Loading the game database...", gameObject);
         database = new Database.Database();
         const string filesPrefix = "Assets/Resources/Core";
@@ -64,6 +61,13 @@ public class World : MonoBehaviour {
             playerCompany.AddEmployee(employeesParentObject.GetChild(i).GetComponent<Employee>());
         }
 
+        gameMenu.ShowMenu();
+    }
+
+    private void OnGameStart() {
+        string startingDate = gameDateTime.ToString("yyyy/MM/dd");
+        Debug.Log($"World.OnGameStart : starting date = {startingDate}");
+
         GameEngine defaultEngine = new GameEngine("No Game Engine", new [] { "PC" });
         defaultEngine.AddFeature("Graphics_2D_1");
         defaultEngine.AddFeature("Audio_Mono");
@@ -85,11 +89,17 @@ public class World : MonoBehaviour {
             defaultEngine);
         playerCompany.StartProject(game);
 
-        gameMenu.ShowMenu();
+        companyBuilding.InitStartingRooms(database.Rooms);
+
+        firstDay = false;
+        simulationRunning = true;
     }
 
-    void Update() {
-        if (!simulationRunning) return;
+    private void Update() {
+        if (!simulationRunning) {
+            if (firstDay) OnGameStart();
+            else return;
+        }
 
         float elapsedTime = Time.deltaTime; // in s
 
@@ -98,14 +108,13 @@ public class World : MonoBehaviour {
         if (dayPercentage >= 1f) {
             NewDay();
             dayPercentage = 0f;
-            playerCompany.Charge(100);
+            playerCompany.Charge(100); // events test
             worldController.OnPlayerCompanyModified(gameDateTime);
         }
 
         // building mode : display a ghost of the required item under the mouse if possible
-        if (!buildingMode) return;
-        var targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        buildingRoom.UpdatePosition(Mathf.RoundToInt(targetPosition.x), Mathf.RoundToInt(targetPosition.y));
+        if (!companyBuilding.IsCurrentlyBuilding) return;
+        companyBuilding.UpdateConstruction();
     }
 
     private void NewDay() {
@@ -147,26 +156,14 @@ public class World : MonoBehaviour {
         var room = roomGameObject.AddComponent<Room>();
         roomGameObject.name = $"Room_{room.Id}";
         room.SetInfo(roomInfo);
+        companyBuilding.StartConstruction(room, "Room");
 
-        buildingRoom = room;
-        buildingMode = true;
         gameMenu.HideMenu();
         Debug.Log($"World.BuildNewRoom : build order for {roomInfo.Name}.");
     }
 
-    public void OnBuildingClicked() {
-        if (!buildingMode) return;
-        if (!companyBuilding.IsRoomBuildable(buildingRoom)) return;
-        Debug.Log("can build!");
-
-        var targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        buildingRoom.UpdatePosition(Mathf.RoundToInt(targetPosition.x), Mathf.RoundToInt(targetPosition.y));
-        companyBuilding.BuildRoom(buildingRoom);
-
-        playerCompany.Charge(buildingRoom.Info.Cost);
+    public void OnConstructionStarted(float constructionCost) {
+        playerCompany.Charge(constructionCost);
         worldController.OnPlayerCompanyModified(gameDateTime);
-
-        buildingMode = false;
-        buildingRoom = null;
     }
 }

@@ -1643,13 +1643,14 @@ MonoBehaviour:
   worldController: {fileID: 1068444075}
   playerCompany: {fileID: 1709252436}
   companyBuilding: {fileID: 2069030189}
+  firstDay: 1
   millisecondsPerDay: 1000
   gameStartYear: 1984
   gameStartMonth: 1
   gameStartDay: 22
   previousDayMonth: 0
   dayPercentage: 0
-  simulationRunning: 1
+  simulationRunning: 0
   pauseButton: {fileID: 761103752}
   simulationSpeedMultiplier: 8
   speedButton: {fileID: 1756391265}
@@ -3776,8 +3777,12 @@ MonoBehaviour:
   wallModelGameObject: {fileID: 1773472052}
   ceilingModelGameObject: {fileID: 1505382293}
   ceilingHeight: 0
-  EmptyTileSprite: {fileID: 21300000, guid: 35305b4e5d6217f40937b827b9e1010e, type: 3}
+  emptyTileSprite: {fileID: 0}
   rooms: []
+  currentlyBuilding: {fileID: 0}
+  currentlyBuildingType: 
+  isBuildableColor: {r: 0.23140138, g: 0.78676474, b: 0.44205645, a: 0.591}
+  isNotBuildableColor: {r: 0.8161765, g: 0.22804934, b: 0.22804934, a: 0.547}
 --- !u!4 &2069030190
 Transform:
   m_ObjectHideFlags: 0
