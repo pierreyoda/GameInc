@@ -250,6 +250,8 @@ public class ScriptParser {
         // Boolean - TODO : improve handling (VariableBoolean ?)
         if (scalar == "true") return (ec, d, c) => 1f;
         if (scalar == "false") return (ec, d, c) => 0f;
+        // Universal constant
+        if (scalar == "Math.PI") return (ec, d, c) => Mathf.PI;
         // Constant
         float value;
         if (!float.TryParse(scalar, NUMBER_STYLE_FLOAT, CultureInfoFloat, out value)) {

@@ -60,7 +60,7 @@ cos({@x}) = {Math.Cos(@x)}
 sin({@x}) = {Math.Sin(@x)}
 tan({@x}) = {Math.Tan(@x)}
 """,
-        "variables": [ "@x = 45 * 3.14159265359 / 180" ],
+        "variables": [ "@x = 45 * Math.PI / 180" ],
         "triggerConditions" : [ "$World.CurrentDate.DayOfWeek == 5" ],
         "triggerActions": [],
         "triggerLimit": "1",
