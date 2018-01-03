@@ -75,7 +75,7 @@ public class Building : MonoBehaviour {
             .sprite.textureRect.height;
         var ceilingsParentObject = transform.Find("Ceilings").gameObject;
         for (int y = 0; y < height; y++) {
-            for (int x = -1; x < width + 1; x++) {
+            for (int x = 0; x < width; x++) {
                 var ceiling = Instantiate(ceilingModelGameObject);
                 ceiling.transform.position = new Vector3(x, 2 * y + 1 + 1/2 * y * ceilingHeight / 50, 0);
                 ceiling.transform.parent = ceilingsParentObject.transform;
