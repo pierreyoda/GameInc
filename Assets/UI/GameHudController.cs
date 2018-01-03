@@ -1,4 +1,5 @@
 ﻿using System;
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -6,6 +7,12 @@ public class GameHudController : MonoBehaviour {
     [SerializeField] private Text currentDateText;
     [SerializeField] private Text playerCompanyNameText;
     [SerializeField] private Text playerCompanyMoneyText;
+
+    private void Start() {
+        Assert.IsNotNull(currentDateText);
+        Assert.IsNotNull(playerCompanyMoneyText);
+        Assert.IsNotNull(playerCompanyMoneyText);
+    }
 
     public void UpdateDateDisplay(DateTime currentDate) {
         currentDateText.text = currentDate.ToString("yyyy/MM/dd");

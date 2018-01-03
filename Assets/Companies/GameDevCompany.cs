@@ -26,6 +26,9 @@ public class GameDevCompany : MonoBehaviour {
     [SerializeField] private List<Employee> employees = new List<Employee>();
     public IReadOnlyList<Employee> Employees => employees.AsReadOnly();
 
+    [SerializeField] private int fans = 0;
+    public int Fans => fans;
+
     [SerializeField] private List<string> allowedEngineFeatures = new List<string>();
     public IReadOnlyList<string> AllowedEngineFeatures => allowedEngineFeatures.AsReadOnly();
 
@@ -69,14 +72,14 @@ public class GameDevCompany : MonoBehaviour {
         currentProject = null;
     }
 
-    public void SetFeature(string name, bool enabled) {
-        CompanyFeature feature = features.FirstOrDefault(f => f.Name == name);
+    public void SetFeature(string featureName, bool featureEnabled) {
+        CompanyFeature feature = features.FirstOrDefault(f => f.Name == featureName);
         if (feature == null) {
-            Debug.LogError($"GameDevCompany.SetFeature(\"{name}\", {enabled}) : unkown feature.");
+            Debug.LogError($"GameDevCompany.SetFeature(\"{featureName}\", {featureEnabled}) : unkown feature.");
             return;
         }
-        feature.Enabled = enabled;
-        Debug.Log($"GameDevCompany.Feature(\"{name}\") = {enabled}.");
+        feature.Enabled = featureEnabled;
+        Debug.Log($"GameDevCompany.Feature(\"{featureName}\") = {featureEnabled}.");
     }
 
     public void AllowEngineFeature(string featureId) {
