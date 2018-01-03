@@ -487,8 +487,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1877568626}
   m_HandleRect: {fileID: 1877568625}
   m_Direction: 2
-  m_Value: 0.9999997
-  m_Size: 0.66666657
+  m_Value: 1
+  m_Size: 0.6666666
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1652,7 +1652,7 @@ MonoBehaviour:
   dayPercentage: 0
   simulationRunning: 0
   pauseButton: {fileID: 761103752}
-  simulationSpeedMultiplier: 8
+  simulationSpeedMultiplier: 2
   speedButton: {fileID: 1756391265}
   gameMenu: {fileID: 1775206632}
   buildRoomSelectionMenu: {fileID: 1229371446}

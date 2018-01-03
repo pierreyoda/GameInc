@@ -18,5 +18,14 @@
         "constructionTime": 7,
         "upkeep": 0.1,
     },
+    {
+        "id": "Elevator",
+        "name": "Elevator",
+        "textureName": "room_elevator",
+        "width": 2,
+        "cost": 20.0,
+        "constructionTime": 15,
+        "upkeep": 0.25,
+    },
 ],
 }
