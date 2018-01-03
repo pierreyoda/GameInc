@@ -55,7 +55,6 @@ public class Building : MonoBehaviour {
         boxCollider.size = new Vector2(width, 2 * height);
         float tileHeight = wallModelGameObject.GetComponent<SpriteRenderer>()
             .sprite.textureRect.height;
-        Debug.LogWarning("height="+tileHeight);
         boxCollider.offset = new Vector2((float) width / 2, tileHeight / (2 * 50));
 
         // Walls
@@ -85,7 +84,7 @@ public class Building : MonoBehaviour {
         ceilingModelGameObject.SetActive(false);
 
         // Rooms
-        GameObject roomsParentObject = transform.Find("Rooms").gameObject;
+        var roomsParentObject = transform.Find("Rooms").gameObject;
         for (int i = 0; i < roomsParentObject.transform.childCount; i++) {
             Room room = roomsParentObject.transform.GetChild(i).GetComponent<Room>();
             rooms.Add(room);
@@ -164,7 +163,7 @@ public class Building : MonoBehaviour {
     }
 
     private bool IsBuildable(Buildable buildable) {
-        if (buildable.PositionX < 0 || buildable.PositionX >= width) return false;
+        if (buildable.PositionX < 1 || buildable.PositionX >= width) return false; // wall offset
         if (buildable.PositionY < 0 || buildable.PositionY >= height) return false;
         int y = buildable.PositionY;
         for (int x = buildable.PositionX; x < (buildable.PositionX + buildable.Width) && x < width; x++) {
@@ -193,9 +192,9 @@ public class Building : MonoBehaviour {
         }
     }
 
-    private Vector2Int GetMousePosition() {
+    private static Vector2Int GetMousePosition() {
         Vector3 targetPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        return new Vector2Int(Mathf.RoundToInt(targetPosition.x),
+        return new Vector2Int(Mathf.RoundToInt(targetPosition.x) + 1, // wall offset
             Mathf.RoundToInt(targetPosition.y));
     }
 }
