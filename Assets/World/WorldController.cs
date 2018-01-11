@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using Database;
 using UnityEngine;
+using Event = Database.Event;
 
 public class WorldController : MonoBehaviour {
     private Database.Database database;
@@ -44,10 +46,16 @@ public class WorldController : MonoBehaviour {
 
     public void OnDateModified(DateTime gameDateTime) {
         this.gameDateTime = gameDateTime;
-        eventsController.OnGameDateChanged(gameDateTime, playerCompany);
+        // World Events
+        List<WorldEvent> triggeredEvents = eventsController.OnGameDateChanged(gameDateTime, playerCompany);
+        foreach (WorldEvent triggeredEvent in triggeredEvents) {
+            hudController.OnEventTriggered(triggeredEvent);
+        }
+        // World News
         News latestNews = newsController.OnGameDateChanged(gameDateTime);
         if (latestNews != null)
             hudController.PushLatestNews(latestNews);
+        // HUD
         hudController.OnDateChanged(gameDateTime);
     }
 

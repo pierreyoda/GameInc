@@ -21,6 +21,9 @@ public class WorldEvent {
     [SerializeField] private string cachedDescriptionEnglish;
     private readonly List<ExpressionFloat> descriptionExpressions = new List<ExpressionFloat>();
 
+    private string computedDescription;
+    public string ComputedDescription => computedDescription;
+
     public WorldEvent(Event info,
         List<ScriptCondition> conditions,
         List<ScriptAction> actions) {
@@ -44,7 +47,9 @@ public class WorldEvent {
     /// If every one of them evaluates to True, trigger the actions.
     /// </summary>
     /// <returns>True if the WorldEvent cannot be triggered anymore, False otherwise.</returns>
-    public bool CheckEvent(EventsController ec, DateTime d, GameDevCompany c) {
+    public bool CheckEvent(EventsController ec, DateTime d, GameDevCompany c, out bool triggered) {
+        triggered = false;
+
         // trigger limits check
         int limit = (int) triggersLimit.Variable(ec, d, c); // TODO : add and use VariableInt
         if (limit >= 0 && triggersCount >= limit) {
@@ -63,9 +68,9 @@ public class WorldEvent {
         foreach (ScriptAction action in actions) {
             action(ec, d, c);
         }
-        string desc = ComputedDescription(ec, d, c);
-        Debug.Log($"=== Event description:\n{desc}\n===");
+        computedDescription = ComputeDescription(ec, d, c);
 
+        triggered = true;
         return false;
     }
 
@@ -126,7 +131,7 @@ public class WorldEvent {
         return cached;
     }
 
-    private string ComputedDescription(EventsController ec, DateTime d, GameDevCompany c) {
+    private string ComputeDescription(EventsController ec, DateTime d, GameDevCompany c) {
         List<float> expressionValues = new List<float>();
         for (int i = 0; i < descriptionExpressions.Count; i++) {
             expressionValues.Add(descriptionExpressions[i].Variable(ec, d, c));

@@ -141,19 +141,25 @@ public class EventsController : MonoBehaviour {
         //Debug.Log($"EventsController : @{variableName} = {value}"); // TODO : fix called twice bug
     }
 
-    public void OnGameDateChanged(DateTime gameDate, GameDevCompany playerCompany) {
+    public List<WorldEvent> OnGameDateChanged(DateTime gameDate, GameDevCompany playerCompany) {
         List<string> unactiveEventsIDs = new List<string>();
+        List<WorldEvent> triggeredEvents = new List<WorldEvent>();
         foreach (WorldEvent we in eventsObservingGameDate) {
-            if (we.CheckEvent(this, gameDate, playerCompany))
+            bool triggered;
+            if (we.CheckEvent(this, gameDate, playerCompany, out triggered))
                 unactiveEventsIDs.Add(we.Info.Id);
+            if (triggered)
+                triggeredEvents.Add(we);
         }
         ClearUnactivableWorldEvents(unactiveEventsIDs);
+        return triggeredEvents;
     }
 
     public void OnPlayerCompanyChanged(DateTime gameDate, GameDevCompany playerCompany) {
         List<string> unactiveEventsIDs = new List<string>();
         foreach (WorldEvent we in eventsObservingPlayerCompany) {
-            if (we.CheckEvent(this, gameDate, playerCompany))
+            bool triggered;
+            if (we.CheckEvent(this, gameDate, playerCompany, out triggered))
                 unactiveEventsIDs.Add(we.Info.Id);
         }
         ClearUnactivableWorldEvents(unactiveEventsIDs);

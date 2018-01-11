@@ -18,15 +18,19 @@ public class GameHudController : MonoBehaviour {
     [SerializeField] private Text playerCompanyMoneyText;
 
     [Header("Dialogs")]
+    [SerializeField] private bool pauseGameInDialog = true;
+    public bool PauseGameInDialog => pauseGameInDialog;
+
     [SerializeField] private NewGameDialog newGameDialog;
+    [SerializeField] private EventTriggeredDialog eventTriggeredDialog;
 
     [Header("News Prompter")]
-    private int currentNewsBarPanelIndex = 0;
     [SerializeField] [UnityEngine.Range(1, 10)] private int maximumNewsCount = 3;
     [SerializeField] [UnityEngine.Range(1f, 50f)] private float marginBetweenPanels = 2f;
     [SerializeField] private Transform newsBarPanelsParent;
     [SerializeField] private NewsBarPanel newsBarPanelModel;
     [SerializeField] private List<NewsBarPanel> newsBarPanels = new List<NewsBarPanel>();
+    private int currentNewsBarPanelIndex = 0;
 
     private void Start() {
         Assert.IsNotNull(worldController);
@@ -80,6 +84,10 @@ public class GameHudController : MonoBehaviour {
                 currentNewsBarPanelIndex -= 1;
         }
         UpdateNewsBarPanelPositions();
+    }
+
+    public void OnEventTriggered(WorldEvent triggeredEvent) {
+        eventTriggeredDialog.ShowEventDialog(triggeredEvent);
     }
 
     public void PushLatestNews(News latestNews) {
