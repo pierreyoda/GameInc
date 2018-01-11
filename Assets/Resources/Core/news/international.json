@@ -1,11 +1,12 @@
 {
+// International News Collection
 "Collection": [
     {
         "id": "International_Reagan_Gorbachev_FirstMeet",
         "name": "International_Reagan_Gorbachev_FirstMeet",
         "date": "1985/11/19",
         "textEnglish" : "US President Ronald Reagan and Soviet leader Mikhail Gorbachev meet for the first time.",
-        "country": "USA,USSR",
+        "countries": "USA,USSR",
     },
 ],
 }
