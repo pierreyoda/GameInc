@@ -13,7 +13,7 @@
     // AUDIO
     {
         "id": "Audio_Mono",
-        "name": "2D Graphics V1",
+        "name": "Audio Mono",
         "descriptionEnglish": "Mono audio.",
         "disables": ["Audio_Stereo"],
         "requirements": [],
@@ -21,7 +21,7 @@
     },
     {
         "id": "Audio_Stereo",
-        "name": "2D Graphics V1",
+        "name": "Audio Stereo",
         "descriptionEnglish": "Stereo audio.",
         "disables": ["Audio_Mono"],
         "requirements": ["$Company.Projects.CompletedGames.WithEngineFeature(Audio_Mono).Count >= 5"],
