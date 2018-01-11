@@ -1,4 +1,5 @@
 ﻿using System;
+using Database;
 using UnityEngine;
 
 public class WorldController : MonoBehaviour {
@@ -32,7 +33,9 @@ public class WorldController : MonoBehaviour {
 
     public void OnDateModified(DateTime gameDateTime) {
         eventsController.OnGameDateChanged(gameDateTime, playerCompany);
-        newsController.OnGameDateChanged(gameDateTime);
+        News latestNews = newsController.OnGameDateChanged(gameDateTime);
+        if (latestNews != null)
+            hudController.UpdateNewsBar(latestNews);
         hudController.UpdateDateDisplay(gameDateTime);
     }
 

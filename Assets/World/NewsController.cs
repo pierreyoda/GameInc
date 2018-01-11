@@ -13,12 +13,13 @@ public class NewsController : MonoBehaviour {
 		news.RemoveAll(n => n.Date < startingDate.Date);
 	}
 
-	public void OnGameDateChanged(DateTime date) {
-		if (news.Count == 0) return;
-		News newsItem = news.First();
-		if (newsItem.Date.Date == date.Date) {
-			Debug.Log($"News Item : {newsItem.TextEnglish}");
+	public News OnGameDateChanged(DateTime date) {
+		if (news.Count == 0) return null;
+		News latestNews = news.First();
+		if (latestNews.Date.Date == date.Date) {
 			news.RemoveAt(0);
+			return latestNews;
 		}
+		return null;
 	}
 }
