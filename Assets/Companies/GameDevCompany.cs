@@ -58,7 +58,7 @@ public class GameDevCompany : MonoBehaviour {
             Debug.LogWarning("GameDevCompany.StartProject : another project is already in progress.");
             return;
         }
-        Debug.Log($"GameDevCompany : started a new Project named \"{project.Name}\".");
+        Debug.Log($"GameDevCompany : started a new {project.Type()} named \"{project.Name}\".");
         currentProject = project;
     }
 
@@ -95,6 +95,12 @@ public class GameDevCompany : MonoBehaviour {
     }
 
     public void AddGameEngine(GameEngine gameEngine) {
+        foreach (GameEngine existingEngine in gameEngines) {
+            if (existingEngine.Name == gameEngine.Name) {
+                Debug.LogWarning($"GameDevCompany.AddGameEngine : engine \"{gameEngine.Name}\" already exists.");
+                return;
+            }
+        }
         gameEngines.Add(gameEngine);
     }
 
