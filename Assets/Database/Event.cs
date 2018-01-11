@@ -26,6 +26,7 @@ public class Event : DatabaseElement {
         "Math.Cos",
         "Math.Sin",
         "Math.Tan",
+        "Math.Abs",
         "Company.EnableFeature",
         "Company.DisableFeature",
     };

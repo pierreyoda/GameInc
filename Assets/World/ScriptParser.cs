@@ -299,6 +299,7 @@ public class ScriptParser {
             case "Math.Cos": return (ec, d, c) => Mathf.Cos(parameterExpressions[0].Variable(ec, d, c));
             case "Math.Sin": return (ec, d, c) => Mathf.Sin(parameterExpressions[0].Variable(ec, d, c));
             case "Math.Tan": return (ec, d, c) => Mathf.Tan(parameterExpressions[0].Variable(ec, d, c));
+            case "Math.Abs": return (ec, d, c) => Mathf.Abs(parameterExpressions[0].Variable(ec, d, c));
             default:
                 Debug.LogError($"ScriptParser.ParseFunctionCall(\"{call}\") : unkown function name {functionName}.");
                 return null;

@@ -59,8 +59,12 @@ x = {@x} rad
 cos({@x}) = {Math.Cos(@x)}
 sin({@x}) = {Math.Sin(@x)}
 tan({@x}) = {Math.Tan(@x)}
+
+y = {@y}
+-6 * y = {-6 * @y}
+abs(y) = {Math.Abs(@y)}
 """,
-        "variables": [ "@x = 45 * Math.PI / 180" ],
+        "variables": [ "@x = 45 * Math.PI / 180", "@y = -3" ],
         "triggerConditions" : [ "$World.CurrentDate.DayOfWeek == 5" ],
         "triggerActions": [],
         "triggerLimit": "1",
