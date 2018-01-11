@@ -12,7 +12,7 @@ public abstract class DatabaseElement {
     [SerializeField] private string name;
     public string Name => name;
 
-    protected static CultureInfo CultureInfo = CultureInfo.InvariantCulture;
+    protected static readonly CultureInfo CultureInfo = CultureInfo.InvariantCulture;
 
     protected DatabaseElement(string id, string name) {
         this.id = id;

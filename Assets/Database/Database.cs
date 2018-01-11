@@ -27,42 +27,50 @@ public class Database {
 
     [Serializable]
     public class DatabaseCollection<T> where T : DatabaseElement {
+        private readonly bool namesAreUnique;
+        public bool NamesAreUnique => namesAreUnique;
+
         [SerializeField] private DataFileType type;
         public DataFileType Type => type;
 
         public List<T> Collection = new List<T>();
 
-        public DatabaseCollection(DataFileType type) {
+        public DatabaseCollection(bool namesAreUnique, DataFileType type) {
+            this.namesAreUnique = namesAreUnique;
             this.type = type;
         }
 
         public T FindById(string id) {
             return Collection.Find(e => e.Id == id);
         }
+
+        public T FindFirstByName(string name) {
+            return Collection.Find(e => e.Name == name);
+        }
     }
 
-    private DatabaseCollection<Event> events = new DatabaseCollection<Event>(DataFileType.Event);
+    private DatabaseCollection<Event> events = new DatabaseCollection<Event>(false, DataFileType.Event);
     public DatabaseCollection<Event> Events => events;
 
-    private DatabaseCollection<Genre> genres = new DatabaseCollection<Genre>(DataFileType.GameGenre);
+    private DatabaseCollection<Genre> genres = new DatabaseCollection<Genre>(true, DataFileType.GameGenre);
     public DatabaseCollection<Genre> Genres => genres;
 
-    private DatabaseCollection<Theme> themes = new DatabaseCollection<Theme>(DataFileType.GameTheme);
+    private DatabaseCollection<Theme> themes = new DatabaseCollection<Theme>(true, DataFileType.GameTheme);
     public DatabaseCollection<Theme> Themes => themes;
 
-    private DatabaseCollection<Platform> platforms = new DatabaseCollection<Platform>(DataFileType.GamingPlatform);
+    private DatabaseCollection<Platform> platforms = new DatabaseCollection<Platform>(true, DataFileType.GamingPlatform);
     public DatabaseCollection<Platform> Platforms => platforms;
 
-    private DatabaseCollection<EngineFeature> engineFeatures = new DatabaseCollection<EngineFeature>(DataFileType.EngineFeature);
+    private DatabaseCollection<EngineFeature> engineFeatures = new DatabaseCollection<EngineFeature>(true, DataFileType.EngineFeature);
     public DatabaseCollection<EngineFeature> EngineFeatures => engineFeatures;
 
-    private DatabaseCollection<Room> rooms = new DatabaseCollection<Room>(DataFileType.Room);
+    private DatabaseCollection<Room> rooms = new DatabaseCollection<Room>(true, DataFileType.Room);
     public DatabaseCollection<Room> Rooms => rooms;
 
-    private DatabaseCollection<Object> objects = new DatabaseCollection<Object>(DataFileType.RoomObject);
+    private DatabaseCollection<Object> objects = new DatabaseCollection<Object>(true, DataFileType.RoomObject);
     public DatabaseCollection<Object> Objects => objects;
 
-    private DatabaseCollection<News> news = new DatabaseCollection<News>(DataFileType.News);
+    private DatabaseCollection<News> news = new DatabaseCollection<News>(false, DataFileType.News);
     public DatabaseCollection<News> News => news;
 
     public Database AddDataFile(string dataFile, DataFileType dataType) {
@@ -162,9 +170,14 @@ public class Database {
         }
 
         foreach (var element in additions.Collection) {
-            if (existing.Collection.Any(existingElement => element.Id == existingElement.Id)) {
+            if (existing.Collection.Any(e => element.Id == e.Id)) {
                 Debug.LogWarning(
                     $"Database - {dataType} element of ID \"{element.Id}\" already exists.");
+                continue;
+            }
+            if (existing.NamesAreUnique && existing.Collection.Any(e => element.Name == e.Name)) {
+                Debug.LogWarning(
+                    $"Database - {dataType} element of name \"{element.Name}\" already exists (unique names activated).");
                 continue;
             }
             if (!element.IsValid()) {
