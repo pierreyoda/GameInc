@@ -17,6 +17,10 @@
         "name": "Strategy",
     },
     {
+        "id": "Simulation",
+        "name": "Simulation",
+    },
+    {
         "id": "Puzzle",
         "name": "Puzzle",
     },
