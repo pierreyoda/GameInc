@@ -6,18 +6,11 @@ using UnityEngine.UI;
 
 public class NewsBarPanel : MonoBehaviour {
     [SerializeField] [UnityEngine.Range(1, 31)] private float delayInDays = 5f;
-    [SerializeField] private Text newsBarText;
     private News latestNews;
 
-    private void Start() {
-        Assert.IsTrue(delayInDays > 0);
-        Assert.IsNotNull(newsBarText);
-        newsBarText.text = ""; // clear debug text
-    }
-
-    public void UpdateNewsText(News news) {
+    public void UpdateDisplayedNews(News news) {
         latestNews = news;
-        newsBarText.text = latestNews.TextEnglish;
+        transform.Find("NewsBarText").GetComponent<Text>().text = latestNews.TextEnglish;
     }
 
     /// <summary>

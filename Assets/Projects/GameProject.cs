@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Database;
 using NUnit.Framework;
 using UnityEngine;
@@ -18,14 +19,19 @@ public class GameProject : Project {
     [SerializeField] private GameEngine engine;
     public GameEngine Engine => engine;
 
+    [SerializeField] private List<string> platformIDs;
+    public IReadOnlyList<string> PlatformIDs => platformIDs.AsReadOnly();
+
     [SerializeField] private float[] scores = new float[GAME_SCORES.Length];
     public float[] Scores => scores;
 
-    public GameProject(string name, Genre genre, Theme theme, GameEngine engine)
+    public GameProject(string name, Genre genre, Theme theme, GameEngine engine,
+        List<string> platformIDs)
             : base(name) {
         this.genre = genre;
         this.theme = theme;
         this.engine = engine;
+        this.platformIDs = platformIDs;
     }
 
     public float Score(string scoreName) {
@@ -34,7 +40,6 @@ public class GameProject : Project {
             Debug.LogError($"GameProject.Score({scoreName}) : unkown score name.");
             return 0f;
         }
-
         return scores[scoreIndex];
     }
 

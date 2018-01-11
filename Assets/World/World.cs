@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using static Database.Database;
@@ -45,16 +46,16 @@ public class World : MonoBehaviour {
             .AddDataFile($"{filesPrefix}/objects.json", DataFileType.RoomObject)
             .Load()
             .PrintDatabaseInfo();
-        worldController.OnGameStarted(database, gameDateTime, playerCompany);
 
         Debug.Log("Instanciating the game world...", gameObject);
 
         dayPercentage = 0f;
         gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
+        worldController.OnGameStarted(database, gameDateTime, playerCompany);
         worldController.OnDateModified(gameDateTime);
 
         playerCompany.Pay(100);
-        worldController.OnPlayerCompanyModified(gameDateTime);
+        worldController.OnPlayerCompanyModified();
 
         var employeesParentObject = transform.Find("Employees");
         for (int i = 0; i < employeesParentObject.childCount; i++) {
@@ -68,26 +69,31 @@ public class World : MonoBehaviour {
         string startingDate = gameDateTime.ToString("yyyy/MM/dd");
         Debug.Log($"World.OnGameStart : starting date = {startingDate}");
 
-        GameEngine defaultEngine = new GameEngine("No Game Engine", new [] { "PC" });
+        GameEngine defaultEngine = new GameEngine("No Game Engine",
+            new DateTime(1980, 1, 1),
+            new [] { "PC" });
         defaultEngine.AddFeature("Graphics_2D_1");
         defaultEngine.AddFeature("Audio_Mono");
         playerCompany.AddGameEngine(defaultEngine);
+
+        GameEngine basicEngine = new GameEngine("Basic Game Engine",
+            new DateTime(1982, 1, 1),
+            new [] { "PC", "NES" });
+        basicEngine.AddFeature("Graphics_2D_1");
+        basicEngine.AddFeature("Graphics_2D_2");
+        basicEngine.AddFeature("Audio_Mono");
+        playerCompany.AddGameEngine(basicEngine);
 
         for (int i = 1; i <= 5; i++) {
             GameProject previousGame = new GameProject($"Previous Game {i}",
                 database.Genres.FindById("RPG"),
                 database.Themes.FindById("HighFantasy"),
-                defaultEngine);
+                defaultEngine,
+                new List<string> { "PC", "NES" });
             playerCompany.StartProject(previousGame);
             playerCompany.CompleteCurrentProject();
-            worldController.OnProjectCompleted(gameDateTime, playerCompany, previousGame);
+            worldController.OnProjectCompleted(playerCompany, previousGame);
         }
-
-        GameProject game = new GameProject("Test Game",
-            database.Genres.FindById("RPG"),
-            database.Themes.FindById("HighFantasy"),
-            defaultEngine);
-        playerCompany.StartProject(game);
 
         companyBuilding.InitStartingRooms(database.Rooms);
 
@@ -108,8 +114,7 @@ public class World : MonoBehaviour {
         if (dayPercentage >= 1f) {
             NewDay();
             dayPercentage = 0f;
-            playerCompany.Charge(100); // events test
-            worldController.OnPlayerCompanyModified(gameDateTime);
+            worldController.OnPlayerCompanyModified();
         }
 
         // building mode : display a ghost of the required item under the mouse if possible
@@ -164,6 +169,6 @@ public class World : MonoBehaviour {
 
     public void OnConstructionStarted(float constructionCost) {
         playerCompany.Charge(constructionCost);
-        worldController.OnPlayerCompanyModified(gameDateTime);
+        worldController.OnPlayerCompanyModified();
     }
 }

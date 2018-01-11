@@ -3,6 +3,8 @@ using Database;
 using UnityEngine;
 
 public class WorldController : MonoBehaviour {
+    private Database.Database database;
+    private DateTime gameDateTime;
     [SerializeField] private World world;
     [SerializeField] private GameDevCompany playerCompany;
     [SerializeField] private EngineFeaturesController engineFeaturesController;
@@ -22,8 +24,17 @@ public class WorldController : MonoBehaviour {
         world.BuildNewRoom(roomId);
     }
 
-    public void OnGameStarted(Database.Database database, DateTime gameDateTime, GameDevCompany playerCompany) {
+    public void StartProject() {
+        hudController.ShowNewProjectDialog(gameDateTime,
+            Project.ProjectType.GameProject, database,
+            playerCompany.GameEngines);
+    }
+
+    public void OnGameStarted(Database.Database database, DateTime gameDateTime,
+        GameDevCompany playerCompany) {
+        this.database = database;
         this.playerCompany = playerCompany;
+        this.gameDateTime = gameDateTime;
         engineFeaturesController.InitFeatures(database.EngineFeatures.Collection);
         engineFeaturesController.CheckFeatures(eventsController, gameDateTime, playerCompany);
         eventsController.InitEvents(database.Events.Collection);
@@ -32,23 +43,29 @@ public class WorldController : MonoBehaviour {
     }
 
     public void OnDateModified(DateTime gameDateTime) {
+        this.gameDateTime = gameDateTime;
         eventsController.OnGameDateChanged(gameDateTime, playerCompany);
         News latestNews = newsController.OnGameDateChanged(gameDateTime);
         if (latestNews != null)
-            hudController.UpdateNewsBar(latestNews);
-        hudController.UpdateDateDisplay(gameDateTime);
+            hudController.PushLatestNews(latestNews);
+        hudController.OnDateChanged(gameDateTime);
     }
 
-    public void OnPlayerCompanyModified(DateTime gameDateTime) {
+    public void OnPlayerCompanyModified() {
         eventsController.OnPlayerCompanyChanged(gameDateTime, playerCompany);
-        hudController.UpdateCompanyHud(playerCompany);
+        hudController.OnCompanyChanged(playerCompany);
     }
 
-    public void OnProjectCompleted(DateTime gameDateTime,
-        GameDevCompany company, Project project) {
+    public void OnProjectStarted(Project newProject) {
+        playerCompany.StartProject(newProject);
+        hudController.CanStartNewProject(false);
+    }
+
+    public void OnProjectCompleted(GameDevCompany company, Project project) {
         if (project.Type() == Project.ProjectType.GameProject)
             engineFeaturesController.CheckFeatures(eventsController,
                 gameDateTime, company);
+        hudController.CanStartNewProject(true);
     }
 
     public void OnConstructionStarted(float constructionCost) {

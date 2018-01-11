@@ -325,6 +325,4 @@ public class ScriptParser {
 
         return parameters.ToArray();
     }
-
-
 }
