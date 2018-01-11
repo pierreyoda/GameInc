@@ -20,6 +20,15 @@ Be careful now, next time will be game over...
 
     // Test events
     {
+        "id": "TitleTest",
+        "name": "Formatted Title Test ! Result = {3 * @Test.TitleTest}.",
+        "descriptionEnglish": "Title Test.",
+        "variables": ["@Test.TitleTest = 1"],
+        "triggerConditions": ["$World.CurrentDate.Day == 4"],
+        "triggerActions": [],
+        "triggerLimit": "1",
+    },
+    {
         "id": "Test",
         "name": "Test !",
         "descriptionEnglish" : "Test event 2 triggered ! Trigger day variable = {@Test.Trigger}.",

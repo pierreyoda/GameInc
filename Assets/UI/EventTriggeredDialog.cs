@@ -16,7 +16,7 @@ public class EventTriggeredDialog : MonoBehaviour {
 
     public void ShowEventDialog(WorldEvent eventToDisplay) {
         triggeredEvent = eventToDisplay;
-        dialogTitle.text = triggeredEvent.Info.TitleEnglish;
+        dialogTitle.text = triggeredEvent.ComputedTitle;
         dialogDescription.text = triggeredEvent.ComputedDescription;
         gameObject.SetActive(true);
     }

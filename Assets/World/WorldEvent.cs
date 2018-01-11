@@ -18,8 +18,14 @@ public class WorldEvent {
     [SerializeField] private List<ScriptCondition> conditions;
     [SerializeField] private List<ScriptAction> actions;
 
-    [SerializeField] private string cachedDescriptionEnglish;
+    [SerializeField] private string cachedTitle;
+    private readonly List<ExpressionFloat> titleExpressions = new List<ExpressionFloat>();
+
+    [SerializeField] private string cachedDescription;
     private readonly List<ExpressionFloat> descriptionExpressions = new List<ExpressionFloat>();
+
+    private string computedTitle;
+    public string ComputedTitle => computedTitle;
 
     private string computedDescription;
     public string ComputedDescription => computedDescription;
@@ -38,8 +44,9 @@ public class WorldEvent {
             triggersLimit = new ExpressionFloat(info.TriggerLimit, (ec, d, c) => -1); // -1 : no limit
         }
 
-        // Description text parsing
-        cachedDescriptionEnglish = CachedDescription(info.DescriptionEnglish);
+        // Text parsing
+        cachedTitle = CachedTitle(info.TitleEnglish);
+        cachedDescription = CachedDescription(info.DescriptionEnglish);
     }
 
     /// <summary>
@@ -68,18 +75,29 @@ public class WorldEvent {
         foreach (ScriptAction action in actions) {
             action(ec, d, c);
         }
+
+        computedTitle = ComputeTitle(ec, d, c);
         computedDescription = ComputeDescription(ec, d, c);
 
         triggered = true;
         return false;
     }
 
+    private string CachedTitle(string title) {
+        return CachedText(title, titleExpressions, "Title");
+    }
+
     private string CachedDescription(string description) {
+        return CachedText(description, descriptionExpressions, "Description");
+    }
+
+    private string CachedText(string text, List<ExpressionFloat> expressions,
+        string label) {
         string cached = "";
-        description = description.Trim();
+        text = text.Trim();
         List<string> tokens = new List<string>();
-        for (int i = 0; i < description.Length; i++) {
-            char character = description[i];
+        for (int i = 0; i < text.Length; i++) {
+            char character = text[i];
             if (character != '{') {
                 cached += character;
                 continue;
@@ -88,8 +106,8 @@ public class WorldEvent {
             bool ends = false;
             tokens.Clear();
             string currentToken = "";
-            for (int j = i + 1; j < description.Length; j++) {
-                char characterEnd = description[j];
+            for (int j = i + 1; j < text.Length; j++) {
+                char characterEnd = text[j];
                 if (characterEnd == '}') {
                     tokens.Add(currentToken);
                     ends = true;
@@ -104,14 +122,14 @@ public class WorldEvent {
                 }
             }
             if (!ends) {
-                Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : formatting error in the English Description text.");
+                Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : formatting error in the English {label} text.");
                 continue;
             }
             string expressionString = string.Join(" ", tokens);
 
             bool alreadyPresent = false;
-            for (int j = 0; j < descriptionExpressions.Count; j++) {
-                if (descriptionExpressions[j].Tokens == expressionString) {
+            for (int j = 0; j < expressions.Count; j++) {
+                if (expressions[j].Tokens == expressionString) {
                     cached += $"${j}$";
                     alreadyPresent = true;
                     break;
@@ -121,25 +139,34 @@ public class WorldEvent {
 
             ExpressionFloat expression = ParseExpressionFloat(tokens.ToArray());
             if (expression == null) {
-                Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : expression parsing error in the English Description text.");
+                Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : expression parsing error in the English {label} text.");
                 continue;
             }
             Assert.IsTrue(expressionString == expression.Tokens);
             cached += $"${descriptionExpressions.Count}$";
-            descriptionExpressions.Add(expression);
+            expressions.Add(expression);
         }
         return cached;
     }
 
+    private string ComputeTitle(EventsController ec, DateTime d, GameDevCompany c) {
+        return ComputeText(ec, d, c, titleExpressions, cachedTitle);
+    }
+
     private string ComputeDescription(EventsController ec, DateTime d, GameDevCompany c) {
+        return ComputeText(ec, d, c, descriptionExpressions, cachedDescription);
+    }
+
+    private string ComputeText(EventsController ec, DateTime d, GameDevCompany c,
+        List<ExpressionFloat> expressions, string cachedText) {
         List<float> expressionValues = new List<float>();
-        for (int i = 0; i < descriptionExpressions.Count; i++) {
-            expressionValues.Add(descriptionExpressions[i].Variable(ec, d, c));
+        for (int i = 0; i < expressions.Count; i++) {
+            expressionValues.Add(expressions[i].Variable(ec, d, c));
         }
 
         string output = "";
-        for (int i = 0; i < cachedDescriptionEnglish.Length; i++) {
-            char character = cachedDescriptionEnglish[i];
+        for (int i = 0; i < cachedText.Length; i++) {
+            char character = cachedText[i];
             if (character != '$') {
                 output += character;
                 continue;
@@ -147,8 +174,8 @@ public class WorldEvent {
 
             // expression print : ${expression index}$
             string number = "";
-            for (int j = i + 1; j < cachedDescriptionEnglish.Length; j++) {
-                char characterEnd = cachedDescriptionEnglish[j];
+            for (int j = i + 1; j < cachedText.Length; j++) {
+                char characterEnd = cachedText[j];
                 if (characterEnd == '$') {
                     i = j;
                     break;
@@ -159,7 +186,7 @@ public class WorldEvent {
 
             int expressionIndex;
             Assert.IsTrue(int.TryParse(number, out expressionIndex));
-            Assert.IsTrue(0 <= expressionIndex && expressionIndex < descriptionExpressions.Count);
+            Assert.IsTrue(0 <= expressionIndex && expressionIndex < expressions.Count);
 
             output += expressionValues[expressionIndex];
         }
