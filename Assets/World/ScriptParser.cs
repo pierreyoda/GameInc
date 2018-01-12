@@ -2,18 +2,33 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using NUnit.Framework;
 using UnityEditor;
+using UnityEditor.WindowsStandalone;
 using UnityEngine;
-using Assert = UnityEngine.Assertions.Assert;
+using UnityEngine.Assertions;
+using Random = UnityEngine.Random;
 
 public class ScriptParser {
     private static readonly char[] SpecialOperators = new char[] {
-        '+', '-', '*', '/', '(', ')'
+        '+', '-', '*', '/', ',',
+    };
+
+    public static readonly string[] FUNCTIONS_ARITY_1 = {
+        "Math.Cos",
+        "Math.Sin",
+        "Math.Tan",
+        "Math.Abs",
+        "Random.Next",
+        "Company.EnableFeature",
+        "Company.DisableFeature",
+    };
+
+    public static readonly string[] FUNCTIONS_ARITY_2 = {
+        "Random.Range",
     };
 
     private static readonly CultureInfo CultureInfoFloat =
-        CultureInfo.CreateSpecificCulture("en-US");
+        CultureInfo.GetCultureInfo("en-US");
 
     private static readonly NumberStyles NUMBER_STYLE_FLOAT =
         NumberStyles.Float | NumberStyles.AllowThousands;
@@ -80,18 +95,14 @@ public class ScriptParser {
         }
 
         // Game variable
-        if (leftName.StartsWith("$Game.")) {
-            string scoreName = leftName.Split('.')[1];
-            if (!GameProject.GAME_SCORES.Contains(scoreName)) {
-                Debug.LogError($"ScriptParser.ParseAction(\"{action}\") : unkown Game Score name.");
-                return null;
-            }
+        if (leftName.StartsWith("$Game.Scores")) { // Current Game Project Scores
+            string scoreId = leftName.Split('.')[2];
             switch (operation) {
-                case "+=": return (ec, d, c) => c.CurrentGame().ModifyScore(scoreName, rightValue.Variable(ec, d, c));
-                case "-=": return (ec, d, c) => c.CurrentGame().ModifyScore(scoreName, -1 * rightValue.Variable(ec, d, c));
+                case "+=": return (ec, d, c) => c.CurrentGame().ModifyScore(scoreId, rightValue.Variable(ec, d, c));
+                case "-=": return (ec, d, c) => c.CurrentGame().ModifyScore(scoreId, -1 * rightValue.Variable(ec, d, c));
                 default:
                     Debug.LogError(
-                        $"ScriptParser.ParseAction(\"{action}\") : unsupported operation for \"$Game.{scoreName}\".");
+                        $"ScriptParser.ParseAction(\"{action}\") : unsupported operation for \"$Game.Scores.{scoreId}\".");
                     return null;
             }
         }
@@ -133,56 +144,97 @@ public class ScriptParser {
     public static ExpressionFloat ParseExpressionFloat(IEnumerable<string> expressionTokens) {
         Assert.IsTrue(expressionTokens.Count() > 0);
 
-        int count = 0;
-        bool inFunctionCall = false;
         DateTime temp = DateTime.Now;
+        bool inFunctionCall = false;
+        int openingParenthesesCountCall = 0, closingParenthesesCountCall = 0;
+        int openingParenthesesCount = 0, closingParenthesesCount = 0;
         // each "$i" where i is an uint will be replaced by the associated variable value
         // we can do this since $ has special meaning otherwise
         string expression = "";
+        string currentToken = "", functionCall = "";
         List<VariableFloat> variables = new List<VariableFloat>();
-        foreach (string token in expressionTokens) {
-            if (token.Length == 0) continue;
-
-            if (token.Length == 1 && SpecialOperators.Contains(token[0])) {
-                expression += $"{token[0]} ";
+        string expressionString = string.Join(" ", expressionTokens);
+        for (int i = 0; i < expressionString.Length; i++) {
+            char c = expressionString[i];
+            if (c == '(') {
+                if (!inFunctionCall && i > 0) {
+                    string previous = "";
+                    for (int j = i - 1; j >= 0; j--) {
+                        char character = expressionString[j];
+                        if (character == ' ') break;
+                        previous = previous.Insert(0, $"{character}");
+                    }
+                    inFunctionCall = previous.Length > 0;
+                    if (inFunctionCall) {
+                        openingParenthesesCountCall = closingParenthesesCountCall = 0;
+                        functionCall = previous;
+                    }
+                }
+                if (inFunctionCall) {
+                    functionCall += c;
+                    ++openingParenthesesCountCall;
+                }
+                ++openingParenthesesCount;
+                if (!inFunctionCall) expression += c;
+                currentToken = "";
                 continue;
             }
-
-            if (!inFunctionCall)
-                inFunctionCall = token.IndexOf('(') > 0;
-
-            string trueToken = token;
-            if (token[0] == '(' || token[0] == ')') {
-                expression += $"{token[0]} ";
-                trueToken = trueToken.Substring(1);
+            if (c == ')') {
+                ++closingParenthesesCount;
+                bool functionCallEnds = false;
+                if (inFunctionCall &&
+                    ++closingParenthesesCountCall == openingParenthesesCountCall) {
+                    functionCall += c;
+                    functionCallEnds = true;
+                }
+                if (functionCallEnds) {
+                    inFunctionCall = false;
+                    bool isFunctionCall;
+                    VariableFloat call = ParseFunctionCall(functionCall, out isFunctionCall);
+                    if (call == null || !isFunctionCall) {
+                        Debug.LogError(
+                            $"ScriptParser.ParseExpressionFloat(\"{expressionString}\") : parsing error in function call \"{functionCall}\".");
+                        return null;
+                    }
+                    expression += $"${variables.Count} ";
+                    variables.Add(call);
+                    functionCall = currentToken = "";
+                }
+                continue;
             }
-
-            bool lastCharacterIsParenthesis = false;
-            if (inFunctionCall && trueToken.EndsWith(")")) {
-                inFunctionCall = false;
-            } else if (!inFunctionCall && trueToken.Length > 1 &&
-                       (trueToken.Last() == '(' || trueToken.Last() == ')')) {
-                trueToken = trueToken.Substring(0, trueToken.Length - 1);
-                lastCharacterIsParenthesis = true;
+            bool ends = i == expressionString.Length - 1;
+            if (SpecialOperators.Contains(c)) {
+                if (!inFunctionCall) expression += $"{c} ";
+                currentToken = "";
+                if (inFunctionCall) functionCall += c;
+                continue;
             }
-
-            bool isVariable;
-            VariableFloat scalar = ParseScalarFloat(trueToken, out isVariable);
-            if (scalar == null) {
-                Debug.LogError($"ScriptParser.ParseExpressionFloat : parsing error on token \"{trueToken}\".");
-                return null;
+            if (!inFunctionCall && (c == ' ' || ends)) { // current token = literal or variable scalar
+                currentToken += c;
+                currentToken = currentToken.Trim();
+                if (currentToken != "") {
+                    bool isVariable;
+                    VariableFloat scalar = ParseScalarFloat(currentToken, out isVariable);
+                    if (scalar == null) {
+                        Debug.LogError(
+                            $"ScriptParser.ParseExpressionFloat(\"{expressionString}\") : parsing error in token \"{currentToken}\".");
+                        return null;
+                    }
+                    if (isVariable) {
+                        expression += $"${variables.Count} ";
+                        variables.Add(scalar);
+                    } else {
+                        expression += scalar(null, temp, null) + (c == ' ' ? " " : ""); // literal or constant scalar
+                    }
+                }
+                currentToken = "";
             }
-
-            if (isVariable) {
-                variables.Add(scalar);
-                expression += $"${count++} ";
-            } else {
-                expression += scalar(null, temp, null) + " ";
-            }
-
-            if (lastCharacterIsParenthesis) {
-                expression += $" {token.Last()} ";
-            }
+            currentToken += c;
+            if (inFunctionCall) functionCall += c;
+        }
+        if (openingParenthesesCount != closingParenthesesCount) {
+            Debug.LogError($"ScriptParser.ParseExpressionFloat(\"{expressionString}\") : invalid parentheses.");
+            return null;
         }
 
         VariableFloat variable = (ec, d, c) => {
@@ -212,9 +264,11 @@ public class ScriptParser {
                 computedExpression += variables[variableIndex](ec, d, c) + " ";
                 i = variableIndexEnd;
             }
-            return ExpressionEvaluator.Evaluate<float>(computedExpression);
+            float result = ExpressionEvaluator.Evaluate<float>(computedExpression);
+            //Debug.LogWarning($"expression : {expressionString} => {expression} => {computedExpression} = {result}");
+            return result;
         };
-        return new ExpressionFloat(string.Join(" ", expressionTokens), variable);
+        return new ExpressionFloat(expressionString, variable); // NB : ERRORS WILL SILENTLY RETURN 0
     }
 
 
@@ -265,7 +319,7 @@ public class ScriptParser {
         int arity = 0;
         isFunctionCall = false;
         string functionName = "";
-        foreach (string function in Database.Event.FUNCTIONS_ARITY_1) {
+        foreach (string function in FUNCTIONS_ARITY_1) {
             if (call.StartsWith(function)) {
                 arity = 1;
                 isFunctionCall = true;
@@ -273,8 +327,15 @@ public class ScriptParser {
                 break;
             }
         }
+        foreach (string function in FUNCTIONS_ARITY_2) {
+            if (call.StartsWith(function)) {
+                arity = 2;
+                isFunctionCall = true;
+                functionName = function;
+                break;
+            }
+        }
         if (functionName == "") return null;
-
 
         List<ExpressionFloat> parameterExpressions = new List<ExpressionFloat>();
         string[] parameters = GetInnerParameters(call);
@@ -289,17 +350,24 @@ public class ScriptParser {
         foreach (string parameter in parameters) {
             ExpressionFloat expression = ParseExpressionFloat(parameter.Trim().Split(' '));
             if (expression == null) {
-                Debug.LogError($"ScriptParser.ParseFunctionCall(\"{call}\") : parameter parsing error for \"{expression}\".");
+                Debug.LogError($"ScriptParser.ParseFunctionCall(\"{call}\") : parameter parsing error for \"{call}\".");
                 return null;
             }
             parameterExpressions.Add(expression);
         }
 
         switch (functionName) {
+            // Arity 1
             case "Math.Cos": return (ec, d, c) => Mathf.Cos(parameterExpressions[0].Variable(ec, d, c));
             case "Math.Sin": return (ec, d, c) => Mathf.Sin(parameterExpressions[0].Variable(ec, d, c));
             case "Math.Tan": return (ec, d, c) => Mathf.Tan(parameterExpressions[0].Variable(ec, d, c));
             case "Math.Abs": return (ec, d, c) => Mathf.Abs(parameterExpressions[0].Variable(ec, d, c));
+            case "Random.Next": return (ec, d, c) => Random.value;
+            // Arity 2
+            case "Random.Range": return (ec, d, c) => Random.Range(
+                    parameterExpressions[0].Variable(ec, d, c),
+                    parameterExpressions[1].Variable(ec, d, c));
+            // Unkown Function
             default:
                 Debug.LogError($"ScriptParser.ParseFunctionCall(\"{call}\") : unkown function name {functionName}.");
                 return null;
@@ -313,7 +381,7 @@ public class ScriptParser {
         int startIndex = functionCall.IndexOf(start, StringComparison.Ordinal);
         int endIndex = functionCall.IndexOf(end, StringComparison.Ordinal);
         if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
-            Debug.LogError($"ScriptParser.GetInnerParameters(\"{functionCall}\") : syntax error.");
+                Debug.LogError($"ScriptParser.GetInnerParameters(\"{functionCall}\") : syntax error.");
             return null;
         }
 

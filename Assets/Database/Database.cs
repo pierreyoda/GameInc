@@ -21,6 +21,9 @@ public class Database {
         Room,
         RoomObject,
         EngineFeature,
+        Skill,
+        HiringMethod,
+        CommonNames,
     }
 
     private readonly List<Tuple<string, DataFileType>> dataFiles = new List<Tuple<string, DataFileType>>();
@@ -72,6 +75,15 @@ public class Database {
 
     private DatabaseCollection<News> news = new DatabaseCollection<News>(false, DataFileType.News);
     public DatabaseCollection<News> News => news;
+
+    private DatabaseCollection<Skill> skills = new DatabaseCollection<Skill>(true, DataFileType.Skill);
+    public DatabaseCollection<Skill> Skills => skills;
+
+    private DatabaseCollection<HiringMethod> hiringMethods = new DatabaseCollection<HiringMethod>(true, DataFileType.HiringMethod);
+    public DatabaseCollection<HiringMethod> HiringMethod => hiringMethods;
+
+    private DatabaseCollection<Names> names = new DatabaseCollection<Names>(false, DataFileType.CommonNames);
+    public DatabaseCollection<Names> Names => names;
 
     public Database AddDataFile(string dataFile, DataFileType dataType) {
         if (!File.Exists(dataFile)) {
@@ -132,6 +144,18 @@ public class Database {
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, objects))
                         return this;
                     break;
+               case DataFileType.Skill:
+                   if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, skills))
+                       return this;
+                   break;
+               case DataFileType.HiringMethod:
+                   if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, hiringMethods))
+                       return this;
+                   break;
+               case DataFileType.CommonNames:
+                   if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, names))
+                       return this;
+                   break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
@@ -148,10 +172,13 @@ public class Database {
         PrintCollectionInfo(engineFeatures);
         PrintCollectionInfo(rooms);
         PrintCollectionInfo(objects);
+        PrintCollectionInfo(skills);
+        PrintCollectionInfo(hiringMethods);
+        PrintCollectionInfo(names);
     }
 
     private void PrintCollectionInfo<T>(DatabaseCollection<T> collection) where T : DatabaseElement {
-        string plural = collection.Type == DataFileType.News ? "" : "s";
+        string plural = (collection.Type == DataFileType.News || collection.Type == DataFileType.CommonNames) ? "" : "s";
         Debug.Log($"Database - Loaded {collection.Collection.Count} {collection.Type}{plural}.");
     }
 

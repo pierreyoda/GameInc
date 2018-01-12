@@ -22,15 +22,6 @@ public class Event : DatabaseElement {
         "Company.Projects.CompletedGames.Count",
     };
 
-    public static readonly string[] FUNCTIONS_ARITY_1 = {
-        "Math.Cos",
-        "Math.Sin",
-        "Math.Tan",
-        "Math.Abs",
-        "Company.EnableFeature",
-        "Company.DisableFeature",
-    };
-
     [SerializeField] private string[] triggerConditions;
     public string[] TriggerConditions => triggerConditions;
 
@@ -124,43 +115,6 @@ public class Event : DatabaseElement {
             } else if (token.StartsWith("@") && token.Length == 1) { // event variable
                 Debug.LogError($"Event with ID = {Id} : empty event variable name.");
                 return false;
-            }
-
-            // Function call
-            int arity = 0;
-            bool functionCall = false;
-            foreach (string function in FUNCTIONS_ARITY_1) {
-                if (token.StartsWith(function)) {
-                    functionCall = true;
-                    arity = 1;
-                    break;
-                }
-            }
-            if (!functionCall) continue;
-            string[] parameters = ScriptParser.GetInnerParameters(token);
-            if (parameters.Length != arity) {
-                Debug.LogError($"Event with ID = {Id} : wrong function call arity ({parameters.Length} instead of {arity}).");
-                return false;
-            }
-
-            int parametersStart = token.IndexOf('(');
-            Assert.IsTrue(0 < parametersStart && parametersStart < token.Length);
-            string functionName = token.Substring(0, parametersStart);
-            switch (functionName) {
-                case "Company.EnableFeature":
-                case "Company.DisableFeature":
-                    string featureName = parameters[0].Trim();
-                    if (featureName.Length == 0 ||
-                        !GameDevCompany.SUPPORTED_FEATURES.Contains(featureName)) {
-                        Debug.LogError($"Event with ID = {Id} : unkown CompanyFeature name \"{featureName}\".");
-                        return false;
-                    }
-                    continue;
-                case "Math.Cos": case "Math.Sin": case "Math.Tan":
-                    continue;
-                default:
-                    Debug.LogError($"Event with ID = {Id} : unkown function name \"{functionName}\".");
-                    return false;
             }
         }
         return true;

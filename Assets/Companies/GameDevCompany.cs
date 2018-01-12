@@ -1,7 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics.Eventing;
 using System.Linq;
+using Database;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Random = UnityEngine.Random;
 
 public class GameDevCompany : MonoBehaviour {
     public static string[] SUPPORTED_FEATURES = {
@@ -25,6 +29,14 @@ public class GameDevCompany : MonoBehaviour {
 
     [SerializeField] private List<Employee> employees = new List<Employee>();
     public IReadOnlyList<Employee> Employees => employees.AsReadOnly();
+
+    [SerializeField] private Transform employeesParentObject;
+
+    [SerializeField] private Staff employeesManager;
+    public Staff EmployeesManager => employeesManager;
+
+    [SerializeField] private DateTime hiringEndingDate = new DateTime(0, 0, 0);
+    [SerializeField] private Action<List<Employee>> onHiringEnded;
 
     [SerializeField] private int fans = 0;
     public int Fans => fans;
@@ -51,6 +63,10 @@ public class GameDevCompany : MonoBehaviour {
             features.Add(new CompanyFeature(featureName, false));
         }
         this.features = features.ToArray();
+    }
+
+    public void Init(Database.Database.DatabaseCollection<Skill> skills) {
+        employeesManager.InitSkillsTypes(skills);
     }
 
     public void StartProject(Project project) {
@@ -92,6 +108,36 @@ public class GameDevCompany : MonoBehaviour {
 
     public void AddEmployee(Employee employee) {
         employees.Add(employee);
+        employee.transform.parent = employeesParentObject;
+    }
+
+    public void StartHiring(DateTime currentDate, HiringMethod method,
+        Action<List<Employee>> callback) {
+        onHiringEnded = callback;
+
+        int candidatesNumber = Random.Range(method.CandidatesDistribution.Item1,
+            method.CandidatesDistribution.Item2 + 1); // upper bound is inclusive by convention
+        if (candidatesNumber <= 0) {
+            Debug.LogWarning($"GameDevCompany.StartHiring : no candidates with Method \"{method.Name}\".");
+            callback(null);
+        }
+        List<Employee> candidates = new List<Employee>();
+        for (int i = 0; i < candidatesNumber; i++) {
+            candidates.Add(GenerateCandidate(method));
+        }
+
+        hiringEndingDate = currentDate.AddDays(method.DurationInDays);
+    }
+
+    private Employee GenerateCandidate(HiringMethod method) {
+        foreach (var skillDistribution in method.SkillsDistribution) {
+
+        }
+        return null;
+    }
+
+    private void FinishHiring() {
+        onHiringEnded(null);
     }
 
     public void AddGameEngine(GameEngine gameEngine) {
@@ -118,7 +164,10 @@ public class GameDevCompany : MonoBehaviour {
         money = amount;
     }
 
-    public void OnNewDay() {
+    public void OnNewDay(DateTime gameDate) {
+        if (gameDate == hiringEndingDate) {
+            FinishHiring();
+        }
     }
 
     public void OnNewMonth(float rent, float upkeep) {

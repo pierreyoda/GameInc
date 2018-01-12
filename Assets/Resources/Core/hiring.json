@@ -1,0 +1,39 @@
+{
+// Employee Hiring Methods Collection
+"Collection": [
+    {
+        "id": "CompSciGraduates",
+        "name": "Computer Science Graduates",
+        "cost": 50.0, // in $k
+        "durationInDays": 14, // in days
+        "candidatesDistribution": "2 - 4", // inclusive
+        "skillsDistribution": [
+            "GameEngine = 25 - 75",
+            "Gameplay = 15 - 100",
+            "AI = 10 - 30",
+            "GameDesign = 5 - 25",
+            "Graphics2D = 0 - 20",
+            "Graphics3D = 0 - 20",
+            "SoundFX = 0 - 20",
+            "Soundtrack = 0 - 20",
+        ],
+    },
+    {
+        "id": "ArtMajorGraduate",
+        "name": "Art Major Graduates",
+        "cost": 50.0,
+        "durationInDays": 14,
+        "candidatesDistribution": "2 - 4",
+        "skillsDistribution": [
+            "GameEngine = 0 - 20",
+            "Gameplay = 0 - 20",
+            "AI = 0 - 10",
+            "GameDesign = 5 - 25",
+            "Graphics2D = 25 - 75",
+            "Graphics3D = 25 - 75",
+            "SoundFX = 5 - 30",
+            "Soundtrack = 5 - 30",
+        ],
+    },
+],
+}

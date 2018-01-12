@@ -44,6 +44,9 @@ public class World : MonoBehaviour {
             .AddDataFile($"{filesPrefix}/engine_features.json", DataFileType.EngineFeature)
             .AddDataFile($"{filesPrefix}/rooms.json", DataFileType.Room)
             .AddDataFile($"{filesPrefix}/objects.json", DataFileType.RoomObject)
+            .AddDataFile($"{filesPrefix}/skills.json", DataFileType.Skill)
+            .AddDataFile($"{filesPrefix}/hiring.json", DataFileType.HiringMethod)
+            .AddDataFolder("Assets/Resources/Core/names", DataFileType.CommonNames)
             .Load()
             .PrintDatabaseInfo();
 
@@ -51,10 +54,10 @@ public class World : MonoBehaviour {
 
         dayPercentage = 0f;
         gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
+
+        playerCompany.Init(database.Skills);
         worldController.OnGameStarted(database, gameDateTime, playerCompany);
         worldController.OnDateModified(gameDateTime);
-
-        playerCompany.Pay(100);
         worldController.OnPlayerCompanyModified();
 
         var employeesParentObject = transform.Find("Employees");
@@ -127,7 +130,7 @@ public class World : MonoBehaviour {
         gameDateTime = gameDateTime.AddDays(1.0);
 
         companyBuilding.OnNewDay();
-        playerCompany.OnNewDay();
+        playerCompany.OnNewDay(gameDateTime);
         if (gameDateTime.Month != previousDayMonth)
             playerCompany.OnNewMonth(companyBuilding.Rent, companyBuilding.Upkeep());
 

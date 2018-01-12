@@ -12,8 +12,8 @@ public class EventsController : MonoBehaviour {
         [SerializeField] private string name;
         public string Name => name;
 
-        [SerializeField] private VariableFloat assignment;
-        public VariableFloat Assignment {
+        [SerializeField] private ExpressionFloat assignment;
+        public ExpressionFloat Assignment {
             get { return assignment; }
             set { assignment = value; }
         }
@@ -24,12 +24,13 @@ public class EventsController : MonoBehaviour {
             set { this.value = value; }
         }
 
-        public EventVariable(string name, VariableFloat assignment) {
+        public EventVariable(string name, ExpressionFloat assignment) {
             this.name = name;
             this.assignment = assignment;
         }
     }
 
+    [SerializeField] private Employee currentEmployee;
     [SerializeField] private List<WorldEvent> worldEvents = new List<WorldEvent>();
     [SerializeField] private List<EventVariable> eventsVariables = new List<EventVariable>();
     [SerializeField] private List<WorldEvent> eventsObservingGameDate = new List<WorldEvent>();
@@ -48,8 +49,7 @@ public class EventsController : MonoBehaviour {
                 if (existing != null) {
                     Debug.LogWarning($"EventsController - Event variable \"@{variable.Name}\" assignment erases a previous one in Event of ID = {e.Id}.");
                     existing.Assignment = variable.Assignment;
-                }
-                else {
+                } else {
                     eventsVariables.Add(variable);
                 }
             }
@@ -93,7 +93,7 @@ public class EventsController : MonoBehaviour {
     /// </summary>
     public void InitVariables(DateTime d, GameDevCompany c) {
         foreach (EventVariable variable in eventsVariables) {
-            SetVariable(variable.Name, variable.Assignment(this, d, c));
+            SetVariable(variable.Name, variable.Assignment.Variable(this, d, c));
         }
     }
 
@@ -107,16 +107,41 @@ public class EventsController : MonoBehaviour {
     }
 
     public float GetGameVariable(string variableName, DateTime d, GameDevCompany c) {
+        // Company Game Features
         if (variableName.StartsWith("Company.Projects.CompletedGames.WithEngineFeature(") &&
             variableName.EndsWith(").Count")) {
             string[] parameters = GetInnerParameters(variableName);
             if (parameters.Length != 1) {
-                Debug.LogError($"ScriptParser.ParseScalarFloat(\"{variableName}\") : wrong function call arity.");
+                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : wrong function call arity.");
                 return 0f;
             }
             string featureName = parameters[0];
             return c.CompletedProjects.GamesWithEngineFeature(featureName).Count;
         }
+
+        // Employee variables
+        if (variableName.StartsWith("Employee")) {
+            if (currentEmployee == null) {
+                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : no current Employee set.");
+                return 0f;
+            }
+            string[] names = variableName.Split('.');
+            if (names.Length != 3) {
+                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : invalid current Employee variable.");
+                return 0f;
+            }
+            if (names[1] != "Skills") {
+                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : no such variable in current Employee.");
+                return 0f;
+            }
+            foreach (EmployeeSkill employeeSkill in currentEmployee.EmployeeSkills) {
+                if (employeeSkill.Id == names[2]) return employeeSkill.Proficiency;
+            }
+            Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : no such Skill for the current Employee.");
+            return 0f;
+        }
+
+        // Other Game Variables
         switch (variableName) {
             case "World.CurrentDate.Year": return d.Year;
             case "World.CurrentDate.Month": return d.Month;
@@ -126,7 +151,7 @@ public class EventsController : MonoBehaviour {
             case "Company.NeverBailedOut" : return c.NeverBailedOut ? 1f : 0f;
             case "Company.Projects.CompletedGames.Count": return c.CompletedProjects.Games.Count;
             default:
-                Debug.LogError($"ScriptParser.ParseScalarFloat(\"{variableName}\") : unkown game variable.");
+                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : unkown game variable.");
                 return 0f;
         }
     }
@@ -138,7 +163,7 @@ public class EventsController : MonoBehaviour {
             return;
         }
         variable.Value = value;
-        //Debug.Log($"EventsController : @{variableName} = {value}"); // TODO : fix called twice bug
+        //Debug.LogWarning($"EventsController : @{variableName} = {value}"); // TODO : fix called twice bug
     }
 
     public List<WorldEvent> OnGameDateChanged(DateTime gameDate, GameDevCompany playerCompany) {
@@ -153,6 +178,10 @@ public class EventsController : MonoBehaviour {
         }
         ClearUnactivableWorldEvents(unactiveEventsIDs);
         return triggeredEvents;
+    }
+
+    public void SetCurrentEmployee(Employee employee) {
+        currentEmployee = employee;
     }
 
     public void OnPlayerCompanyChanged(DateTime gameDate, GameDevCompany playerCompany) {
@@ -203,11 +232,7 @@ public class EventsController : MonoBehaviour {
             return null;
         }
 
-        VariableFloat variable = (ec, d, c) => {
-            float value = variableExpression.Variable(ec, d, c);
-            ec.SetVariable(variableName, value);
-            return value;
-        };
-        return new EventVariable(variableName, variable);
+        //Debug.LogWarning($"@{variableName} = {variableExpression.Tokens}");
+        return new EventVariable(variableName, variableExpression);
     }
 }

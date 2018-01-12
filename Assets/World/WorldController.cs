@@ -42,6 +42,16 @@ public class WorldController : MonoBehaviour {
         eventsController.InitEvents(database.Events.Collection);
         eventsController.InitVariables(gameDateTime, playerCompany);
         newsController.InitNews(database.News.Collection, gameDateTime);
+
+        float hiringCost;
+        Employee employee = playerCompany.EmployeesManager.GenerateRandomEmployee(
+            eventsController, gameDateTime, playerCompany,
+            database.HiringMethod.FindById("CompSciGraduates"),
+            database.Names.FindById("CommonNamesUSA"),
+            database.Skills,
+            out hiringCost);
+        playerCompany.AddEmployee(employee);
+        Debug.Log($"Generated Random Employee : hiring cost = {hiringCost}.");
     }
 
     public void OnDateModified(DateTime gameDateTime) {

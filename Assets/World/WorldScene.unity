@@ -508,6 +508,47 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 98582330}
+--- !u!1 &106001929
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 106001930}
+  - component: {fileID: 106001931}
+  m_Layer: 0
+  m_Name: StaffManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &106001930
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 106001929}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1082800132}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &106001931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 106001929}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7320c7a097649d697acc9039e24a6ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  employeeModel: {fileID: 2053819544}
 --- !u!1 &113033644
 GameObject:
   m_ObjectHideFlags: 0
@@ -1543,8 +1584,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1877568626}
   m_HandleRect: {fileID: 1877568625}
   m_Direction: 2
-  m_Value: 1
-  m_Size: 0.66666657
+  m_Value: 0.9999997
+  m_Size: 0.6666665
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -2412,7 +2453,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.00001779194, y: 0}
+  m_AnchoredPosition: {x: -0.000025380656, y: 0.00003050869}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &518196597
@@ -4564,6 +4605,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1709252435}
+  - {fileID: 106001930}
   - {fileID: 1418979560}
   m_Father: {fileID: 0}
   m_RootOrder: 2
@@ -5725,7 +5767,7 @@ Transform:
   m_Children:
   - {fileID: 2053819543}
   m_Father: {fileID: 1082800132}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1420685486
 GameObject:
@@ -5979,7 +6021,8 @@ MonoBehaviour:
       descriptionEnglish: 
       variables: []
     triggersCount: 0
-    cachedDescriptionEnglish: 
+    cachedTitle: 
+    cachedDescription: 
   dialogTitle: {fileID: 779727030}
   dialogDescription: {fileID: 91600753}
   buttonConfirm: {fileID: 1478463088}
@@ -7447,8 +7490,9 @@ MonoBehaviour:
   money: 100
   neverBailedOut: 1
   companyName: Game Inc. Studios
-  employees:
-  - {fileID: 2053819544}
+  employees: []
+  employeesParentObject: {fileID: 1418979560}
+  employeesManager: {fileID: 106001931}
   fans: 0
   allowedEngineFeatures: []
   gameEngines: []
@@ -7528,6 +7572,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4a1b0e6b370452d880d61c3dc7ec85d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentEmployee: {fileID: 0}
   worldEvents: []
   eventsVariables: []
   eventsObservingGameDate: []
@@ -9292,7 +9337,7 @@ GameObject:
   - component: {fileID: 2053819544}
   - component: {fileID: 2053819545}
   m_Layer: 11
-  m_Name: Employee 0
+  m_Name: EmployeeModel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9322,11 +9367,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06c2f4843d8dff84cad98cec7b8ea06e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  id: 0
-  firstName: 
-  lastName: 
+  id: -1
+  firstName: '[MODEL]'
+  lastName: '[MODEL]'
   salary: 0
-  skills: []
+  employeeSkills: []
   vacationNeed:
     label: 
     level: 0

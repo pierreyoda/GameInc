@@ -1,0 +1,61 @@
+{
+// Employee Skills Collection
+"Collection": [
+    {
+        "id": "GameEngine",
+        "name": "Game Engine",
+        "dailyProgress": "$Game.Scores.Engine += Random.Range($Employee.Skills.GameEngine / 100, $Employee.Skills.GameEngine / 50)",
+        "hiringCost": "$Employee.HiringCost += $Employee.Skills.GameEngine / 50",
+        "salary": "$Employee.Salary += $Employee.Skills.GameEngine / 300",
+    },
+    {
+        "id": "Gameplay",
+        "name": "Gameplay",
+        "dailyProgress": "$Game.Scores.Gameplay += Random.Range($Employee.Skills.Gameplay / 100, $Employee.Skills.Gameplay / 50)",
+        "hiringCost": "$Employee.HiringCost += $Employee.Skills.Gameplay / 50",
+        "salary": "$Employee.Salary += $Employee.Skills.Gameplay / 300",
+    },
+    {
+        "id": "AI",
+        "name": "Artificial Intelligence",
+        "dailyProgress": "$Game.Scores.AI += Random.Range($Employee.Skills.AI / 100, $Employee.Skills.AI / 50)",
+        "hiringCost": "$Employee.HiringCost += $Employee.Skills.AI / 50",
+        "salary": "$Employee.Salary += $Employee.Skills.AI / 300",
+    },
+    {
+        "id": "GameDesign",
+        "name": "Game Design",
+        "dailyProgress": "$Game.Scores.GameDesign += Random.Range($Employee.Skills.GameDesign / 100, $Employee.Skills.GameDesign / 50)",
+        "hiringCost": "$Employee.HiringCost += $Employee.Skills.GameDesign / 50",
+        "salary": "$Employee.Salary += $Employee.Skills.GameDesign / 300",
+    },
+    {
+        "id": "Graphics2D",
+        "name": "2D Graphics",
+        "dailyProgress": "$Game.Scores.Graphics2D += Random.Range($Employee.Skills.Graphics2D / 100, $Employee.Skills.Graphics2D / 50)",
+        "hiringCost": "$Employee.HiringCost += $Employee.Skills.Graphics2D / 50",
+        "salary": "$Employee.Salary += $Employee.Skills.Graphics2D / 300",
+    },
+    {
+        "id": "Graphics3D",
+        "name": "3D Graphics",
+        "dailyProgress": "$Game.Scores.Graphics3D += Random.Range($Employee.Skills.Graphics3D / 100, $Employee.Skills.Graphics3D / 50)",
+        "hiringCost": "$Employee.HiringCost += $Employee.Skills.Graphics3D / 50",
+        "salary": "$Employee.Salary += $Employee.Skills.Graphics3D / 300",
+    },
+    {
+        "id": "SoundFX",
+        "name": "Sound Effects",
+        "dailyProgress": "$Game.Scores.SoundFX += Random.Range($Employee.Skills.SoundFX / 100, $Employee.Skills.SoundFX / 50)",
+        "hiringCost": "$Employee.HiringCost += $Employee.Skills.SoundFX / 50",
+        "salary": "$Employee.Salary += $Employee.Skills.SoundFX / 300",
+    },
+    {
+        "id": "Soundtrack",
+        "name": "Soundtrack",
+        "dailyProgress": "$Game.Scores.Soundtrack += Random.Range($Employee.Skills.Soundtrack / 100, $Employee.Skills.Soundtrack / 50)",
+        "hiringCost": "$Employee.HiringCost += $Employee.Skills.Soundtrack / 50",
+        "salary": "$Employee.Salary += $Employee.Skills.Soundtrack / 300",
+    },
+],
+}
