@@ -69,13 +69,14 @@ public class GameDevCompany : MonoBehaviour {
         employeesManager.InitSkillsTypes(skills);
     }
 
-    public void StartProject(Project project) {
+    public void StartProject(Project project, DateTime gameDate) {
         if (currentProject != null) {
             Debug.LogWarning("GameDevCompany.StartProject : another project is already in progress.");
             return;
         }
         Debug.Log($"GameDevCompany : started a new {project.Type()} named \"{project.Name}\".");
         currentProject = project;
+        currentProject.StartProject(gameDate);
     }
 
     public void CompleteCurrentProject() {
@@ -83,7 +84,6 @@ public class GameDevCompany : MonoBehaviour {
             Debug.LogWarning("GameDevCompany.CompleteCurrentProject : no current project.");
             return;
         }
-        currentProject.AddCompletion(100);
         completedProjects.AddCompletedProject(currentProject);
         currentProject = null;
     }
@@ -164,10 +164,16 @@ public class GameDevCompany : MonoBehaviour {
         money = amount;
     }
 
-    public void OnNewDay(DateTime gameDate) {
-        if (gameDate == hiringEndingDate) {
+    public void OnNewDay(EventsController ec, DateTime gameDate) {
+        if (gameDate == hiringEndingDate)
             FinishHiring();
+        if (currentProject == null) return;
+        foreach (Employee employee in employees) {
+            employeesManager.ApplyDayProgress(currentProject, employee,
+                ec, gameDate, this);
         }
+        if (currentProject.OnDateModified(gameDate))
+            CompleteCurrentProject();
     }
 
     public void OnNewMonth(float rent, float upkeep) {

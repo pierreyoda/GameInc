@@ -7,6 +7,7 @@ using static Database.Database;
 public class World : MonoBehaviour {
     [Header("Game World")]
     [SerializeField] private WorldController worldController;
+    [SerializeField] private EventsController eventsController;
     [SerializeField] private GameDevCompany playerCompany;
     [SerializeField] private Building companyBuilding;
     [SerializeField] private Database.Database database;
@@ -93,10 +94,17 @@ public class World : MonoBehaviour {
                 database.Themes.FindById("HighFantasy"),
                 defaultEngine,
                 new List<string> { "PC", "NES" });
-            playerCompany.StartProject(previousGame);
+            playerCompany.StartProject(previousGame, gameDateTime);
             playerCompany.CompleteCurrentProject();
             worldController.OnProjectCompleted(playerCompany, previousGame);
         }
+
+        GameProject testGame = new GameProject("Test Game",
+            database.Genres.FindById("Action"),
+            database.Themes.FindById("Far West"),
+            defaultEngine,
+            new List<string> { "PC" });
+        playerCompany.StartProject(testGame, gameDateTime);
 
         companyBuilding.InitStartingRooms(database.Rooms);
 
@@ -130,7 +138,7 @@ public class World : MonoBehaviour {
         gameDateTime = gameDateTime.AddDays(1.0);
 
         companyBuilding.OnNewDay();
-        playerCompany.OnNewDay(gameDateTime);
+        playerCompany.OnNewDay(eventsController, gameDateTime);
         if (gameDateTime.Month != previousDayMonth)
             playerCompany.OnNewMonth(companyBuilding.Rent, companyBuilding.Upkeep());
 

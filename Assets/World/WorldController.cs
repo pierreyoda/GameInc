@@ -75,7 +75,7 @@ public class WorldController : MonoBehaviour {
     }
 
     public void OnProjectStarted(Project newProject) {
-        playerCompany.StartProject(newProject);
+        playerCompany.StartProject(newProject, gameDateTime);
         hudController.CanStartNewProject(false);
     }
 

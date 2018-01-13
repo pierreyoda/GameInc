@@ -12,9 +12,15 @@ public abstract class Project {
 
     [Serializable]
     public class ProjectScore {
-        public string id;
-        public string name;
+        [SerializeField] private string id;
+        public string Id => id;
+
         public float score;
+
+        public ProjectScore(string id, float score) {
+            this.id = id;
+            this.score = score;
+        }
     }
 
     private static int INSTANCES_COUNT = 0;
@@ -25,14 +31,16 @@ public abstract class Project {
     [SerializeField] private string name;
     public string Name => name;
 
-    [SerializeField] private int completion = 0;
-    public int Completion => completion;
+    [SerializeField] private float completion = 0f; // in percents
+    public float Completion => completion;
 
     [SerializeField] private List<ProjectScore> scores = new List<ProjectScore>();
     public List<ProjectScore> Scores => scores;
 
     [SerializeField] private DateTime startDate;
     public DateTime StartDate => startDate;
+
+    [SerializeField] [Range(1, 10000)] private int durationInDays = 60;
 
     [SerializeField] private DateTime completionDate;
     public DateTime CompletionDate => completionDate;
@@ -42,15 +50,41 @@ public abstract class Project {
         this.name = name;
     }
 
-    public abstract ProjectType Type();
+    public void StartProject(DateTime gameDate) {
+        startDate = gameDate;
+        foreach (string skillId in DefaultSkillsForType(Type())) {
+            scores.Add(new ProjectScore(skillId, 0));
+        }
+    }
 
-    public void AddCompletion(int added) {
-        Assert.IsTrue(added > 0);
-        completion += added;
+    public bool OnDateModified(DateTime gameDate) {
+        if (completion >= 1f) return true;
+        DateTime endDate = startDate.AddDays(durationInDays);
+        float deltaInDays = (float) (endDate - gameDate).TotalDays;
+        completion = (durationInDays - deltaInDays) / durationInDays;
+        Debug.LogWarning("project completion = " + completion);
+        if (completion >= 1f) {
+            completionDate = gameDate;
+            return true;
+        }
+        return false;
+    }
+
+    public abstract ProjectType Type();
+    private static string[] DefaultSkillsForType(ProjectType type) {
+        switch (type) {
+            case ProjectType.GameProject:
+                return new[] {
+                    "GameEngine", "Gameplay", "AI",
+                    "GameDesign", "Graphics2D",
+                    "SoundFX",
+                };
+            default: return null;
+        }
     }
 
     public float Score(string scoreId) {
-        ProjectScore projectScore = scores.Find(s => s.id == scoreId);
+        ProjectScore projectScore = scores.Find(s => s.Id == scoreId);
         if (projectScore == null) {
             Debug.LogError($"Project.Score({scoreId}) : unkown Skill ID.");
             return 0f;
@@ -59,11 +93,9 @@ public abstract class Project {
     }
 
     public void ModifyScore(string scoreId, float difference) {
-        ProjectScore projectScore = scores.Find(s => s.id == scoreId);
-        if (projectScore == null) {
-            Debug.LogError($"Project.ModifyScore({scoreId}, {difference}) : unkown Skill ID.");
+        ProjectScore projectScore = scores.Find(s => s.Id == scoreId);
+        if (projectScore == null)
             return;
-        }
         projectScore.score += difference;
     }
 }

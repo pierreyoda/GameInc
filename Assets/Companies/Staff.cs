@@ -128,4 +128,16 @@ public class Staff : MonoBehaviour {
         }
         return salary;
     }
+
+    public void ApplyDayProgress(Project currentProject, Employee employee,
+        EventsController ec, DateTime d, GameDevCompany c) {
+        ec.SetCurrentEmployee(employee);
+        foreach (EmployeeSkill employeeSkill in employee.EmployeeSkills) {
+            SkillType skillType = Array.Find(skillTypes,
+                type => type.Id == employeeSkill.Id);
+            Assert.IsNotNull(skillType);
+            skillType.DailyProgress(ec, d, c);
+        }
+        ec.SetCurrentEmployee(null);
+    }
 }

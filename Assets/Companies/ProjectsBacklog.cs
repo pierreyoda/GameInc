@@ -11,11 +11,6 @@ public class ProjectsBacklog {
     public List<GameProject> Games => games;
 
     public bool AddCompletedProject(Project project) {
-        if (project.Completion != 100) {
-            Debug.LogError($"ProjectsBacklog.AddPorject : unfinished Project (ID = {project.Id}, name = {project.Name}).");
-            return false;
-        }
-
         switch (project.Type()) {
             case Project.ProjectType.GameProject: games.Add(project as GameProject); break;
         }

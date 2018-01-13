@@ -4622,6 +4622,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   worldController: {fileID: 1068444075}
+  eventsController: {fileID: 1730790485}
   playerCompany: {fileID: 1709252436}
   companyBuilding: {fileID: 2069030189}
   firstDay: 1
@@ -6199,7 +6200,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1434735892
 RectTransform:
   m_ObjectHideFlags: 0
