@@ -37,7 +37,7 @@ public class World : MonoBehaviour {
         Debug.Log("Loading the game database...", gameObject);
         database = new Database.Database();
         const string filesPrefix = "Assets/Resources/Core";
-        database.AddDataFile($"{filesPrefix}/events.json", DataFileType.Event)
+        database = database.AddDataFile($"{filesPrefix}/events.json", DataFileType.Event)
             .AddDataFolder("Assets/Resources/Core/news", DataFileType.News)
             .AddDataFile($"{filesPrefix}/genres.json", DataFileType.GameGenre)
             .AddDataFile($"{filesPrefix}/themes.json", DataFileType.GameTheme)
@@ -48,15 +48,21 @@ public class World : MonoBehaviour {
             .AddDataFile($"{filesPrefix}/skills.json", DataFileType.Skill)
             .AddDataFile($"{filesPrefix}/hiring.json", DataFileType.HiringMethod)
             .AddDataFolder("Assets/Resources/Core/names", DataFileType.CommonNames)
-            .Load()
-            .PrintDatabaseInfo();
+            .Load();
+        if (database == null) {
+            Debug.LogError($"World.Start() : Database loading error.");
+            #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+            #endif
+            Application.Quit();
+        }
+        database.PrintDatabaseInfo();
 
         Debug.Log("Instanciating the game world...", gameObject);
 
         dayPercentage = 0f;
         gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
 
-        playerCompany.Init(database.Skills);
         worldController.OnGameStarted(database, gameDateTime, playerCompany);
         worldController.OnDateModified(gameDateTime);
         worldController.OnPlayerCompanyModified();
@@ -138,7 +144,7 @@ public class World : MonoBehaviour {
         gameDateTime = gameDateTime.AddDays(1.0);
 
         companyBuilding.OnNewDay();
-        playerCompany.OnNewDay(eventsController, gameDateTime);
+        playerCompany.OnNewDay(worldController);
         if (gameDateTime.Month != previousDayMonth)
             playerCompany.OnNewMonth(companyBuilding.Rent, companyBuilding.Upkeep());
 

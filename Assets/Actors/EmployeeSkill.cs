@@ -10,10 +10,10 @@ public class EmployeeSkill {
     [SerializeField] private string name;
     public string Name => name;
 
-    [SerializeField] private int proficiency;
-    public int Proficiency => proficiency;
+    [SerializeField] private float proficiency;
+    public float Proficiency => proficiency;
 
-    public EmployeeSkill(string id, string name, int proficiency) {
+    public EmployeeSkill(string id, string name, float proficiency) {
         Assert.IsTrue(proficiency >= 0);
         this.id = id;
         this.name = name;

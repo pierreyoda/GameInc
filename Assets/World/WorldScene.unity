@@ -2453,7 +2453,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000025380656, y: 0.00003050869}
+  m_AnchoredPosition: {x: -0.0000035570783, y: 0.00003050869}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &518196597
@@ -4355,6 +4355,9 @@ MonoBehaviour:
   eventsController: {fileID: 1730790485}
   newsController: {fileID: 1514514859}
   hudController: {fileID: 1288497913}
+  currentEmployee: {fileID: 0}
+  scriptVariables: []
+  scriptGlobalVariables: []
 --- !u!1 &1069001295
 GameObject:
   m_ObjectHideFlags: 0
@@ -6022,6 +6025,7 @@ MonoBehaviour:
       descriptionEnglish: 
       variables: []
     triggersCount: 0
+    active: 0
     cachedTitle: 
     cachedDescription: 
   dialogTitle: {fileID: 779727030}
@@ -7573,11 +7577,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4a1b0e6b370452d880d61c3dc7ec85d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  currentEmployee: {fileID: 0}
   worldEvents: []
-  eventsVariables: []
-  eventsObservingGameDate: []
-  eventsObservingPlayerCompany: []
 --- !u!1 &1756391263
 GameObject:
   m_ObjectHideFlags: 0

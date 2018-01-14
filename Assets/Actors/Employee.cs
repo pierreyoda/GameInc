@@ -14,6 +14,8 @@ public class Employee : MonoBehaviour {
     [SerializeField] private string lastName;
     public string LastName => lastName;
 
+    public string Name => $"{firstName} {lastName}";
+
     [SerializeField] private float salary;
     public float Salary {
         get { return salary; }

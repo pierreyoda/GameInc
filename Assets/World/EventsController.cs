@@ -1,238 +1,74 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using Script;
 using UnityEngine;
 using Event = Database.Event;
-using static ScriptParser;
 
 public class EventsController : MonoBehaviour {
-
-    [Serializable]
-    private class EventVariable {
-        [SerializeField] private string name;
-        public string Name => name;
-
-        [SerializeField] private ExpressionFloat assignment;
-        public ExpressionFloat Assignment {
-            get { return assignment; }
-            set { assignment = value; }
-        }
-
-        [SerializeField] private float value = 0f;
-        public float Value {
-            get { return value; }
-            set { this.value = value; }
-        }
-
-        public EventVariable(string name, ExpressionFloat assignment) {
-            this.name = name;
-            this.assignment = assignment;
-        }
-    }
-
-    [SerializeField] private Employee currentEmployee;
     [SerializeField] private List<WorldEvent> worldEvents = new List<WorldEvent>();
-    [SerializeField] private List<EventVariable> eventsVariables = new List<EventVariable>();
-    [SerializeField] private List<WorldEvent> eventsObservingGameDate = new List<WorldEvent>();
-    [SerializeField] private List<WorldEvent> eventsObservingPlayerCompany = new List<WorldEvent>();
 
-    public void InitEvents(List<Event> events) {
+    public void InitEvents(List<Event> events,
+        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
+        List<IFunction> functions) {
         foreach (Event e in events) {
-            // Parse the variable declarations
             foreach (string declaration in e.VariablesDeclarations) {
-                EventVariable variable = ParseVariableDeclaration(declaration);
-                if (variable == null) {
+                if (!Parser.ParseVariableDeclaration(declaration,
+                    localVariables, globalVariables, functions)) {
                     Debug.LogError($"EventsController - Event variable declaration parsing error for Event (ID = {e.Id}).");
-                    break;
-                }
-                EventVariable existing = eventsVariables.Find(v => v.Name == variable.Name);
-                if (existing != null) {
-                    Debug.LogWarning($"EventsController - Event variable \"@{variable.Name}\" assignment erases a previous one in Event of ID = {e.Id}.");
-                    existing.Assignment = variable.Assignment;
-                } else {
-                    eventsVariables.Add(variable);
                 }
             }
 
             // Parse the trigger conditions and actions
-            List<ScriptCondition> conditions = new List<ScriptCondition>();
-            List<ScriptAction> actions = new List<ScriptAction>();
+            List<Expression<bool>> conditions = new List<Expression<bool>>();
+            List<IExpression> actions = new List<IExpression>();
             foreach (string condition in e.TriggerConditions) {
-                ScriptCondition trigger = ParseCondition(condition);
+                Expression<bool> trigger = Parser.ParseComparison(condition,
+                    localVariables, globalVariables, functions);
                 if (trigger == null) {
-                    Debug.LogError($"EventsController - Condition parsing error for Event (ID = {e.Id}).");
-                    break;
+                    Debug.LogError(
+                        $"EventsController - Condition parsing error for Event (ID = {e.Id}). Ignoring \"{condition}\".");
+                    continue;
+                }
+                if (trigger.Type() != SymbolType.Boolean) {
+                    Debug.LogError(
+                        $"EventsController - Condition expression {trigger.Type()} and not boolean for Event (ID = {e.Id}). Ignoring \"{condition}\".");
+                    continue;
                 }
                 conditions.Add(trigger);
             }
             foreach (string action in e.TriggerActions) {
-                ScriptAction trigger = ParseAction(action);
+                IExpression trigger = Parser.ParseExpression(action,
+                    localVariables, globalVariables, functions);
                 if (trigger == null) {
-                    Debug.LogError($"EventsController - Action parsing error for Event (ID = {e.Id}).");
-                    break;
+                    Debug.LogError(
+                        $"EventsController - Action parsing error for Event (ID = {e.Id}). Ignoring \"{action}\".");
+                    continue;
                 }
                 actions.Add(trigger);
             }
 
             // Store the WorldEvent and its computed metadata
-            WorldEvent worldEvent = new WorldEvent(e, conditions, actions);
+            WorldEvent worldEvent = new WorldEvent(e, conditions, actions,
+                localVariables, globalVariables, functions);
             worldEvents.Add(worldEvent);
-
-            // Sort by observed game object
-            foreach (string gameObject in e.ObservedObjects) {
-                if (gameObject.StartsWith("World.CurrentDate"))
-                    eventsObservingGameDate.Add(worldEvent);
-                if (gameObject.StartsWith("Company"))
-                    eventsObservingPlayerCompany.Add(worldEvent);
-            }
         }
     }
-
-    /// <summary>
-    /// Initialize the event variables.
-    /// </summary>
-    public void InitVariables(DateTime d, GameDevCompany c) {
-        foreach (EventVariable variable in eventsVariables) {
-            SetVariable(variable.Name, variable.Assignment.Variable(this, d, c));
-        }
-    }
-
-    public float GetVariable(string variableName) {
-        var variable = eventsVariables.Find(v => v.Name == variableName);
-        if (variable == null) {
-            Debug.LogError($"EventsController.GetVariable(\"{variableName}\") : unkown event variable.");
-            return 0f;
-        }
-        return variable.Value;
-    }
-
-    public float GetGameVariable(string variableName, DateTime d, GameDevCompany c) {
-        // Company Game Features
-        if (variableName.StartsWith("Company.Projects.CompletedGames.WithEngineFeature(") &&
-            variableName.EndsWith(").Count")) {
-            string[] parameters = GetInnerParameters(variableName);
-            if (parameters.Length != 1) {
-                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : wrong function call arity.");
-                return 0f;
-            }
-            string featureName = parameters[0];
-            return c.CompletedProjects.GamesWithEngineFeature(featureName).Count;
-        }
-
-        // Employee variables
-        if (variableName.StartsWith("Employee")) {
-            if (currentEmployee == null) {
-                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : no current Employee set.");
-                return 0f;
-            }
-            string[] names = variableName.Split('.');
-            if (names.Length != 3) {
-                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : invalid current Employee variable.");
-                return 0f;
-            }
-            if (names[1] != "Skills") {
-                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : no such variable in current Employee.");
-                return 0f;
-            }
-            foreach (EmployeeSkill employeeSkill in currentEmployee.EmployeeSkills) {
-                if (employeeSkill.Id == names[2]) return employeeSkill.Proficiency;
-            }
-            Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : no such Skill for the current Employee.");
-            return 0f;
-        }
-
-        // Other Game Variables
-        switch (variableName) {
-            case "World.CurrentDate.Year": return d.Year;
-            case "World.CurrentDate.Month": return d.Month;
-            case "World.CurrentDate.Day": return d.Day;
-            case "World.CurrentDate.DayOfWeek": return (float) d.DayOfWeek;
-            case "Company.Money": return c.Money;
-            case "Company.NeverBailedOut" : return c.NeverBailedOut ? 1f : 0f;
-            case "Company.Projects.CompletedGames.Count": return c.CompletedProjects.Games.Count;
-            default:
-                Debug.LogError($"ScriptParser.GetGameVariable(\"{variableName}\") : unkown game variable.");
-                return 0f;
-        }
-    }
-
-    public void SetVariable(string variableName, float value) {
-        var variable = eventsVariables.Find(v => v.Name == variableName);
-        if (variable == null) {
-            Debug.LogError($"EventsController.SetVariable(\"{variableName}\", {value}) : unkown event variable.");
-            return;
-        }
-        variable.Value = value;
-        //Debug.LogWarning($"EventsController : @{variableName} = {value}"); // TODO : fix called twice bug
-    }
-
-    public List<WorldEvent> OnGameDateChanged(DateTime gameDate, GameDevCompany playerCompany) {
-        List<string> unactiveEventsIDs = new List<string>();
+    public List<WorldEvent> OnGameDateChanged(IScriptContext context) {
         List<WorldEvent> triggeredEvents = new List<WorldEvent>();
-        foreach (WorldEvent we in eventsObservingGameDate) {
+        foreach (WorldEvent we in worldEvents) {
+            if (!we.Active) continue;
             bool triggered;
-            if (we.CheckEvent(this, gameDate, playerCompany, out triggered))
-                unactiveEventsIDs.Add(we.Info.Id);
-            if (triggered)
-                triggeredEvents.Add(we);
+            we.CheckEvent(context, out triggered);
+            if (triggered) triggeredEvents.Add(we);
         }
-        ClearUnactivableWorldEvents(unactiveEventsIDs);
         return triggeredEvents;
     }
 
-    public void SetCurrentEmployee(Employee employee) {
-        currentEmployee = employee;
-    }
-
-    public void OnPlayerCompanyChanged(DateTime gameDate, GameDevCompany playerCompany) {
-        List<string> unactiveEventsIDs = new List<string>();
-        foreach (WorldEvent we in eventsObservingPlayerCompany) {
+    public void OnPlayerCompanyChanged(IScriptContext context) {
+        foreach (WorldEvent we in worldEvents) {
+            if (!we.Active) continue;
             bool triggered;
-            if (we.CheckEvent(this, gameDate, playerCompany, out triggered))
-                unactiveEventsIDs.Add(we.Info.Id);
+            we.CheckEvent(context, out triggered);
         }
-        ClearUnactivableWorldEvents(unactiveEventsIDs);
-    }
-
-    private void ClearUnactivableWorldEvents(List<string> unactiveEventsIDs) {
-        foreach (string unactiveID in unactiveEventsIDs) {
-            eventsObservingGameDate.RemoveAll(we => we.Info.Id == unactiveID);
-            eventsObservingPlayerCompany.RemoveAll(we => we.Info.Id == unactiveID);
-        }
-    }
-
-    private static EventVariable ParseVariableDeclaration(string declaration) {
-        string[] tokens = declaration.Split(' ');
-        if (tokens.Length < 3) return null;
-        if (!tokens[0].StartsWith("@")) {
-            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : must assign an event variable (\"@variable\").");
-            return null;
-        }
-        string variableName = tokens[0].Substring(1);
-        if (variableName.Length == 0) {
-            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : empty event variable name.");
-            return null;
-        }
-
-        string operation = tokens[1];
-        if (operation != "=") {
-            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : can only assign the variable value.");
-            return null;
-        }
-
-        string rightValue = tokens[2];
-        if (rightValue == $"@{variableName}") {
-            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : illegal assignment.");
-            return null;
-        }
-
-        ExpressionFloat variableExpression = ParseExpressionFloat(tokens.Skip(2));
-        if (variableExpression == null) {
-            Debug.LogError($"EventsController.ParseVariableDeclaration(\"{declaration}\") : right operand parsing error.");
-            return null;
-        }
-
-        //Debug.LogWarning($"@{variableName} = {variableExpression.Tokens}");
-        return new EventVariable(variableName, variableExpression);
     }
 }

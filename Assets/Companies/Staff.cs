@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Database;
 using NUnit.Framework;
-using static ScriptParser;
+using Script;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -14,16 +15,17 @@ public class Staff : MonoBehaviour {
         [SerializeField] private string id;
         public string Id => id;
 
-        [SerializeField] private ScriptAction dailyProgress;
-        public ScriptAction DailyProgress => dailyProgress;
+        [SerializeField] private Expression<float> dailyProgress;
+        public Expression<float> DailyProgress => dailyProgress;
 
-        [SerializeField] private ExpressionFloat hiringCost;
-        public ExpressionFloat HiringCost => hiringCost;
+        [SerializeField] private Expression<float> hiringCost;
+        public Expression<float> HiringCost => hiringCost;
 
-        [SerializeField] private ExpressionFloat salary;
-        public ExpressionFloat Salary => salary;
+        [SerializeField] private Expression<float> salary;
+        public Expression<float> Salary => salary;
 
-        public SkillType(string id, ScriptAction dailyProgress, ExpressionFloat hiringCost, ExpressionFloat salary) {
+        public SkillType(string id, Expression<float> dailyProgress,
+            Expression<float> hiringCost, Expression<float> salary) {
             this.id = id;
             this.dailyProgress = dailyProgress;
             this.hiringCost = hiringCost;
@@ -39,35 +41,50 @@ public class Staff : MonoBehaviour {
         employeeModel.gameObject.SetActive(false);
     }
 
-    public void InitSkillsTypes(Database.Database.DatabaseCollection<Skill> skills) {
+    public void InitSkillsTypes(Database.Database.DatabaseCollection<Database.Skill> skills,
+        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
+        List<IFunction> functions) {
         skillTypes = new SkillType[skills.Collection.Count];
         for (int i = 0; i < skills.Collection.Count; i++) {
-            Skill skill = skills.Collection[i];
-            ScriptAction dailyProgress = ParseAction(skill.DailyProgress);
-            if (dailyProgress == null) {
-                Debug.LogError(
-                    $"Staff.InitSkillsTypes : parsing error in daily progress for Skill with ID = {skill.Id}.");
-                continue;
-            }
-            ExpressionFloat hiringCost = ParseSkillExpression(skill.Id, skill.HiringCost, "hiring cost");
-            ExpressionFloat salary = ParseSkillExpression(skill.Id, skill.Salary, "salary");
-            if (hiringCost == null || salary == null) continue;
+            Database.Skill skill = skills.Collection[i];
+            // daily progress
+            var dailyProgress = ParseSkillExpression(localVariables, globalVariables,
+                functions, skill.DailyProgress, "daily progress", skill.Id, false);
+            if (dailyProgress == null) continue;
+            // hiring cost
+            var hiringCost = ParseSkillExpression(localVariables, globalVariables,
+                functions, skill.HiringCost, "daily progress", skill.Id, true);
+            if (hiringCost == null) continue;
+            // salary
+            var salary = ParseSkillExpression(localVariables, globalVariables,
+                functions, skill.Salary, "daily progress", skill.Id, true);
+            if (salary == null) continue;
             skillTypes[i] = new SkillType(skill.Id, dailyProgress, hiringCost, salary);
         }
     }
 
-    private static ExpressionFloat ParseSkillExpression(string skillId, string expression, string label) {
-        string[] tokens = expression.Split(' ');
-        Assert.IsTrue(tokens.Length >= 3);
-        ExpressionFloat skillExpression = ParseExpressionFloat(tokens.Skip(2));
-        if (skillExpression == null)
-            Debug.LogError($"Staff.ParseSkillExpression : parsing error in {label} for Skill with ID = {skillId}.");
-        return skillExpression;
+    private static Expression<float> ParseSkillExpression(List<LocalVariable> localVariables,
+        List<GlobalVariable> globalVariables, List<IFunction> functions,
+        string script, string label, string id, bool assignment) {
+        IExpression expression = assignment ? Parser.ParseAssignment(
+            script, localVariables, globalVariables, functions) : Parser.ParseExpression(
+            script, localVariables, globalVariables, functions);
+        if (expression == null) {
+            Debug.LogError(
+                $"Staff.InitSkillsTypes : parsing error in {label} for Skill with ID = {id}. Ignoring.");
+            return null;
+        }
+        if (expression.Type() != SymbolType.Float) {
+            Debug.LogError(
+                $"Staff.InitSkillsTypes : {expression.Type()} {label} expression instead of {SymbolType.Float} for Skill with ID = {id}. Ignoring.");
+            return null;
+        }
+        return expression as Expression<float>;
     }
 
-    public Employee GenerateRandomEmployee(EventsController ec, DateTime d,
-        GameDevCompany c, HiringMethod hiringMethod, Names commonNames,
-        Database.Database.DatabaseCollection<Skill> skillsCollection,
+    public Employee GenerateRandomEmployee(IScriptContext context,
+        HiringMethod hiringMethod, Names commonNames,
+        Database.Database.DatabaseCollection<Database.Skill> skillsCollection,
         out float hiringCost) {
         // Sex
         bool male = Random.value > 0.5f;
@@ -81,9 +98,9 @@ public class Staff : MonoBehaviour {
         for (int i = 0; i < hiringMethod.SkillsDistribution.Length; i++) {
             var skillDistribution = hiringMethod.SkillsDistribution[i];
             string skillId = skillDistribution.Item1;
-            Skill skillInfo = skillsCollection.FindById(skillId);
+            Database.Skill skillInfo = skillsCollection.FindById(skillId);
             if (skillInfo == null) {
-                Debug.LogError($"Staff.GenerateRandomEmployee : invalid skill ID {skillId} in Hiring Method of ID {hiringMethod.Id}");
+                Debug.LogError($"Staff.GenerateRandomEmployee : invalid skill ID {skillId} in Hiring Method of ID {hiringMethod.Id}.");
                 hiringCost = -1f;
                 return null;
             }
@@ -95,49 +112,64 @@ public class Staff : MonoBehaviour {
 
         // Game Object Creation
         Employee employee = Instantiate(employeeModel);
-        Employee generated = new Employee(firstName, lastName, 0, d, skills); // TODO : find other way
+        Employee generated = new Employee(firstName, lastName, 0, context.D(), skills); // TODO : find other way
         employee.CopyEmployee(generated);
         employee.name = $"Employee_{generated.Id}";
-        ec.SetCurrentEmployee(employee);
+        context.SetCurrentEmployee(employee);
 
         // Hiring cost and salary
-        hiringCost = ComputeEmployeeHiringCost(ec, d, c);
-        employee.Salary = ComputeEmployeeSalary(ec, d, c);
+        hiringCost = ComputeEmployeeHiringCost(context);
+        employee.Salary = ComputeEmployeeSalary(context);
 
-        ec.SetCurrentEmployee(null);
+        context.SetCurrentEmployee(null);
         employee.gameObject.SetActive(true);
         return employee;
     }
 
-    private float ComputeEmployeeHiringCost(EventsController ec, DateTime d,
-        GameDevCompany c) {
-        float hiringCost = 0f;
+    private float ComputeEmployeeHiringCost(IScriptContext context) {
+        Assert.IsTrue(ScriptContext.SetLocalVariableValue(context,
+            "Employee.HiringCost", new FloatSymbol(0f)));
         foreach (SkillType skillType in skillTypes) {
             if (skillType == null) continue;
-            hiringCost += skillType.HiringCost.Variable(ec, d, c);
+            ISymbol result = skillType.HiringCost.EvaluateAsISymbol(context);
+            if (result == null || result.Type() != SymbolType.Float) {
+                Debug.LogError($"Staff : error while evaluating hiring cost for Skill \"{skillType.Id}\".");
+                return 0f;
+            }
         }
-        return hiringCost;
+        Symbol<float> hiringCost = ScriptContext.GetLocalVariableValue(context,
+            "Employee.HiringCost") as Symbol<float>;
+        Assert.IsNotNull(hiringCost);
+        return hiringCost.Value;
     }
 
-    public float ComputeEmployeeSalary(EventsController ec, DateTime d,
-        GameDevCompany c) {
-        float salary = 0f;
+    private float ComputeEmployeeSalary(IScriptContext context) {
+        Assert.IsTrue(ScriptContext.SetLocalVariableValue(context,
+            "Employee.Salary", new FloatSymbol(0f)));
         foreach (SkillType skillType in skillTypes) {
-            if (skillType == null) continue;
-            salary += skillType.Salary.Variable(ec, d, c);
+            ISymbol result = skillType.Salary.EvaluateAsISymbol(context);
+            if (result == null || result.Type() != SymbolType.Float) {
+                Debug.LogError($"Staff : error while evaluating salary for Skill \"{skillType.Id}\".");
+                return 0f;
+            }
         }
-        return salary;
+        Symbol<float> salary = ScriptContext.GetLocalVariableValue(context,
+            "Employee.HiringCost") as Symbol<float>;
+        Assert.IsNotNull(salary);
+        return salary.Value;
     }
 
-    public void ApplyDayProgress(Project currentProject, Employee employee,
-        EventsController ec, DateTime d, GameDevCompany c) {
-        ec.SetCurrentEmployee(employee);
+    public void ApplyDayProgress(Employee employee, IScriptContext context) {
+        context.SetCurrentEmployee(employee);
         foreach (EmployeeSkill employeeSkill in employee.EmployeeSkills) {
             SkillType skillType = Array.Find(skillTypes,
                 type => type.Id == employeeSkill.Id);
             Assert.IsNotNull(skillType);
-            skillType.DailyProgress(ec, d, c);
+            Symbol<float> result = skillType.DailyProgress.Evaluate(context);
+            if (result == null) {
+                Debug.LogError($"Staff : error while evaluating daily progress for Employee \"{employee.Id}\".");
+            }
         }
-        ec.SetCurrentEmployee(null);
+        context.SetCurrentEmployee(null);
     }
 }

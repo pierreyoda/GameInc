@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Database;
+using Script;
 using UnityEngine;
-using static ScriptParser;
 
 public class EngineFeaturesController : MonoBehaviour {
     [Serializable]
@@ -14,20 +13,30 @@ public class EngineFeaturesController : MonoBehaviour {
         [SerializeField] private bool allowed = false;
         public bool Allowed => allowed;
 
-        [SerializeField] private List<ScriptCondition> requirements;
-        [SerializeField] private List<ScriptAction> effects;
+        [SerializeField] private List<Expression<bool>> requirements;
+        [SerializeField] private List<IExpression> effects;
 
         public WorldEngineFeature(EngineFeature info,
-            List<ScriptCondition> requirements, List<ScriptAction> effects) {
+            List<Expression<bool>> requirements, List<IExpression> effects) {
             this.info = info;
             this.requirements = requirements;
             this.effects = effects;
         }
 
-        public bool CheckFeature(EventsController ec, DateTime d, GameDevCompany c) {
+        public bool CheckFeature(IScriptContext context) {
             // requirement check : all requirements must evaluate to True
-            foreach (ScriptCondition requirement in requirements) {
-                if (!requirement(ec, d, c)) return false;
+            foreach (Expression<bool> requirement in requirements) {
+                ISymbol result = requirement.Evaluate(context);
+                if (result == null) {
+                    Debug.Log($"EngineFeature \"{info.Id}\" : error while evaluating requirement \"{requirement.Script()}\".");
+                    return true;
+                }
+                if (result.Type() != SymbolType.Boolean) {
+                    Debug.Log($"EngineFeature \"{info.Id}\" : non-boolean requirement of type {result.Type()} \"{requirement.Script()}\".");
+                    return true;
+                }
+                bool validated = ((Symbol<bool>) result).Value;
+                if (!validated) return false;
             }
 
             // action when triggered
@@ -43,26 +52,36 @@ public class EngineFeaturesController : MonoBehaviour {
     [SerializeField] private List<string> authorizedFeaturesIDs = new List<string>();
     public List<string> AuthorizedFeaturesIDs => authorizedFeaturesIDs;
 
-    public void InitFeatures(List<EngineFeature> engineFeatures) {
+    public void InitFeatures(List<EngineFeature> engineFeatures,
+        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
+        List<IFunction> functions) {
         foreach (EngineFeature f in engineFeatures) {
             // Parse the requirements and effects
-            List<ScriptCondition> requirements = new List<ScriptCondition>();
-            List<ScriptAction> effects = new List<ScriptAction>();
+            List<Expression<bool>> requirements = new List<Expression<bool>>();
+            List<IExpression> effects = new List<IExpression>();
             foreach (string requirement in f.Requirements) {
-                ScriptCondition trigger = ParseCondition(requirement);
-                if (trigger == null) {
-                    Debug.LogError($"EngineFeaturesController - Requirement parsing error for EngineFeature (ID = {f.Id}).");
-                    break;
+                Expression<bool> condition = Parser.ParseComparison(requirement,
+                    localVariables, globalVariables, functions);
+                if (condition == null) {
+                    Debug.LogError(
+                        $"EngineFeaturesController - Requirement parsing error for Event (ID = {f.Id}). Ignoring \"{requirement}\".");
+                    continue;
                 }
-                requirements.Add(trigger);
+                if (condition.Type() != SymbolType.Boolean) {
+                    Debug.LogError(
+                        $"EngineFeaturesController - Requirement expression {condition.Type()} and not boolean for EngineFeature (ID = {f.Id}). Ignoring \"{requirement}\".");
+                    continue;
+                }
+                requirements.Add(condition);
             }
             foreach (string effect in f.Effects) {
-                ScriptAction trigger = ParseAction(effect);
-                if (trigger == null) {
-                    Debug.LogError($"EngineFeaturesController - Effect parsing error for EngineFeature (ID = {f.Id}).");
-                    break;
+                IExpression action = Parser.ParseExpression(effect,
+                    localVariables, globalVariables, functions);
+                if (action == null) {
+                    Debug.LogError($"EngineFeaturesController - Effect parsing error for EngineFeature (ID = {f.Id}). Ignoring \"{effect}\".");
+                    continue;
                 }
-                effects.Add(trigger);
+                effects.Add(action);
             }
 
             // Store the WorldEvent and its computed metadata
@@ -71,12 +90,12 @@ public class EngineFeaturesController : MonoBehaviour {
         }
     }
 
-    public void CheckFeatures(EventsController ec, DateTime d, GameDevCompany c) {
+    public void CheckFeatures(IScriptContext context) {
         foreach (WorldEngineFeature feature in worldFeatures) {
             if (feature.Allowed)
                 continue;
-            if (feature.CheckFeature(ec, d, c))
-                c.AllowEngineFeature(feature.Info.Id);
+            if (feature.CheckFeature(context))
+                context.C().AllowEngineFeature(feature.Info.Id);
         }
     }
 }

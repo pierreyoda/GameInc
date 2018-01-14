@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.Remoting.Messaging;
 using NUnit.Framework;
+using Script;
 using UnityEngine;
 using Event = Database.Event;
-using static ScriptParser;
 
 [Serializable]
 public class WorldEvent {
@@ -11,18 +12,19 @@ public class WorldEvent {
     public Event Info => info;
 
     [SerializeField] private int triggersCount = 0;
-    public int TriggersCount => triggersCount;
+    private Expression<int> triggersLimit;
 
-    private ExpressionFloat triggersLimit;
+    [SerializeField] private bool active = true;
+    public bool Active => active;
 
-    [SerializeField] private List<ScriptCondition> conditions;
-    [SerializeField] private List<ScriptAction> actions;
+    [SerializeField] private List<Expression<bool>> conditions;
+    [SerializeField] private List<IExpression> actions;
 
     [SerializeField] private string cachedTitle;
-    private readonly List<ExpressionFloat> titleExpressions = new List<ExpressionFloat>();
+    private readonly List<IExpression> titleExpressions = new List<IExpression>();
 
     [SerializeField] private string cachedDescription;
-    private readonly List<ExpressionFloat> descriptionExpressions = new List<ExpressionFloat>();
+    private readonly List<IExpression> descriptionExpressions = new List<IExpression>();
 
     private string computedTitle;
     public string ComputedTitle => computedTitle;
@@ -31,22 +33,35 @@ public class WorldEvent {
     public string ComputedDescription => computedDescription;
 
     public WorldEvent(Event info,
-        List<ScriptCondition> conditions,
-        List<ScriptAction> actions) {
+        List<Expression<bool>> conditions,
+        List<IExpression> actions,
+        List<LocalVariable> localVariables,
+        List<GlobalVariable> globalVariables,
+        List<IFunction> functions) {
         this.info = info;
         this.conditions = conditions;
         this.actions = actions;
 
         // Trigger limit parsing
-        triggersLimit = ParseExpressionFloat(info.TriggerLimit.Split(' '));
-        if (triggersLimit == null) {
-            Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : trigger limit parsing error in \"{info.TriggerLimit}\".");
-            triggersLimit = new ExpressionFloat(info.TriggerLimit, (ec, d, c) => -1); // -1 : no limit
+        IExpression limit = Parser.ParseExpression(info.TriggerLimit,
+            localVariables, globalVariables, functions);
+        if (limit == null) {
+            Debug.LogError(
+                $"WorldEvent (Info.Id = {info.Id}) : trigger limit parsing error in \"{info.TriggerLimit}\". Reverting to no limit default (-1).");
+            triggersLimit = new SymbolExpression<int>(new IntegerSymbol(-1)); // no limit by default
+        } else if (limit.Type() != SymbolType.Integer) {
+            Debug.LogError(
+                $"WorldEvent (Info.Id = {info.Id}) : trigger limit of type {limit.Type()} instead of {SymbolType.Integer}. Reverting to no limit default (-1).");
+            triggersLimit = new SymbolExpression<int>(new IntegerSymbol(-1)); // no limit by default
+        } else {
+            triggersLimit = limit as Expression<int>;
         }
 
         // Text parsing
-        cachedTitle = CachedTitle(info.TitleEnglish);
-        cachedDescription = CachedDescription(info.DescriptionEnglish);
+        cachedTitle = CachedText(info.TitleEnglish, titleExpressions,
+            localVariables, globalVariables, functions, "Title");
+        cachedDescription = CachedText(info.DescriptionEnglish, descriptionExpressions,
+            localVariables, globalVariables, functions, "Description");
     }
 
     /// <summary>
@@ -54,48 +69,57 @@ public class WorldEvent {
     /// If every one of them evaluates to True, trigger the actions.
     /// </summary>
     /// <returns>True if the WorldEvent cannot be triggered anymore, False otherwise.</returns>
-    public bool CheckEvent(EventsController ec, DateTime d, GameDevCompany c, out bool triggered) {
+    public bool CheckEvent(IScriptContext context, out bool triggered) {
         triggered = false;
 
         // trigger limits check
-        int limit = (int) triggersLimit.Variable(ec, d, c); // TODO : add and use VariableInt
+        ISymbol limitSymbol = triggersLimit.Evaluate(context);
+        if (limitSymbol == null || limitSymbol.Type() != SymbolType.Integer) {
+            Debug.Log($"WorldEvent - Event \"{info.Id}\" : invalid limit \"{triggersLimit.Script()}\".");
+            active = false;
+            return true;
+        }
+        int limit = ((Symbol<int>) limitSymbol).Value;
         if (limit >= 0 && triggersCount >= limit) {
             Debug.Log($"WorldEvent - Event \"{info.Id}\" reached its triggers limit ({limit}).");
+            active = false;
             return true;
         }
 
         // condition check : all conditions must evaluate to True
-        foreach (ScriptCondition condition in conditions) {
-            if (!condition(ec, d, c)) return false;
+        foreach (Expression<bool> condition in conditions) {
+            ISymbol result = condition.Evaluate(context);
+            if (result == null) {
+                Debug.Log($"WorldEvent - Event \"{info.Id}\" : error while evaluating condition \"{condition.Script()}\".");
+                return true;
+            }
+            if (result.Type() != SymbolType.Boolean) {
+                Debug.Log($"WorldEvent - Event \"{info.Id}\" : non-boolean condition of type {result.Type()} \"{condition.Script()}\".");
+                return true;
+            }
+            bool validated = ((Symbol<bool>) result).Value;
+            if (!validated) return false;
         }
 
         // action when triggered
         Debug.Log($"WorldEvent - Event \"{info.Id}\" triggered ! Triggers count = {triggersCount}, limit = {limit}.");
         ++triggersCount;
-        foreach (ScriptAction action in actions) {
-            action(ec, d, c);
+        foreach (IExpression action in actions) {
         }
 
-        computedTitle = ComputeTitle(ec, d, c);
-        computedDescription = ComputeDescription(ec, d, c);
+        computedTitle = ComputeTitle(context);
+        computedDescription = ComputeDescription(context);
 
         triggered = true;
         return false;
     }
 
-    private string CachedTitle(string title) {
-        return CachedText(title, titleExpressions, "Title");
-    }
-
-    private string CachedDescription(string description) {
-        return CachedText(description, descriptionExpressions, "Description");
-    }
-
-    private string CachedText(string text, List<ExpressionFloat> expressions,
+    private string CachedText(string text, List<IExpression> expressions,
+        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
+        List<IFunction> functions,
         string label) {
         string cached = "";
         text = text.Trim();
-        List<string> tokens = new List<string>();
         for (int i = 0; i < text.Length; i++) {
             char character = text[i];
             if (character != '{') {
@@ -104,32 +128,24 @@ public class WorldEvent {
             }
             // expression print : { expression... }
             bool ends = false;
-            tokens.Clear();
-            string currentToken = "";
+            string expressionString = "";
             for (int j = i + 1; j < text.Length; j++) {
-                char characterEnd = text[j];
-                if (characterEnd == '}') {
-                    tokens.Add(currentToken);
+                char c = text[j];
+                if (c == '}') {
                     ends = true;
                     i = j;
                     break;
                 }
-                if (characterEnd == ' ') {
-                    tokens.Add(currentToken);
-                    currentToken = "";
-                } else {
-                    currentToken += characterEnd;
-                }
+                expressionString += c;
             }
             if (!ends) {
-                Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : formatting error in the English {label} text.");
+                Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : formatting error in the English {label} text \"{text}\".");
                 continue;
             }
-            string expressionString = string.Join(" ", tokens);
 
             bool alreadyPresent = false;
             for (int j = 0; j < expressions.Count; j++) {
-                if (expressions[j].Tokens == expressionString) {
+                if (expressions[j].Script() == expressionString) {
                     cached += $"${j}$";
                     alreadyPresent = true;
                     break;
@@ -137,31 +153,37 @@ public class WorldEvent {
             }
             if (alreadyPresent) continue;
 
-            ExpressionFloat expression = ParseExpressionFloat(tokens.ToArray());
+            IExpression expression = Parser.ParseExpression(expressionString,
+                localVariables, globalVariables, functions);
             if (expression == null) {
                 Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : expression parsing error in the English {label} text.");
                 continue;
             }
-            Assert.IsTrue(expressionString == expression.Tokens);
-            cached += $"${descriptionExpressions.Count}$";
+            cached += $"${expressions.Count}$";
             expressions.Add(expression);
         }
         return cached;
     }
 
-    private string ComputeTitle(EventsController ec, DateTime d, GameDevCompany c) {
-        return ComputeText(ec, d, c, titleExpressions, cachedTitle);
+    private string ComputeTitle(IScriptContext context) {
+        return ComputeText(context, titleExpressions, cachedTitle);
     }
 
-    private string ComputeDescription(EventsController ec, DateTime d, GameDevCompany c) {
-        return ComputeText(ec, d, c, descriptionExpressions, cachedDescription);
+    private string ComputeDescription(IScriptContext context) {
+        return ComputeText(context, descriptionExpressions, cachedDescription);
     }
 
-    private string ComputeText(EventsController ec, DateTime d, GameDevCompany c,
-        List<ExpressionFloat> expressions, string cachedText) {
-        List<float> expressionValues = new List<float>();
+    private static string ComputeText(IScriptContext context,
+        List<IExpression> expressions, string cachedText) {
+        List<string> expressionValues = new List<string>();
         for (int i = 0; i < expressions.Count; i++) {
-            expressionValues.Add(expressions[i].Variable(ec, d, c));
+            IExpression expression = expressions[i];
+            ISymbol symbol = expression.EvaluateAsISymbol(context);
+            if (symbol == null) {
+                expressionValues.Add($"{{EVALUATION ERROR FOR : {expression.Script()}}}");
+                continue;
+            }
+            expressionValues.Add(symbol.ValueString());
         }
 
         string output = "";

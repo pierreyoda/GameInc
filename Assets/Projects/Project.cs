@@ -62,7 +62,6 @@ public abstract class Project {
         DateTime endDate = startDate.AddDays(durationInDays);
         float deltaInDays = (float) (endDate - gameDate).TotalDays;
         completion = (durationInDays - deltaInDays) / durationInDays;
-        Debug.LogWarning("project completion = " + completion);
         if (completion >= 1f) {
             completionDate = gameDate;
             return true;
@@ -75,27 +74,11 @@ public abstract class Project {
         switch (type) {
             case ProjectType.GameProject:
                 return new[] {
-                    "GameEngine", "Gameplay", "AI",
-                    "GameDesign", "Graphics2D",
-                    "SoundFX",
+                    "Engine", "Gameplay", "AI",
+                    "GameDesign", "Graphics2D", "Graphics3D",
+                    "SoundFX", "Soundtrack",
                 };
             default: return null;
         }
-    }
-
-    public float Score(string scoreId) {
-        ProjectScore projectScore = scores.Find(s => s.Id == scoreId);
-        if (projectScore == null) {
-            Debug.LogError($"Project.Score({scoreId}) : unkown Skill ID.");
-            return 0f;
-        }
-        return projectScore.score;
-    }
-
-    public void ModifyScore(string scoreId, float difference) {
-        ProjectScore projectScore = scores.Find(s => s.Id == scoreId);
-        if (projectScore == null)
-            return;
-        projectScore.score += difference;
     }
 }

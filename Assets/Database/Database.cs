@@ -114,47 +114,47 @@ public class Database {
             switch (sourceFile.Item2) {
                 case DataFileType.Event:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, events))
-                        return this;
+                        return null;
                     break;
                 case DataFileType.News:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, news))
-                        return this;
+                        return null;
                     break;
                 case DataFileType.GameGenre:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, genres))
-                        return this;
+                        return null;
                     break;
                 case DataFileType.GameTheme:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, themes))
-                        return this;
+                        return null;
                     break;
                 case DataFileType.GamingPlatform:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, platforms))
-                        return this;
+                        return null;
                     break;
                 case DataFileType.EngineFeature:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, engineFeatures))
-                        return this;
+                        return null;
                     break;
                 case DataFileType.Room:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, rooms))
-                        return this;
+                        return null;
                     break;
                 case DataFileType.RoomObject:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, objects))
-                        return this;
+                        return null;
                     break;
                case DataFileType.Skill:
                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, skills))
-                       return this;
+                       return null;
                    break;
                case DataFileType.HiringMethod:
                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, hiringMethods))
-                       return this;
+                       return null;
                    break;
                case DataFileType.CommonNames:
                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, names))
-                       return this;
+                       return null;
                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -184,18 +184,26 @@ public class Database {
 
     private static bool LoadDataFile<T>(string dataFile, DataFileType dataType,
         DatabaseCollection<T> existing) where T : DatabaseElement {
+        // JSON formatting
         string dataFileContent = JsonFormatter.Format(File.ReadAllText(dataFile));
         if (dataFileContent == null) {
             Debug.LogWarning($"Database - Invalid {dataType} JSON format in \"{dataFile}\" data file.");
             return false;
         }
-        DatabaseCollection<T> additions = JsonUtility.FromJson<DatabaseCollection<T>>(dataFileContent);
+        // JSON parsing
+        DatabaseCollection<T> additions;
+        try {
+            additions = JsonUtility.FromJson<DatabaseCollection<T>>(dataFileContent);
+        } catch (ArgumentException e) {
+            Debug.LogError($"Database.LoadDataFile(\"{dataFile}\", {dataType}) : JSON error :\n{e.Message}");
+            return false;
+        }
         if (additions == null) {
             Debug.LogWarning(
                 $"Database - Invalid {dataType} JSON in \"{dataFile}\" data file.");
             return false;
         }
-
+        // Database processing
         foreach (var element in additions.Collection) {
             if (existing.Collection.Any(e => element.Id == e.Id)) {
                 Debug.LogWarning(

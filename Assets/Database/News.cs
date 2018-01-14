@@ -1,4 +1,5 @@
 ﻿using System;
+using Script;
 using UnityEngine;
 
 namespace Database {
@@ -9,7 +10,7 @@ namespace Database {
 [Serializable]
 public class News : DatabaseElement {
     [SerializeField] private string date;
-    public DateTime Date => ParseDate(date);
+    public DateTime Date => Parser.ParseDate(date);
 
     [SerializeField] private string textEnglish;
     public string TextEnglish => textEnglish;

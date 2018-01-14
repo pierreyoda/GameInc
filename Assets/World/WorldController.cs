@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using Database;
+using Script;
 using UnityEngine;
-using Event = Database.Event;
+using UnityEngine.Assertions;
 
-public class WorldController : MonoBehaviour {
+public class WorldController : MonoBehaviour, IScriptContext {
     private Database.Database database;
     private DateTime gameDateTime;
     [SerializeField] private World world;
@@ -13,6 +14,12 @@ public class WorldController : MonoBehaviour {
     [SerializeField] private EventsController eventsController;
     [SerializeField] private NewsController newsController;
     [SerializeField] private GameHudController hudController;
+
+    [Header("Scripting Engine")]
+    [SerializeField] private Employee currentEmployee;
+    [SerializeField] private List<IFunction> scriptFunctions = new List<IFunction>();
+    [SerializeField] private List<LocalVariable> scriptVariables = new List<LocalVariable>();
+    [SerializeField] private List<GlobalVariable> scriptGlobalVariables;
 
     public void ToggleSimulationPause() {
         world.ToggleSimulation();
@@ -32,32 +39,91 @@ public class WorldController : MonoBehaviour {
             playerCompany.GameEngines);
     }
 
-    public void OnGameStarted(Database.Database database, DateTime gameDateTime,
-        GameDevCompany playerCompany) {
-        this.database = database;
-        this.playerCompany = playerCompany;
-        this.gameDateTime = gameDateTime;
-        engineFeaturesController.InitFeatures(database.EngineFeatures.Collection);
-        engineFeaturesController.CheckFeatures(eventsController, gameDateTime, playerCompany);
-        eventsController.InitEvents(database.Events.Collection);
-        eventsController.InitVariables(gameDateTime, playerCompany);
-        newsController.InitNews(database.News.Collection, gameDateTime);
+    private List<GlobalVariable> GameVariables() {
+        return new List<GlobalVariable> {
+            // World
+            new GlobalVariable("World.CurrentDate", SymbolType.Date,
+                c => new DateSymbol(c.D())),
+            new GlobalVariable("World.CurrentDate.Year", SymbolType.Integer,
+            c => new IntegerSymbol(c.D().Year)),
+            new GlobalVariable("World.CurrentDate.Month", SymbolType.Integer,
+                c => new IntegerSymbol(c.D().Month)),
+            new GlobalVariable("World.CurrentDate.Day", SymbolType.Integer,
+                c => new IntegerSymbol(c.D().Day)),
+            new GlobalVariable("World.CurrentDate.DayOfWeek", SymbolType.Integer,
+                c => new IntegerSymbol((int) c.D().DayOfWeek)),
+            // Company
+            new GlobalVariable("Company.Money", SymbolType.Float,
+                c => new FloatSymbol(c.C().Money)),
+            new GlobalVariable("Company.NeverBailedOut", SymbolType.Boolean,
+                c => new BooleanSymbol(c.C().NeverBailedOut)),
+            new GlobalVariable("Company.Projects.CompletedGames.Count", SymbolType.Integer,
+                c => new IntegerSymbol(c.C().CompletedProjects.Games.Count)),
+        };
+    }
+
+    public void OnGameStarted(Database.Database db, DateTime date,
+        GameDevCompany playedCompany) {
+        database = db;
+        playerCompany = playedCompany;
+        gameDateTime = date;
+
+        // load script functions
+        scriptFunctions = Function<bool>.DefaultFunctions();
+        scriptGlobalVariables = GameVariables();
+        // set initial global variables values
+        foreach (GlobalVariable globalVariable in scriptGlobalVariables) {
+            ISymbol value = globalVariable.FromContext(this);
+            if (value == null) {
+                Debug.LogError($"WorldController.OnGameStarted : error while evaluating global variable \"${globalVariable.Name}\".");
+                continue;
+            }
+            if (value.Type() != globalVariable.Type) {
+                Debug.LogError($"WorldController.OnGameStarted : \"${globalVariable.Name}\" must be of type {globalVariable.Type} instead of {value.Type()}.");
+                continue;
+            }
+            globalVariable.Value = value;
+        }
+        // additional local variables
+        Assert.IsTrue(ScriptContext.AddLocalVariable(this,
+            "Employee.HiringCost", new FloatSymbol(0)));
+        Assert.IsTrue(ScriptContext.AddLocalVariable(this,
+            "Employee.Salary", new FloatSymbol(0)));
+
+        // test
+        Assert.IsTrue(ScriptContext.AddLocalVariable(this,
+            "testVariable", new FloatSymbol(0f)));
+        string testScript = "@testVariable = -1.0 + 2.0 * Math.Cos(30.0 * Math.PI/180.0)";
+        Parser.ExecuteScript(this, testScript, scriptVariables,
+            scriptGlobalVariables, scriptFunctions);
+
+        // scripts parsing
+        eventsController.InitEvents(db.Events.Collection,
+            scriptVariables, scriptGlobalVariables, scriptFunctions);
+        Parser.ExecuteVariableDeclarations(this);
+        playerCompany.Init(database.Skills,
+            scriptVariables, scriptGlobalVariables, scriptFunctions);
+
+        engineFeaturesController.InitFeatures(db.EngineFeatures.Collection,
+            scriptVariables, scriptGlobalVariables, scriptFunctions);
+        engineFeaturesController.CheckFeatures(this);
+        newsController.InitNews(db.News.Collection, date);
 
         float hiringCost;
-        Employee employee = playerCompany.EmployeesManager.GenerateRandomEmployee(
-            eventsController, gameDateTime, playerCompany,
-            database.HiringMethod.FindById("CompSciGraduates"),
-            database.Names.FindById("CommonNamesUSA"),
-            database.Skills,
+        Employee employee = playedCompany.EmployeesManager.GenerateRandomEmployee(
+            this,
+            db.HiringMethod.FindById("CompSciGraduates"),
+            db.Names.FindById("CommonNamesUSA"),
+            db.Skills,
             out hiringCost);
-        playerCompany.AddEmployee(employee);
+        playedCompany.AddEmployee(employee);
         Debug.Log($"Generated Random Employee : hiring cost = {hiringCost}.");
     }
 
     public void OnDateModified(DateTime gameDateTime) {
         this.gameDateTime = gameDateTime;
         // World Events
-        List<WorldEvent> triggeredEvents = eventsController.OnGameDateChanged(gameDateTime, playerCompany);
+        List<WorldEvent> triggeredEvents = eventsController.OnGameDateChanged(this);
         foreach (WorldEvent triggeredEvent in triggeredEvents) {
             hudController.OnEventTriggered(triggeredEvent);
         }
@@ -70,7 +136,7 @@ public class WorldController : MonoBehaviour {
     }
 
     public void OnPlayerCompanyModified() {
-        eventsController.OnPlayerCompanyChanged(gameDateTime, playerCompany);
+        eventsController.OnPlayerCompanyChanged(this);
         hudController.OnCompanyChanged(playerCompany);
     }
 
@@ -81,12 +147,62 @@ public class WorldController : MonoBehaviour {
 
     public void OnProjectCompleted(GameDevCompany company, Project project) {
         if (project.Type() == Project.ProjectType.GameProject)
-            engineFeaturesController.CheckFeatures(eventsController,
-                gameDateTime, company);
+            engineFeaturesController.CheckFeatures(this);
         hudController.CanStartNewProject(true);
     }
 
     public void OnConstructionStarted(float constructionCost) {
         world.OnConstructionStarted(constructionCost);
     }
+
+    public List<LocalVariable> LocalVariables() {
+        return scriptVariables;
+    }
+
+    public GlobalVariable GetGlobalVariable(string variableName) {
+        GlobalVariable globalVariable = scriptGlobalVariables.Find(gv => gv.Name == variableName);
+        if (globalVariable == null)
+            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : unkown global variable.");
+        return globalVariable;
+    }
+
+    public bool SetGlobalVariable(string variableName, ISymbol value) {
+        GlobalVariable globalVariable = scriptGlobalVariables.Find(gv => gv.Name == variableName);
+        if (globalVariable == null) {
+            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : unkown global variable.");
+            return false;
+        }
+        if (value.Type() != globalVariable.Type) {
+            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : unkown global variable.");
+            return false;
+        }
+
+        bool assigned = false;
+        switch (variableName) {
+            case "Company.Money":
+                assigned = true;
+                playerCompany.SetMoney((value as Symbol<float>).Value);
+                break;
+            case "Company.NeverBailedOut":
+                assigned = true;
+                playerCompany.NeverBailedOut = (value as Symbol<bool>).Value;
+                break;
+        }
+        if (!assigned) {
+            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : illegal assignment.");
+            return false;
+        }
+        globalVariable.Value = value;
+        return true;
+    }
+
+    public DateTime D() {
+        return gameDateTime;
+    }
+    public GameDevCompany C() {
+        return playerCompany;
+    }
+
+    public Employee CurrentEmployee() { return currentEmployee; }
+    public void SetCurrentEmployee(Employee e) { currentEmployee = e; }
 }

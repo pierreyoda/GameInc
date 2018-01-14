@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Eventing;
 using System.Linq;
 using Database;
+using Script;
 using UnityEngine;
 using UnityEngine.Assertions;
 using Random = UnityEngine.Random;
@@ -65,8 +66,10 @@ public class GameDevCompany : MonoBehaviour {
         this.features = features.ToArray();
     }
 
-    public void Init(Database.Database.DatabaseCollection<Skill> skills) {
-        employeesManager.InitSkillsTypes(skills);
+    public void Init(Database.Database.DatabaseCollection<Database.Skill> skills,
+        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
+        List<IFunction> functions) {
+        employeesManager.InitSkillsTypes(skills, localVariables, globalVariables, functions);
     }
 
     public void StartProject(Project project, DateTime gameDate) {
@@ -88,14 +91,15 @@ public class GameDevCompany : MonoBehaviour {
         currentProject = null;
     }
 
-    public void SetFeature(string featureName, bool featureEnabled) {
+    public bool SetFeature(string featureName, bool featureEnabled) {
         CompanyFeature feature = features.FirstOrDefault(f => f.Name == featureName);
         if (feature == null) {
             Debug.LogError($"GameDevCompany.SetFeature(\"{featureName}\", {featureEnabled}) : unkown feature.");
-            return;
+            return false;
         }
         feature.Enabled = featureEnabled;
         Debug.Log($"GameDevCompany.Feature(\"{featureName}\") = {featureEnabled}.");
+        return true;
     }
 
     public void AllowEngineFeature(string featureId) {
@@ -107,6 +111,7 @@ public class GameDevCompany : MonoBehaviour {
     }
 
     public void AddEmployee(Employee employee) {
+        Assert.IsNotNull(employee);
         employees.Add(employee);
         employee.transform.parent = employeesParentObject;
     }
@@ -123,17 +128,11 @@ public class GameDevCompany : MonoBehaviour {
         }
         List<Employee> candidates = new List<Employee>();
         for (int i = 0; i < candidatesNumber; i++) {
-            candidates.Add(GenerateCandidate(method));
+            Employee employee = null;
+            candidates.Add(employee);
         }
 
         hiringEndingDate = currentDate.AddDays(method.DurationInDays);
-    }
-
-    private Employee GenerateCandidate(HiringMethod method) {
-        foreach (var skillDistribution in method.SkillsDistribution) {
-
-        }
-        return null;
     }
 
     private void FinishHiring() {
@@ -164,15 +163,14 @@ public class GameDevCompany : MonoBehaviour {
         money = amount;
     }
 
-    public void OnNewDay(EventsController ec, DateTime gameDate) {
-        if (gameDate == hiringEndingDate)
+    public void OnNewDay(IScriptContext context) {
+        if (context.D() == hiringEndingDate)
             FinishHiring();
         if (currentProject == null) return;
         foreach (Employee employee in employees) {
-            employeesManager.ApplyDayProgress(currentProject, employee,
-                ec, gameDate, this);
+            employeesManager.ApplyDayProgress(employee, context);
         }
-        if (currentProject.OnDateModified(gameDate))
+        if (currentProject.OnDateModified(context.D()))
             CompleteCurrentProject();
     }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using Script;
 using UnityEngine;
 
 namespace Database {
@@ -12,7 +13,7 @@ public class Platform : DatabaseElement {
     public string ManufacturerName => manufacturerName;
 
     [SerializeField] private string releaseDate;
-    public DateTime ReleaseDate => ParseDate(releaseDate);
+    public DateTime ReleaseDate => Parser.ParseDate(releaseDate);
 
     public Platform(string id, string name, string manufacturerName,
         string releaseDate) : base(id, name) {
