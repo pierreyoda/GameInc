@@ -179,7 +179,8 @@ public class WorldController : MonoBehaviour, IScriptContext {
             return false;
         }
         if (value.Type() != globalVariable.Type) {
-            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : unkown global variable.");
+            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : type mismatch " +
+                           $"({value.Type()} instead of {globalVariable.Type}).");
             return false;
         }
 
@@ -187,11 +188,11 @@ public class WorldController : MonoBehaviour, IScriptContext {
         switch (variableName) {
             case "Company.Money":
                 assigned = true;
-                playerCompany.SetMoney((value as Symbol<float>).Value);
+                playerCompany.SetMoney((value as FloatSymbol).Value);
                 break;
             case "Company.NeverBailedOut":
                 assigned = true;
-                playerCompany.NeverBailedOut = (value as Symbol<bool>).Value;
+                playerCompany.NeverBailedOut = (value as BooleanSymbol).Value;
                 break;
         }
         if (!assigned) {

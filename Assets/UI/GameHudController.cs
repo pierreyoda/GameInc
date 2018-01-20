@@ -41,6 +41,7 @@ public class GameHudController : MonoBehaviour {
         Assert.IsNotNull(newsBarPanelModel);
         Assert.IsNotNull(newsBarPanelsParent);
 
+        eventTriggeredDialog.gameObject.SetActive(false);
         for (int i = 0; i < maximumNewsCount; i++) {
             NewsBarPanel newsBarPanel = Instantiate(newsBarPanelModel);
             newsBarPanel.transform.SetParent(newsBarPanelsParent, false);
@@ -87,6 +88,7 @@ public class GameHudController : MonoBehaviour {
     }
 
     public void OnEventTriggered(WorldEvent triggeredEvent) {
+        eventTriggeredDialog.gameObject.SetActive(true);
         eventTriggeredDialog.ShowEventDialog(triggeredEvent);
     }
 

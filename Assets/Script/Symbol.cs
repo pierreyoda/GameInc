@@ -314,7 +314,7 @@ public class DateSymbol : Symbol<DateTime> {
         OperatorType type) {
         switch (type) {
             case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
-            case OperatorType.Superior: return new BooleanSymbol(Value < other.Value);
+            case OperatorType.Superior: return new BooleanSymbol(Value > other.Value);
             case OperatorType.SuperiorOrEqual: return new BooleanSymbol(Value >= other.Value);
             case OperatorType.Inferior: return new BooleanSymbol(Value < other.Value);
             case OperatorType.InferiorOrEqual: return new BooleanSymbol(Value <= other.Value);

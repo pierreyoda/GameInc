@@ -58,7 +58,7 @@ public class LocalVariableExpression<T> : Expression<T>, IVariableExpression {
     [SerializeField] private LocalVariable localVariable;
 
     public LocalVariableExpression(LocalVariable localVariable)
-        : base($"@{localVariable.Name}", localVariable.Type) {
+        : base($"{localVariable.Name}", localVariable.Type) {
         Assert.IsNotNull(localVariable);
         this.localVariable = localVariable;
     }
@@ -67,13 +67,13 @@ public class LocalVariableExpression<T> : Expression<T>, IVariableExpression {
         return localVariable.Value as Symbol<T>;
     }
 
-    public string Representation() => $"@{localVariable.Name}";
+    public string Representation() => $"{localVariable.Name}";
     public SymbolType VariableType() => localVariable.Type;
 
     public ISymbol Assign(IScriptContext context, AssignmentType assignmentType,
         ISymbol right) {
         if (right.Type() != localVariable.Type) {
-            Debug.LogError($"LocalVariableExpression(@{localVariable.Name}).Assign : " +
+            Debug.LogError($"LocalVariableExpression({localVariable.Name}).Assign : " +
                            $"type mismatch ({right.Type()} instead of {localVariable.Type}");
             return null;
         }
@@ -85,7 +85,7 @@ public class LocalVariableExpression<T> : Expression<T>, IVariableExpression {
         Symbol<T> assignmentResult = localValue.Assignment(rightValue,
             assignmentType);
         if (assignmentResult == null) {
-            Debug.LogError($"LocalVariableExpression(@{localVariable.Name}).Assign : " +
+            Debug.LogError($"LocalVariableExpression({localVariable.Name}).Assign : " +
                             "error while evaluating assignment.");
             return null;
         }
@@ -117,8 +117,15 @@ public class GlobalVariableExpression<T> : Expression<T>, IVariableExpression {
                            $"type mismatch ({right.Type()} instead of {globalVariable.Type}");
             return null;
         }
-        return context.SetGlobalVariable(globalVariable.Name, right) ?
-            globalVariable.Value : null;
+        Symbol<T> rightValue = right as Symbol<T>;
+        Assert.IsNotNull(rightValue);
+        globalVariable.Value = globalVariable.FromContext(context); // refresh value
+        Symbol<T> globalValue = globalVariable.Value as Symbol<T>;
+        Assert.IsNotNull(globalValue);
+        Symbol<T> assignmentResult = globalValue.Assignment(rightValue,
+            assignmentType);
+        return context.SetGlobalVariable(globalVariable.Name, assignmentResult) ?
+            assignmentResult : null;
     }
 }
 
@@ -219,47 +226,47 @@ public class ComparisonExpression<T> : Expression<bool> {
     }
 }
 
-    [Serializable]
-    public class FunctionExpression<T> : Expression<T> {
-        [SerializeField] private Function<T> metadata;
-        [SerializeField] private IExpression[] parameters;
+[Serializable]
+public class FunctionExpression<T> : Expression<T> {
+    [SerializeField] private Function<T> metadata;
+    [SerializeField] private IExpression[] parameters;
 
-        public FunctionExpression(Function<T> metadata, IExpression[] parameters) :
-            base($"{metadata.Name()}({string.Join(", ", parameters.Select(p => p.Script()))})",
-                metadata.ReturnType()) {
-            Assert.IsTrue(metadata.Parameters().Length == parameters.Length);
-            this.metadata = metadata;
-            this.parameters = parameters;
+    public FunctionExpression(Function<T> metadata, IExpression[] parameters) :
+        base($"{metadata.Name()}({string.Join(", ", parameters.Select(p => p.Script()))})",
+            metadata.ReturnType()) {
+        Assert.IsTrue(metadata.Parameters().Length == parameters.Length);
+        this.metadata = metadata;
+        this.parameters = parameters;
+    }
+
+    public override Symbol<T> Evaluate(IScriptContext c) {
+        List<ISymbol> symbols = new List<ISymbol>();
+        for (int i = 0; i < parameters.Length; i++) {
+            SymbolType type = metadata.Parameters()[i];
+            IExpression parameter = parameters[i];
+            if (parameter.Type() != type && type != SymbolType.Void) { // void : any type
+                Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : parameter n°{i+1} must be of type {type} (\"{parameter.Script()}\").");
+                return null;
+            }
+            ISymbol symbol = parameter.EvaluateAsISymbol(c);
+            if (symbol == null) {
+                Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : error while evaluating parameter n°{i+1} (\"{parameter.Script()}\").");
+                return null;
+            }
+            symbols.Add(symbol);
         }
-
-        public override Symbol<T> Evaluate(IScriptContext c) {
-            List<ISymbol> symbols = new List<ISymbol>();
-            for (int i = 0; i < parameters.Length; i++) {
-                SymbolType type = metadata.Parameters()[i];
-                IExpression parameter = parameters[i];
-                if (parameter.Type() != type && type != SymbolType.Void) { // void : any type
-                    Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : parameter n°{i+1} must be of type {type} (\"{parameter.Script()}\").");
-                    return null;
-                }
-                ISymbol symbol = parameter.EvaluateAsISymbol(c);
-                if (symbol == null) {
-                    Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : error while evaluating parameter n°{i+1} (\"{parameter.Script()}\").");
-                    return null;
-                }
-                symbols.Add(symbol);
-            }
-            T result = metadata.Lambda(c, symbols.ToArray());
-            switch (metadata.ReturnType()) {
-                case SymbolType.Void: return new VoidSymbol() as Symbol<T>;
-                case SymbolType.Boolean: return new BooleanSymbol(Convert.ToBoolean(result)) as Symbol<T>;
-                case SymbolType.Integer: return new IntegerSymbol(Convert.ToInt32(result)) as Symbol<T>;
-                case SymbolType.Float: return new FloatSymbol(Convert.ToSingle(result)) as Symbol<T>;
-                case SymbolType.Id: return new IdSymbol(Convert.ToString(result)) as Symbol<T>;
-                case SymbolType.String: return new StringSymbol(Convert.ToString(result)) as Symbol<T>;
-                case SymbolType.Date: return new DateSymbol(Convert.ToDateTime(result)) as Symbol<T>;
-                default: return null;
-            }
+        T result = metadata.Lambda(c, symbols.ToArray());
+        switch (metadata.ReturnType()) {
+            case SymbolType.Void: return new VoidSymbol() as Symbol<T>;
+            case SymbolType.Boolean: return new BooleanSymbol(Convert.ToBoolean(result)) as Symbol<T>;
+            case SymbolType.Integer: return new IntegerSymbol(Convert.ToInt32(result)) as Symbol<T>;
+            case SymbolType.Float: return new FloatSymbol(Convert.ToSingle(result)) as Symbol<T>;
+            case SymbolType.Id: return new IdSymbol(Convert.ToString(result)) as Symbol<T>;
+            case SymbolType.String: return new StringSymbol(Convert.ToString(result)) as Symbol<T>;
+            case SymbolType.Date: return new DateSymbol(Convert.ToDateTime(result)) as Symbol<T>;
+            default: return null;
         }
     }
+}
 
 }
