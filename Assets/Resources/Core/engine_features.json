@@ -7,7 +7,7 @@
         "descriptionEnglish": "Crude 2D graphics.",
         "disables": [],
         "requirement": "true",
-        "effect": "CurrentGame.ModifyScore(Graphics2D, 5.0)",
+        "effect": "CurrentGame.ModifyScore(@Graphics2D, 5.0)",
     },
 
     // AUDIO
@@ -17,23 +17,23 @@
         "descriptionEnglish": "Mono audio.",
         "disables": ["Audio_Stereo"],
         "requirement": "true",
-        "effect": "CurrentGame.ModifyScore(SoundFX, 5.0)",
+        "effect": "CurrentGame.ModifyScore(@SoundFX, 5.0)",
     },
     {
         "id": "Audio_Stereo",
         "name": "Audio Stereo",
         "descriptionEnglish": "Stereo audio.",
         "disables": ["Audio_Mono"],
-        "requirement": "Company.Projects.CompletedGames.WithEngineFeatureCount(Audio_Mono) >= 5",
-        "effect": "CurrentGame.ModifyScore(SoundFX, 10.0)",
+        "requirement": "Company.Projects.CompletedGames.WithEngineFeatureCount(@Audio_Mono) >= 5",
+        "effect": "CurrentGame.ModifyScore(@SoundFX, 10.0)",
     },
     {
         "id": "Audio_Soundtrack",
         "name": "Soundtrack",
         "descriptionEnglish": "Add a soundtrack to the game.",
         "disables": [],
-        "requirement": "Company.Projects.CompletedGames.WithEngineFeatureCount(Audio_Mono) >= 3",
-        "effect": "CurrentGame.ModifyScore(Soundtrack, 15.0)",
+        "requirement": "Company.Projects.CompletedGames.WithEngineFeatureCount(@Audio_Mono) >= 3",
+        "effect": "CurrentGame.ModifyScore(@Soundtrack, 15.0)",
     },
 ],
 }

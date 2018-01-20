@@ -230,9 +230,10 @@ public class FloatSymbol : Symbol<float> {
 [Serializable]
 public class IdSymbol : Symbol<string> {
     public IdSymbol(string value)
-        : base(value, $"{value}", SymbolType.Id) { }
+        : base(value, $"@{value}", SymbolType.Id) {
+    }
 
-    protected override string AsString() => Value;
+    protected override string AsString() => $"@{Value}";
 
     public override Symbol<string> Operation(Symbol<string> right, OperatorType type) {
         return IllegalOperation(right, "of any kind");

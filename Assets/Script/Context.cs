@@ -15,7 +15,7 @@ public interface IScriptContext {
     void SetCurrentEmployee(Employee employee);
 }
 
-public class ScriptContext {
+public abstract class ScriptContext {
     public static bool AddLocalVariable(IScriptContext context, string name,
         ISymbol value) {
         List<LocalVariable> localVariables = context.LocalVariables();
@@ -59,6 +59,7 @@ public class ScriptContext {
 }
 
 public class ParserContext {
+    public Grammar Grammar;
     public List<LocalVariable> LocalVariables;
     public List<GlobalVariable> GlobalVariables;
     public List<IFunction> Functions;

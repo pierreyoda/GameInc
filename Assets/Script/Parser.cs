@@ -27,7 +27,6 @@ public class LocalVariable {
     }
 
     [SerializeField] private IExpression declaration;
-    public IExpression Declaration => declaration;
 
     public LocalVariable(string name, SymbolType type, IExpression declaration) {
         this.name = name;
@@ -67,7 +66,7 @@ public class GlobalVariable {
 public class Parser : MonoBehaviour {
     private static readonly CultureInfo DateCultureInfo = CultureInfo.InvariantCulture;
     public const NumberStyles NumberStyleInteger = NumberStyles.Integer;
-    public const NumberStyles NumberStyleFloat =
+    private const NumberStyles NumberStyleFloat =
         NumberStyles.Float | NumberStyles.AllowThousands;
 
     private static IExpression ParseAssignment(string assignment,
@@ -85,15 +84,16 @@ public class Parser : MonoBehaviour {
         }
 
         // Sanity checks
-        string variable = tokens[0];
+        bool declaration = tokens[0] == context.Grammar.VariableDeclarator;
+        string variable = tokens[declaration ? 1 : 0];
         bool global = variable.StartsWith("$");
-        string variableName = variable.Substring(1);
-        if (variableName.Length < 1) {
-            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal empty variable name.");
+        string variableName = global ? variable.Substring(1) : variable;
+        if (variableName.Length < (global ? 2 : 1) ||
+            !context.Grammar.ValidateVariableName(variableName)) {
+            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal variable name.");
             return null;
         }
-        bool declaration = !global && tokens[1] == ":";
-        int decl = declaration ? 2 : 0;
+        int decl = declaration ? 3 : 0;
         string operation = tokens[1 + decl];
         AssignmentType assignmentType;
         if (!Operations.AssignmentTypeFromString(operation, out assignmentType)) {
@@ -110,16 +110,16 @@ public class Parser : MonoBehaviour {
         LocalVariable localVariable = null;
         GlobalVariable globalVariable = null;
         if (declaration) {
-            if (!variable.StartsWith("@") || tokens[1] != ":") {
+            if (tokens[2] != context.Grammar.TypeDeclarator) {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal declaration \"{a}\"");
                 return null;
             }
-            string typeString = tokens[2];
+            string typeString = tokens[3];
             if (!Symbol<bool>.SymbolTypeFromString(typeString, out type)) {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported Type \"{typeString}\"");
                 return null;
             }
-        } else if (variable.StartsWith("@")) { // local variable
+        } else if (!global) { // local variable
             localVariable = context.LocalVariables.Find(lv => lv.Name == variableName);
             if (localVariable == null) {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unkown local Variable \"{variableName}\"");
@@ -127,8 +127,12 @@ public class Parser : MonoBehaviour {
             }
             type = localVariable.Type;
         }
-        if (variable.StartsWith("$")) { // global variable
-            Assert.IsTrue(localVariable == null && !declaration);
+        if (global) { // global variable
+            Assert.IsTrue(localVariable == null);
+            if (declaration) {
+                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : cannot declare a Global Variable.");
+                return null;
+            }
             globalVariable = context.GlobalVariables.Find(gv => gv.Name == variableName);
             if (globalVariable == null) {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unkown Game Variable \"{variableName}\"");
@@ -161,10 +165,7 @@ public class Parser : MonoBehaviour {
         else Assert.IsNotNull(localVariable);
 
         // Return type : if ends with ';' void, else returns the computed value
-        SymbolType returnType;
-        if (tokens.Last() == ";") returnType = SymbolType.Void;
-        else returnType = type;
-        bool returnsType = returnType == type;
+        bool returnsType = tokens.Last() != ";";
 
         //Debug.LogWarning($"==> parsed {type} assignment \"{a}\" : returns type = {returnsType} : " +
         //                 $"{variable} {assignmentType} {rightExpression.Script()}");
@@ -177,11 +178,11 @@ public class Parser : MonoBehaviour {
                 else
                     variableExpression = new LocalVariableExpression<bool>(localVariable);
                 if (returnsType)
-                assignmentExpression = new AssignmentExpression<bool, bool>(assignmentType,
-                    variableExpression, rightExpression as Expression<bool>, returnsType);
+                    assignmentExpression = new AssignmentExpression<bool, bool>(assignmentType,
+                        variableExpression, rightExpression as Expression<bool>, returnsType);
                 else
-                assignmentExpression = new AssignmentExpression<Void, bool>(assignmentType,
-                    variableExpression, rightExpression as Expression<bool>, returnsType);
+                    assignmentExpression = new AssignmentExpression<Void, bool>(assignmentType,
+                        variableExpression, rightExpression as Expression<bool>, returnsType);
                 break;
             case SymbolType.Integer:
                 if (global)
@@ -241,7 +242,7 @@ public class Parser : MonoBehaviour {
 
     public static IExpression ParseExpression(string expression,
         ParserContext context) {
-        bool isAssignment, isComparison;
+        bool isAssignment;
         List<string> tokens = Lexer.Tokenize(expression, out isAssignment);
         if (tokens == null) {
             Debug.LogError($"Parser.ParseExpression(\"{expression}\") : tokenization error.");
@@ -519,19 +520,13 @@ public class Parser : MonoBehaviour {
     }
 
     private static IExpression ParseToken(string expression,
-        ParserContext context, string declaringLocalVariable = "") {
+        ParserContext context) {
         expression = expression.Trim();
         if (expression == "") return null;
-        // local variable
-        if (expression.StartsWith("@")) {
-            string variableName = expression.Substring(1);
-            LocalVariable localVariable = context.LocalVariables.Find(
-                lv => lv.Name == variableName);
-            if (variableName != declaringLocalVariable && localVariable == null) {
-                Debug.LogError($"Parser.ParseToken(\"{expression}\") : " +
-                               $"unkown Local Variable \"@{variableName}\".");
-                return null;
-            }
+        // local variable ?
+        LocalVariable localVariable = context.LocalVariables.Find(
+            lv => lv.Name == expression);
+        if (localVariable != null) {
             switch (localVariable.Type) {
                 case SymbolType.Boolean: return new LocalVariableExpression<bool>(localVariable);
                 case SymbolType.Integer: return new LocalVariableExpression<int>(localVariable);
@@ -566,7 +561,7 @@ public class Parser : MonoBehaviour {
             case "Math.PI": return new SymbolExpression<float>(new FloatSymbol(Mathf.PI));
         }
         // literal constant
-        ISymbol constant = ParseLiteral(expression);
+        ISymbol constant = ParseLiteral(expression, context);
         if (constant == null) {
             Debug.LogError($"Parser.ParseToken(\"{expression}\") : cannot parse as literal.");
             return null;
@@ -582,7 +577,7 @@ public class Parser : MonoBehaviour {
         }
     }
 
-    private static ISymbol ParseLiteral(string token) {
+    private static ISymbol ParseLiteral(string token, ParserContext context) {
         token = token.Trim();
         if (token == "") return null;
         char firstChar = token[0];
@@ -590,8 +585,12 @@ public class Parser : MonoBehaviour {
         if (token == "true") return new BooleanSymbol(true);
         if (token == "false") return new BooleanSymbol(false);
         // ID literal
-        if (char.IsLetter(firstChar)) {
-            return new IdSymbol(token);
+        if (firstChar == '@') {
+            if (!context.Grammar.ValidateIdLiteral(token)) {
+                Debug.LogError($"Parser.ParseLiteral(\"{token}\") : invalid ID literal.");
+                return null;
+            }
+            return new IdSymbol(token.Substring(1));
         }
         // string literal
         if (firstChar == '\'' || firstChar == '\"') {

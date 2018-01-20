@@ -8,22 +8,22 @@
         "descriptionEnglish" : """
 Looks like youre in troubles !
 
-Just this once, the government will bail you out with {@Company.BailOut.Amount}k.
+Just this once, the government will bail you out with {Company.BailOut.Amount}k.
 
 Be careful now, next time will be game over...
 """,
-        "onInit": "@Company.BailOut.Trigger : float = -200.0; @Company.BailOut.Amount : float = 400.0;",
-        "triggerCondition": "($Company.NeverBailedOut == true) && ($Company.Money < @Company.BailOut.Trigger)",
-        "triggerAction": "$Company.NeverBailedOut = false; $Company.Money += @Company.BailOut.Amount;",
+        "onInit": "let Company.BailOut.Trigger : float = -200.0; let Company.BailOut.Amount : float = 400.0;",
+        "triggerCondition": "($Company.NeverBailedOut == true) && ($Company.Money < Company.BailOut.Trigger)",
+        "triggerAction": "$Company.NeverBailedOut = false; $Company.Money += Company.BailOut.Amount;",
         "triggerLimit": "1",
     },
 
     // Test events
     {
         "id": "TitleTest",
-        "name": "Formatted Title Test ! Result = {3 * @Test.TitleTest}.",
+        "name": "Formatted Title Test ! Result = {3 * Test.TitleTest}.",
         "descriptionEnglish": "Title Test.",
-        "onInit": "@Test.TitleTest : int = 1",
+        "onInit": "let Test.TitleTest : int = 1",
         "triggerCondition": "$World.CurrentDate.Day == 4",
         "triggerAction": "",
         "triggerLimit": "1",
@@ -32,19 +32,19 @@ Be careful now, next time will be game over...
         "id": "MathTest",
         "name": "Math Functions Test Event",
         "descriptionEnglish": """
-x = {@x} rad
-3 * x = {3.0 * @x} rad
-cos({@x}) = {Math.Cos(@x)}
-sin({@x}) = {Math.Sin(@x)}
-tan({@x}) = {Math.Tan(@x)}
+x = {x} rad
+3 * x = {3.0 * x} rad
+cos({x}) = {Math.Cos(x)}
+sin({x}) = {Math.Sin(x)}
+tan({x}) = {Math.Tan(x)}
 
-y = {@y}
--6 * y = {-6.0 * @y}
-abs(y) = {Math.Abs(@y)}
+y = {y}
+-6 * y = {-6.0 * y}
+abs(y) = {Math.Abs(y)}
 """,
         "onInit": """
-@x : float = 45.0 * Math.PI / 180.0;
-@y : float = Math.Cos(2.0 * 0.25) - Random.Range(3.0, 5.0);
+let x : float = 45.0 * Math.PI / 180.0;
+let y : float = Math.Cos(2.0 * 0.25) - Random.Range(3.0, 5.0);
 """,
         "triggerCondition": "$World.CurrentDate.DayOfWeek == 5",
         "triggerAction": "",
@@ -52,42 +52,42 @@ abs(y) = {Math.Abs(@y)}
     },
     {
         "id": "ParsingTest",
-        "name": "Script Parser Test ! name = {@name} age = {@age}",
+        "name": "Script Parser Test ! name = {name} age = {age}",
         "descriptionEnglish": """
-a : id = {@a}
-b : date = {@b} ;
-c : date = {@c} ; d : date = {@d} ;
-b == c = {@b == @c} / c == d = {@c == @d}
-@e == 1 = {@e == 1}
+a : id = {a}
+b : date = {b} ;
+c : date = {c} ; d : date = {d} ;
+b == c = {b == c} / c == d = {c == d}
+e == 1 = {e == 1}
 3*5 == 10 + 5 = {3*5 == 10 + 5}
 11 <= 11 = {11 <= 11}
 10 < 9 = {10<9} ; 10 > 9 = {10>9}
 """,
         "onInit": """
-@name : string = 'john' + ' ' + 'doe';
-@age : float = 10.0 + Random.Range(3.0, 9.0);
-@a : id = idA;
-@b : date = 1983/01/30;
-@c : date = 1984/01/30;
-@d : date = 1984/01/30;
-@e : int = 1;
+let name : string = 'john' + ' ' + 'doe';
+let age : float = 10.0 + Random.Range(3.0, 9.0);
+let a : id = @idA;
+let b : date = 1983/01/30;
+let c : date = 1984/01/30;
+let d : date = 1984/01/30;
+let e : int = 1;
 """,
-        "triggerCondition" : "$World.CurrentDate == @c",
+        "triggerCondition" : "$World.CurrentDate == c",
         "triggerAction": "",
-        "triggerLimit": "@e",
+        "triggerLimit": "e",
     },
 
     // Engine-related events
     {
         "id": "Company_Engine_CanDevelop",
         "name": "Custom Engine development unlocked !",
-        "descriptionEnglish": "Having completed {@Engine.CanDevelop.MinGames} games, you can now develop your own Game Engine !",
-        "onInit": "@Engine.CanDevelop.MinGames : int = 0",
+        "descriptionEnglish": "Having completed {Engine.CanDevelop.MinGames} games, you can now develop your own Game Engine !",
+        "onInit": "let Engine.CanDevelop.MinGames : int = 0",
         "triggerCondition": """
-(Company.Projects.CompletedGamesCount() >= @Engine.CanDevelop.MinGames) &&
+(Company.Projects.CompletedGamesCount() >= Engine.CanDevelop.MinGames) &&
 ($World.CurrentDate.Month >= 2)
 """,
-        "triggerAction": "Company.SetFeature(Engine.CanDevelop, true)",
+        "triggerAction": "Company.SetFeature(@Engine.CanDevelop, true)",
         "triggerLimit": "1",
     },
 ],

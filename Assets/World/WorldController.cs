@@ -90,7 +90,8 @@ public class WorldController : MonoBehaviour, IScriptContext {
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
             "Employee.Salary", new FloatSymbol(0)));
         // parser context
-        ParserContext parserContext = new ParserContext() {
+        ParserContext parserContext = new ParserContext {
+            Grammar = Grammar.DefaultGrammar(),
             LocalVariables = scriptVariables,
             GlobalVariables = scriptGlobalVariables,
             Functions = scriptFunctions,
@@ -100,10 +101,10 @@ public class WorldController : MonoBehaviour, IScriptContext {
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
             "testVariable", new FloatSymbol(0f)));
         string script = @"
-            @alpha : int = 3;
-            @beta : int = (@alpha + 7) / 2;
-            @gamma : int = ToInt('4') + ToInt(-2.0);
-            @str : string = 'beta=' + ToString(@beta) + '; gamma=' + ToString(@gamma) + ';'
+            let alpha : int = 3;
+            let beta : int = (alpha + 7) / 2;
+            let gamma : int = ToInt('4') + ToInt(-2.0);
+            let str : string = 'beta=' + ToString(beta) + '; gamma=' + ToString(gamma) + ';'
         ";
         Executable executable = Executable.FromScript(script, parserContext);
         string scriptResult;
