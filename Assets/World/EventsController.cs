@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Script;
 using UnityEngine;
 using Event = Database.Event;
@@ -7,52 +6,51 @@ using Event = Database.Event;
 public class EventsController : MonoBehaviour {
     [SerializeField] private List<WorldEvent> worldEvents = new List<WorldEvent>();
 
-    public void InitEvents(List<Event> events,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
+    public void CreateEvents(List<Event> events,
+        ParserContext parserContext) {
         foreach (Event e in events) {
-            foreach (string declaration in e.VariablesDeclarations) {
-                if (!Parser.ParseVariableDeclaration(declaration,
-                    localVariables, globalVariables, functions)) {
-                    Debug.LogError($"EventsController - Event variable declaration parsing error for Event (ID = {e.Id}).");
-                }
+            // On-Init script
+            Executable onInit = Executable.FromScript(e.OnInit, parserContext);
+            if (onInit == null) {
+                Debug.LogError(
+                     "EventsController - Event on-init script parsing " +
+                    $"error for Event (ID = {e.Id}). Ignoring Event."
+                );
+                continue;
             }
-
-            // Parse the trigger conditions and actions
-            List<Expression<bool>> conditions = new List<Expression<bool>>();
-            List<IExpression> actions = new List<IExpression>();
-            foreach (string condition in e.TriggerConditions) {
-                Expression<bool> trigger = Parser.ParseComparison(condition,
-                    localVariables, globalVariables, functions);
-                if (trigger == null) {
-                    Debug.LogError(
-                        $"EventsController - Condition parsing error for Event (ID = {e.Id}). Ignoring \"{condition}\".");
-                    continue;
-                }
-                if (trigger.Type() != SymbolType.Boolean) {
-                    Debug.LogError(
-                        $"EventsController - Condition expression {trigger.Type()} and not boolean for Event (ID = {e.Id}). Ignoring \"{condition}\".");
-                    continue;
-                }
-                conditions.Add(trigger);
+            // Condition script
+            TypedExecutable<bool> condition = TypedExecutable<bool>.FromScript(
+                e.TriggerCondition, parserContext);
+            if (condition == null) {
+                Debug.LogError(
+                     "EventsController - Condition parsing error for Event " +
+                    $"(ID = {e.Id}) in \"{e.TriggerCondition}\".");
+                continue;
             }
-            foreach (string action in e.TriggerActions) {
-                IExpression trigger = Parser.ParseExpression(action,
-                    localVariables, globalVariables, functions);
-                if (trigger == null) {
-                    Debug.LogError(
-                        $"EventsController - Action parsing error for Event (ID = {e.Id}). Ignoring \"{action}\".");
-                    continue;
-                }
-                actions.Add(trigger);
+            // Action script
+            Executable action = Executable.FromScript(e.TriggerAction,
+                parserContext);
+            if (action == null) {
+                Debug.LogError(
+                     "EventsController - Action parsing error for Event " +
+                    $"(ID = {e.Id}) in \"{e.TriggerCondition}\".");
+                continue;
             }
-
             // Store the WorldEvent and its computed metadata
-            WorldEvent worldEvent = new WorldEvent(e, conditions, actions,
-                localVariables, globalVariables, functions);
+            WorldEvent worldEvent = new WorldEvent(e, onInit, condition,
+                action, parserContext);
             worldEvents.Add(worldEvent);
         }
     }
+
+    public bool InitEvents(IScriptContext context) {
+        bool noErrors = true;
+        foreach (WorldEvent we in worldEvents) {
+            if (!we.InitEvent(context)) noErrors = false;
+        }
+        return noErrors;
+    }
+
     public List<WorldEvent> OnGameDateChanged(IScriptContext context) {
         List<WorldEvent> triggeredEvents = new List<WorldEvent>();
         foreach (WorldEvent we in worldEvents) {

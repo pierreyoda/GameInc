@@ -9,16 +9,16 @@ using Event = Database.Event;
 [Serializable]
 public class WorldEvent {
     [SerializeField] private Event info;
-    public Event Info => info;
 
     [SerializeField] private int triggersCount = 0;
-    private Expression<int> triggersLimit;
+    private readonly TypedExecutable<int> triggersLimit;
 
-    [SerializeField] private bool active = true;
+    [SerializeField] private bool active = false;
     public bool Active => active;
 
-    [SerializeField] private List<Expression<bool>> conditions;
-    [SerializeField] private List<IExpression> actions;
+    [SerializeField] private Executable onInit;
+    [SerializeField] private TypedExecutable<bool> condition;
+    [SerializeField] private Executable action;
 
     [SerializeField] private string cachedTitle;
     private readonly List<IExpression> titleExpressions = new List<IExpression>();
@@ -32,36 +32,40 @@ public class WorldEvent {
     private string computedDescription;
     public string ComputedDescription => computedDescription;
 
-    public WorldEvent(Event info,
-        List<Expression<bool>> conditions,
-        List<IExpression> actions,
-        List<LocalVariable> localVariables,
-        List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
+    public WorldEvent(Event info, Executable onInit, TypedExecutable<bool> condition,
+        Executable action, ParserContext parserContext) {
         this.info = info;
-        this.conditions = conditions;
-        this.actions = actions;
+        this.onInit = onInit;
+        this.condition = condition;
+        this.action = action;
 
         // Trigger limit parsing
-        IExpression limit = Parser.ParseExpression(info.TriggerLimit,
-            localVariables, globalVariables, functions);
-        if (limit == null) {
+        triggersLimit = TypedExecutable<int>.FromScript(info.TriggerLimit,
+            parserContext);
+        if (triggersLimit == null) {
             Debug.LogError(
-                $"WorldEvent (Info.Id = {info.Id}) : trigger limit parsing error in \"{info.TriggerLimit}\". Reverting to no limit default (-1).");
-            triggersLimit = new SymbolExpression<int>(new IntegerSymbol(-1)); // no limit by default
-        } else if (limit.Type() != SymbolType.Integer) {
-            Debug.LogError(
-                $"WorldEvent (Info.Id = {info.Id}) : trigger limit of type {limit.Type()} instead of {SymbolType.Integer}. Reverting to no limit default (-1).");
-            triggersLimit = new SymbolExpression<int>(new IntegerSymbol(-1)); // no limit by default
-        } else {
-            triggersLimit = limit as Expression<int>;
+                $"WorldEvent (Info.Id = {info.Id}) : trigger limit parsing error in " +
+                $"\"{info.TriggerLimit}\". Reverting to no limit default (-1).");
+            triggersLimit = TypedExecutable<int>.FromScript("-1", parserContext); // no limit by default
+            Assert.IsNotNull(triggersLimit);
         }
 
         // Text parsing
-        cachedTitle = CachedText(info.TitleEnglish, titleExpressions,
-            localVariables, globalVariables, functions, "Title");
-        cachedDescription = CachedText(info.DescriptionEnglish, descriptionExpressions,
-            localVariables, globalVariables, functions, "Description");
+        cachedTitle = CachedText(info.TitleEnglish, titleExpressions, "Title",
+            parserContext);
+        cachedDescription = CachedText(info.DescriptionEnglish,
+            descriptionExpressions, "Description", parserContext);
+    }
+
+    public bool InitEvent(IScriptContext context) {
+        if (onInit.Execute(context) == null) {
+            Debug.LogError($"WorldEvent(id = \"{info.Id}\").OnInit : evaluation " +
+                      $"error in \"{info.OnInit}\". Disabling this WorldEvent.");
+            active = false;
+            return false;
+        }
+        active = true;
+        return true;
     }
 
     /// <summary>
@@ -70,16 +74,15 @@ public class WorldEvent {
     /// </summary>
     /// <returns>True if the WorldEvent cannot be triggered anymore, False otherwise.</returns>
     public bool CheckEvent(IScriptContext context, out bool triggered) {
+        Assert.IsTrue(active);
         triggered = false;
-
         // trigger limits check
-        ISymbol limitSymbol = triggersLimit.Evaluate(context);
-        if (limitSymbol == null || limitSymbol.Type() != SymbolType.Integer) {
-            Debug.Log($"WorldEvent - Event \"{info.Id}\" : invalid limit \"{triggersLimit.Script()}\".");
+        int limit;
+        if (!triggersLimit.Compute(context, out limit)) {
+            Debug.Log($"WorldEvent - Event \"{info.Id}\" : evaluation error in limit \"{info.TriggerLimit}\".");
             active = false;
             return true;
         }
-        int limit = ((Symbol<int>) limitSymbol).Value;
         if (limit >= 0 && triggersCount >= limit) {
             Debug.Log($"WorldEvent - Event \"{info.Id}\" reached its triggers limit ({limit}).");
             active = false;
@@ -87,37 +90,30 @@ public class WorldEvent {
         }
 
         // condition check : all conditions must evaluate to True
-        foreach (Expression<bool> condition in conditions) {
-            ISymbol result = condition.Evaluate(context);
-            if (result == null) {
-                Debug.Log($"WorldEvent - Event \"{info.Id}\" : error while evaluating condition \"{condition.Script()}\".");
-                return true;
-            }
-            if (result.Type() != SymbolType.Boolean) {
-                Debug.Log($"WorldEvent - Event \"{info.Id}\" : non-boolean condition of type {result.Type()} \"{condition.Script()}\".");
-                return true;
-            }
-            bool validated = ((Symbol<bool>) result).Value;
-            if (!validated) return false;
+        bool validated;
+        if (!condition.Compute(context, out validated)) {
+            Debug.Log($"WorldEvent - Event \"{info.Id}\" : error while " +
+                      $"evaluating condition \"{info.TriggerCondition}\".");
         }
+        if (!validated) return false;
 
         // action when triggered
-        Debug.Log($"WorldEvent - Event \"{info.Id}\" triggered ! Triggers count = {triggersCount}, limit = {limit}.");
-        ++triggersCount;
-        foreach (IExpression action in actions) {
+        Debug.Log($"WorldEvent - Event \"{info.Id}\" triggered ! " +
+                  $"Triggers count = {++triggersCount}, limit = {limit}.");
+        if (action.Execute(context) == null) {
+            Debug.LogError($"WorldEvent - Event \"{info.Id}\" activation : error " +
+                           $"while evaluating Action script \"{info.TriggerAction}\".");
+            computedTitle = computedDescription = "$ SCRIPT EXECUTION ERROR $";
+            return true;
         }
-
         computedTitle = ComputeTitle(context);
         computedDescription = ComputeDescription(context);
-
         triggered = true;
         return false;
     }
 
     private string CachedText(string text, List<IExpression> expressions,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions,
-        string label) {
+        string label, ParserContext parserContext) {
         string cached = "";
         text = text.Trim();
         for (int i = 0; i < text.Length; i++) {
@@ -153,8 +149,7 @@ public class WorldEvent {
             }
             if (alreadyPresent) continue;
 
-            IExpression expression = Parser.ParseExpression(expressionString,
-                localVariables, globalVariables, functions);
+            IExpression expression = Parser.ParseExpression(expressionString, parserContext);
             if (expression == null) {
                 Debug.LogError($"WorldEvent (Info.Id = {info.Id}) : expression parsing error in the English {label} text.");
                 continue;

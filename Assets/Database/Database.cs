@@ -196,6 +196,7 @@ public class Database {
             additions = JsonUtility.FromJson<DatabaseCollection<T>>(dataFileContent);
         } catch (ArgumentException e) {
             Debug.LogError($"Database.LoadDataFile(\"{dataFile}\", {dataType}) : JSON error :\n{e.Message}");
+            Debug.LogError($"Formatted JSON :\n{dataFileContent}");
             return false;
         }
         if (additions == null) {

@@ -13,79 +13,56 @@ public class EngineFeaturesController : MonoBehaviour {
         [SerializeField] private bool allowed = false;
         public bool Allowed => allowed;
 
-        [SerializeField] private List<Expression<bool>> requirements;
-        [SerializeField] private List<IExpression> effects;
+        [SerializeField] private TypedExecutable<bool> requirement;
+        [SerializeField] private Executable effect;
 
         public WorldEngineFeature(EngineFeature info,
-            List<Expression<bool>> requirements, List<IExpression> effects) {
+            TypedExecutable<bool> requirement, Executable effect) {
             this.info = info;
-            this.requirements = requirements;
-            this.effects = effects;
+            this.requirement = requirement;
+            this.effect = effect;
         }
 
         public bool CheckFeature(IScriptContext context) {
-            // requirement check : all requirements must evaluate to True
-            foreach (Expression<bool> requirement in requirements) {
-                ISymbol result = requirement.Evaluate(context);
-                if (result == null) {
-                    Debug.Log($"EngineFeature \"{info.Id}\" : error while evaluating requirement \"{requirement.Script()}\".");
-                    return true;
-                }
-                if (result.Type() != SymbolType.Boolean) {
-                    Debug.Log($"EngineFeature \"{info.Id}\" : non-boolean requirement of type {result.Type()} \"{requirement.Script()}\".");
-                    return true;
-                }
-                bool validated = ((Symbol<bool>) result).Value;
-                if (!validated) return false;
+            // requirement check
+            bool validated;
+            if (!requirement.Compute(context, out validated)) {
+                Debug.LogError($"EngineFeature \"{info.Id}\" : error while evaluating requirement \"{info.Requirement}\".");
+                return true;
             }
+            if (!validated) return false;
 
             // action when triggered
-            Debug.Log($"WorldEngineFeature - Engine feature {info.Id} is now allowed.");
             allowed = true;
-
+            Debug.Log($"WorldEngineFeature - Engine feature {info.Id} is now allowed.");
             return true;
         }
     }
 
     [SerializeField] private List<WorldEngineFeature> worldFeatures = new List<WorldEngineFeature>();
 
-    [SerializeField] private List<string> authorizedFeaturesIDs = new List<string>();
-    public List<string> AuthorizedFeaturesIDs => authorizedFeaturesIDs;
-
-    public void InitFeatures(List<EngineFeature> engineFeatures,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
+    public void CreateFeatures(List<EngineFeature> engineFeatures,
+        ParserContext parserContext) {
         foreach (EngineFeature f in engineFeatures) {
-            // Parse the requirements and effects
-            List<Expression<bool>> requirements = new List<Expression<bool>>();
-            List<IExpression> effects = new List<IExpression>();
-            foreach (string requirement in f.Requirements) {
-                Expression<bool> condition = Parser.ParseComparison(requirement,
-                    localVariables, globalVariables, functions);
-                if (condition == null) {
-                    Debug.LogError(
-                        $"EngineFeaturesController - Requirement parsing error for Event (ID = {f.Id}). Ignoring \"{requirement}\".");
-                    continue;
-                }
-                if (condition.Type() != SymbolType.Boolean) {
-                    Debug.LogError(
-                        $"EngineFeaturesController - Requirement expression {condition.Type()} and not boolean for EngineFeature (ID = {f.Id}). Ignoring \"{requirement}\".");
-                    continue;
-                }
-                requirements.Add(condition);
+            // Parse the Requirement script
+            TypedExecutable<bool> requirement = TypedExecutable<bool>.FromScript(
+                f.Requirement, parserContext);
+            if (requirement == null) {
+                Debug.LogError( "EngineFeaturesController.InitFeatures : Requirement parsing " +
+                               $"error for EngineFeature (ID = {f.Id}). Ignoring \"{f.Requirement}\".");
+                continue;
             }
-            foreach (string effect in f.Effects) {
-                IExpression action = Parser.ParseExpression(effect,
-                    localVariables, globalVariables, functions);
-                if (action == null) {
-                    Debug.LogError($"EngineFeaturesController - Effect parsing error for EngineFeature (ID = {f.Id}). Ignoring \"{effect}\".");
-                    continue;
-                }
-                effects.Add(action);
+
+            // Parse the Effect script
+            Executable effect = Executable.FromScript(f.Effect, parserContext);
+            if (effect == null) {
+                Debug.LogError( "EngineFeaturesController.InitFeatures : Effect parsing " +
+                                $"error for EngineFeature (ID = {f.Id}). Ignoring \"{f.Effect}\".");
+                continue;
             }
 
             // Store the WorldEvent and its computed metadata
-            WorldEngineFeature worldFeature = new WorldEngineFeature(f, requirements, effects);
+            WorldEngineFeature worldFeature = new WorldEngineFeature(f, requirement, effect);
             worldFeatures.Add(worldFeature);
         }
     }

@@ -6,7 +6,6 @@ namespace Script {
 
 public interface IScriptContext {
     List<LocalVariable> LocalVariables();
-    GlobalVariable GetGlobalVariable(string name);
     bool SetGlobalVariable(string name, ISymbol value);
 
     DateTime D();
@@ -57,6 +56,12 @@ public class ScriptContext {
         }
         return localVariable.Value;
     }
+}
+
+public class ParserContext {
+    public List<LocalVariable> LocalVariables;
+    public List<GlobalVariable> GlobalVariables;
+    public List<IFunction> Functions;
 }
 
 }

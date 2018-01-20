@@ -89,25 +89,37 @@ public class WorldController : MonoBehaviour, IScriptContext {
             "Employee.HiringCost", new FloatSymbol(0)));
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
             "Employee.Salary", new FloatSymbol(0)));
+        // parser context
+        ParserContext parserContext = new ParserContext() {
+            LocalVariables = scriptVariables,
+            GlobalVariables = scriptGlobalVariables,
+            Functions = scriptFunctions,
+        };
 
         // test
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
             "testVariable", new FloatSymbol(0f)));
-        string testScript = "@testVariable = -1.0 + 2.0 * Math.Cos(30.0 * Math.PI/180.0)";
-        Parser.ExecuteScript(this, testScript, scriptVariables,
-            scriptGlobalVariables, scriptFunctions);
+        string script = @"
+            @alpha : int = 3;
+            @beta : int = (@alpha + 7) / 2;
+            @gamma : int = ToInt('4') + ToInt(-2.0);
+            @str : string = 'beta=' + ToString(@beta) + '; gamma=' + ToString(@gamma) + ';'
+        ";
+        Executable executable = Executable.FromScript(script, parserContext);
+        string scriptResult;
+        executable.ExecuteExpecting(this, out scriptResult);
+        Debug.LogWarning("===> executable result = " + scriptResult);
 
         // scripts parsing
-        eventsController.InitEvents(db.Events.Collection,
-            scriptVariables, scriptGlobalVariables, scriptFunctions);
-        Parser.ExecuteVariableDeclarations(this);
-        playerCompany.Init(database.Skills,
-            scriptVariables, scriptGlobalVariables, scriptFunctions);
-
-        engineFeaturesController.InitFeatures(db.EngineFeatures.Collection,
-            scriptVariables, scriptGlobalVariables, scriptFunctions);
+        eventsController.CreateEvents(db.Events.Collection, parserContext);
+        playerCompany.Init(database.Skills, parserContext);
+        engineFeaturesController.CreateFeatures(db.EngineFeatures.Collection,
+            parserContext);
         engineFeaturesController.CheckFeatures(this);
-        newsController.InitNews(db.News.Collection, date);
+        newsController.CreateNews(db.News.Collection, date);
+
+        // events OnInit calls
+        Assert.IsTrue(eventsController.InitEvents(this));
 
         float hiringCost;
         Employee employee = playedCompany.EmployeesManager.GenerateRandomEmployee(
@@ -157,13 +169,6 @@ public class WorldController : MonoBehaviour, IScriptContext {
 
     public List<LocalVariable> LocalVariables() {
         return scriptVariables;
-    }
-
-    public GlobalVariable GetGlobalVariable(string variableName) {
-        GlobalVariable globalVariable = scriptGlobalVariables.Find(gv => gv.Name == variableName);
-        if (globalVariable == null)
-            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : unkown global variable.");
-        return globalVariable;
     }
 
     public bool SetGlobalVariable(string variableName, ISymbol value) {

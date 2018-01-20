@@ -15,18 +15,18 @@ public class EngineFeature : DatabaseElement {
     [SerializeField] private string[] disables;
     public string[] Disables => disables;
 
-    [SerializeField] private string[] requirements;
-    public string[] Requirements => requirements;
+    [SerializeField] private string requirement;
+    public string Requirement => requirement;
 
-    [SerializeField] private string[] effects;
-    public string[] Effects => effects;
+    [SerializeField] private string effect;
+    public string Effect => effect;
 
     public EngineFeature(string id, string name, string descriptionEnglish,
-        string[] disables, string[] requirements, string[] effects) : base(id, name) {
+        string[] disables, string requirement, string effect) : base(id, name) {
         this.descriptionEnglish = descriptionEnglish;
         this.disables = disables;
-        this.requirements = requirements;
-        this.effects = effects;
+        this.requirement = requirement;
+        this.effect = effect;
     }
 }
 

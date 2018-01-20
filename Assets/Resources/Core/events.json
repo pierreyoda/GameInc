@@ -12,9 +12,9 @@ Just this once, the government will bail you out with {@Company.BailOut.Amount}k
 
 Be careful now, next time will be game over...
 """,
-        "variables": [ "@Company.BailOut.Trigger : float = -200.0", "@Company.BailOut.Amount : float = 400.0" ],
-        "triggerConditions" : [ "$Company.NeverBailedOut == true", "$Company.Money < @Company.BailOut.Trigger" ],
-        "triggerActions" : [ "$Company.NeverBailedOut = false", "$Company.Money += @Company.BailOut.Amount" ],
+        "onInit": "@Company.BailOut.Trigger : float = -200.0; @Company.BailOut.Amount : float = 400.0;",
+        "triggerCondition": "($Company.NeverBailedOut == true) && ($Company.Money < @Company.BailOut.Trigger)",
+        "triggerAction": "$Company.NeverBailedOut = false; $Company.Money += @Company.BailOut.Amount;",
         "triggerLimit": "1",
     },
 
@@ -23,9 +23,9 @@ Be careful now, next time will be game over...
         "id": "TitleTest",
         "name": "Formatted Title Test ! Result = {3 * @Test.TitleTest}.",
         "descriptionEnglish": "Title Test.",
-        "variables": ["@Test.TitleTest : int = 1"],
-        "triggerConditions": ["$World.CurrentDate.Day == 4"],
-        "triggerActions": [],
+        "onInit": "@Test.TitleTest : int = 1",
+        "triggerCondition": "$World.CurrentDate.Day == 4",
+        "triggerAction": "",
         "triggerLimit": "1",
     },
     {
@@ -38,13 +38,16 @@ cos({@x}) = {Math.Cos(@x)}
 sin({@x}) = {Math.Sin(@x)}
 tan({@x}) = {Math.Tan(@x)}
 
-y = Rand(0, 1) = {@y}
+y = {@y}
 -6 * y = {-6.0 * @y}
 abs(y) = {Math.Abs(@y)}
 """,
-        "variables": [ "@x : float = 45.0 * Math.PI / 180.0", "@y : float = Math.Cos(2.0 * 0.25) - Random.Range(3.0, 5.0)" ],
-        "triggerConditions" : [ "$World.CurrentDate.DayOfWeek == 5" ],
-        "triggerActions": [],
+        "onInit": """
+@x : float = 45.0 * Math.PI / 180.0;
+@y : float = Math.Cos(2.0 * 0.25) - Random.Range(3.0, 5.0);
+""",
+        "triggerCondition": "$World.CurrentDate.DayOfWeek == 5",
+        "triggerAction": "",
         "triggerLimit": "1",
     },
     {
@@ -58,19 +61,19 @@ b == c = {@b == @c} / c == d = {@c == @d}
 @e == 1 = {@e == 1}
 3*5 == 10 + 5 = {3*5 == 10 + 5}
 11 <= 11 = {11 <= 11}
-10 < 9 = {10<9}
+10 < 9 = {10<9} ; 10 > 9 = {10>9}
 """,
-        "variables": [
-            "@name : string = 'john' + ' ' + 'doe'",
-            "@age : float = 10.0 + Random.Range(3.0, 9.0)",
-            "@a : id = idA",
-            "@b : date = 1983/01/30",
-            "@c : date = 1984/01/30",
-            "@d : date = 1984/01/30",
-            "@e : int = 1",
-        ],
-        "triggerConditions" : ["$World.CurrentDate == @c"],
-        "triggerActions": [],
+        "onInit": """
+@name : string = 'john' + ' ' + 'doe';
+@age : float = 10.0 + Random.Range(3.0, 9.0);
+@a : id = idA;
+@b : date = 1983/01/30;
+@c : date = 1984/01/30;
+@d : date = 1984/01/30;
+@e : int = 1;
+""",
+        "triggerCondition" : "$World.CurrentDate == @c",
+        "triggerAction": "",
         "triggerLimit": "@e",
     },
 
@@ -78,13 +81,13 @@ b == c = {@b == @c} / c == d = {@c == @d}
     {
         "id": "Company_Engine_CanDevelop",
         "name": "Custom Engine development unlocked !",
-        "descriptionEnglish" : "Having completed {@Engine.CanDevelop.MinGames} games, you can now develop your own Game Engine !",
-        "variables": [ "@Engine.CanDevelop.MinGames : int = 0" ],
-        "triggerConditions" : [
-            "Company.Projects.CompletedGamesCount() >= @Engine.CanDevelop.MinGames",
-            "$World.CurrentDate.Month >= 2",
-        ],
-        "triggerActions" : [ "Company.SetFeature(Engine.CanDevelop, true)" ],
+        "descriptionEnglish": "Having completed {@Engine.CanDevelop.MinGames} games, you can now develop your own Game Engine !",
+        "onInit": "@Engine.CanDevelop.MinGames : int = 0",
+        "triggerCondition": """
+(Company.Projects.CompletedGamesCount() >= @Engine.CanDevelop.MinGames) &&
+($World.CurrentDate.Month >= 2)
+""",
+        "triggerAction": "Company.SetFeature(Engine.CanDevelop, true)",
         "triggerLimit": "1",
     },
 ],

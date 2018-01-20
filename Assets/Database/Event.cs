@@ -12,13 +12,16 @@ namespace Database {
 /// </summary>
 [Serializable]
 public class Event : DatabaseElement {
-    [SerializeField] private string[] triggerConditions;
-    public string[] TriggerConditions => triggerConditions;
+    [SerializeField] [MultilineAttribute] private string onInit;
+    public string OnInit => onInit;
 
-    [SerializeField] private string[] triggerActions;
-    public string[] TriggerActions => triggerActions;
+    [SerializeField] [MultilineAttribute] private string triggerCondition;
+    public string TriggerCondition => triggerCondition;
 
-    [SerializeField] private string triggerLimit;
+    [SerializeField] [MultilineAttribute] private string triggerAction;
+    public string TriggerAction => triggerAction;
+
+    [SerializeField] [MultilineAttribute] private string triggerLimit;
     public string TriggerLimit => triggerLimit;
 
     public string TitleEnglish => Name;
@@ -26,17 +29,14 @@ public class Event : DatabaseElement {
     [SerializeField] [MultilineAttribute] private string descriptionEnglish;
     public string DescriptionEnglish => descriptionEnglish;
 
-    [SerializeField] private string[] variables;
-    public string[] VariablesDeclarations => variables;
-
-    public Event(string id, string name, string[] triggerConditions,
-        string[] triggerActions, string triggerLimit, string[] variables,
-        string descriptionEnglish) : base(id, name) {
-        this.triggerConditions = triggerConditions;
-        this.triggerActions = triggerActions;
+    public Event(string id, string name, string onInit, string triggerCondition,
+        string triggerAction, string triggerLimit, string descriptionEnglish)
+        : base(id, name) {
+        this.onInit = onInit;
+        this.triggerCondition = triggerCondition;
+        this.triggerAction = triggerAction;
         this.triggerLimit = triggerLimit;
         this.descriptionEnglish = descriptionEnglish;
-        this.variables = variables;
     }
 }
 

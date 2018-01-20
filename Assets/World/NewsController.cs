@@ -7,7 +7,7 @@ using UnityEngine;
 public class NewsController : MonoBehaviour {
 	[SerializeField] private List<News> news;
 
-	public void InitNews(List<News> allNews, DateTime startingDate) {
+	public void CreateNews(List<News> allNews, DateTime startingDate) {
 		// sort by date
 		news = new List<News>(allNews.OrderBy(n => n.Date));
 		news.RemoveAll(n => n.Date < startingDate.Date);

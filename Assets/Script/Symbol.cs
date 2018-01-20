@@ -5,8 +5,13 @@ using UnityEngine.WSA;
 
 namespace Script {
 
+[Serializable]
+public class Void { }
+
+[Serializable]
 public enum SymbolType {
     Invalid,
+    Void,
     Boolean,
     Integer,
     Float,
@@ -44,12 +49,12 @@ public abstract class Symbol<T> : ISymbol {
         this.type = type;
     }
 
-    public abstract string AsString();
+    protected abstract string AsString();
     public string ValueString() => AsString();
 
     public abstract Symbol<T> Operation(Symbol<T> right, OperatorType type);
     public abstract Symbol<T> Assignment(Symbol<T> right, AssignmentType type);
-    public abstract Symbol<bool> CompareTo(Symbol<T> other, ComparisonType type);
+    public abstract Symbol<bool> CompareTo(Symbol<T> other, OperatorType type);
 
     protected Symbol<T> IllegalAssignment(Symbol<T> right, string label) {
         Debug.LogError($"Script Error : illegal assignment : {expression} {label} {right.expression}");
@@ -73,14 +78,43 @@ public abstract class Symbol<T> : ISymbol {
     }
 }
 
+[Serializable]
+public class VoidSymbol : Symbol<Void> {
+    public VoidSymbol() : base(new Void(), "$VOID$", SymbolType.Void) { }
+
+    protected override string AsString() => "$VOID$";
+    public override Symbol<Void> Operation(Symbol<Void> right, OperatorType type) {
+        return IllegalOperation(right, "of any kind");
+    }
+
+    public override Symbol<Void> Assignment(Symbol<Void> right, AssignmentType type) {
+        return IllegalAssignment(right, "of any kind");
+    }
+
+    public override Symbol<bool> CompareTo(Symbol<Void> other, OperatorType type) {
+        Debug.LogError("Unsupported comparison of any kind for VoidSymbol.");
+        return null;
+    }
+}
+
+[Serializable]
 public class BooleanSymbol : Symbol<bool> {
     public BooleanSymbol(bool value)
         : base(value, value ? "true" : "false", SymbolType.Boolean) { }
 
-    public override string AsString() => Value ? "true" : "false";
+    protected override string AsString() => Value ? "true" : "false";
 
     public override Symbol<bool> Operation(Symbol<bool> right, OperatorType type) {
-        return IllegalOperation(right, "of any kind");
+        switch (type) {
+            case OperatorType.LogicalAnd:
+                return new BooleanSymbol(Value && right.Value);
+            case OperatorType.LogicalOr:
+                return new BooleanSymbol(Value || right.Value);
+            default:
+                Debug.LogError($"Script Error : illegal operation {type} between " +
+                                "two boolean Symbols.");
+                return null;
+        }
     }
 
     public override Symbol<bool> Assignment(Symbol<bool> right, AssignmentType type) {
@@ -91,9 +125,9 @@ public class BooleanSymbol : Symbol<bool> {
     }
 
     public override Symbol<bool> CompareTo(Symbol<bool> other,
-        ComparisonType type) {
+        OperatorType type) {
         switch (type) {
-            case ComparisonType.Equal: return new BooleanSymbol(Value == other.Value);
+            case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
             default:
                 Debug.LogError($"Unsupported operation {type} for BooleanSymbol.");
                 return null;
@@ -101,11 +135,12 @@ public class BooleanSymbol : Symbol<bool> {
     }
 }
 
+[Serializable]
 public class IntegerSymbol : Symbol<int> {
     public IntegerSymbol(int value)
         : base(value, value.ToString(), SymbolType.Integer) { }
 
-    public override string AsString() => Value.ToString(CultureInfo);
+    protected override string AsString() => Value.ToString(CultureInfo);
 
     public override Symbol<int> Operation(Symbol<int> right, OperatorType type) {
         switch (type) {
@@ -133,23 +168,24 @@ public class IntegerSymbol : Symbol<int> {
     }
 
     public override Symbol<bool> CompareTo(Symbol<int> other,
-        ComparisonType type) {
+        OperatorType type) {
         switch (type) {
-            case ComparisonType.Equal: return new BooleanSymbol(Value == other.Value);
-            case ComparisonType.Superior: return new BooleanSymbol(Value < other.Value);
-            case ComparisonType.SuperiorOrEqual: return new BooleanSymbol(Value >= other.Value);
-            case ComparisonType.Inferior: return new BooleanSymbol(Value < other.Value);
-            case ComparisonType.InferiorOrEqual: return new BooleanSymbol(Value <= other.Value);
+            case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
+            case OperatorType.Superior: return new BooleanSymbol(Value > other.Value);
+            case OperatorType.SuperiorOrEqual: return new BooleanSymbol(Value >= other.Value);
+            case OperatorType.Inferior: return new BooleanSymbol(Value < other.Value);
+            case OperatorType.InferiorOrEqual: return new BooleanSymbol(Value <= other.Value);
             default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
     }
 }
 
+[Serializable]
 public class FloatSymbol : Symbol<float> {
     public FloatSymbol(float value)
         : base(value, value.ToString(CultureInfo), SymbolType.Float) { }
 
-    public override string AsString() => Value.ToString(CultureInfo);
+    protected override string AsString() => Value.ToString(CultureInfo);
 
     public override Symbol<float> Operation(Symbol<float> right, OperatorType type) {
         switch (type) {
@@ -177,13 +213,13 @@ public class FloatSymbol : Symbol<float> {
     }
 
     public override Symbol<bool> CompareTo(Symbol<float> other,
-        ComparisonType type) {
+        OperatorType type) {
         switch (type) {
-            case ComparisonType.Equal: return new BooleanSymbol(Math.Abs(Value - other.Value) < FLOAT_EPSILON);
-            case ComparisonType.Superior: return new BooleanSymbol(Value < other.Value);
-            case ComparisonType.SuperiorOrEqual: return new BooleanSymbol(Value >= other.Value);
-            case ComparisonType.Inferior: return new BooleanSymbol(Value < other.Value);
-            case ComparisonType.InferiorOrEqual: return new BooleanSymbol(Value <= other.Value);
+            case OperatorType.Equal: return new BooleanSymbol(Math.Abs(Value - other.Value) < FLOAT_EPSILON);
+            case OperatorType.Superior: return new BooleanSymbol(Value > other.Value);
+            case OperatorType.SuperiorOrEqual: return new BooleanSymbol(Value >= other.Value);
+            case OperatorType.Inferior: return new BooleanSymbol(Value < other.Value);
+            case OperatorType.InferiorOrEqual: return new BooleanSymbol(Value <= other.Value);
             default:
                 Debug.LogError($"Unsupported operation {type} for FloatSymbol.");
                 return null;
@@ -191,11 +227,12 @@ public class FloatSymbol : Symbol<float> {
     }
 }
 
+[Serializable]
 public class IdSymbol : Symbol<string> {
     public IdSymbol(string value)
         : base(value, $"{value}", SymbolType.Id) { }
 
-    public override string AsString() => Value;
+    protected override string AsString() => Value;
 
     public override Symbol<string> Operation(Symbol<string> right, OperatorType type) {
         return IllegalOperation(right, "of any kind");
@@ -209,9 +246,9 @@ public class IdSymbol : Symbol<string> {
     }
 
     public override Symbol<bool> CompareTo(Symbol<string> other,
-        ComparisonType type) {
+        OperatorType type) {
         switch (type) {
-            case ComparisonType.Equal: return new BooleanSymbol(Value == other.Value);
+            case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
             default:
                 Debug.LogError($"Unsupported operation {type} for IdSymbol.");
                 return null;
@@ -219,11 +256,12 @@ public class IdSymbol : Symbol<string> {
     }
 }
 
+[Serializable]
 public class StringSymbol : Symbol<string> {
     public StringSymbol(string value)
         : base(value, $"\"{value}\"", SymbolType.String) { }
 
-    public override string AsString() => Value;
+    protected override string AsString() => Value;
 
     public override Symbol<string> Operation(Symbol<string> right, OperatorType type) {
         switch (type) {
@@ -241,9 +279,9 @@ public class StringSymbol : Symbol<string> {
     }
 
     public override Symbol<bool> CompareTo(Symbol<string> other,
-        ComparisonType type) {
+        OperatorType type) {
         switch (type) {
-            case ComparisonType.Equal: return new BooleanSymbol(Value == other.Value);
+            case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
             default:
                 Debug.LogError($"Unsupported operation {type} for StringSymbol.");
                 return null;
@@ -251,11 +289,12 @@ public class StringSymbol : Symbol<string> {
     }
 }
 
+[Serializable]
 public class DateSymbol : Symbol<DateTime> {
     public DateSymbol(DateTime value)
         : base(value, $"\"{value:yyyy/MM/dd}\"", SymbolType.Date) { }
 
-    public override string AsString() {
+    protected override string AsString() {
         return $"{Value:yyyy/MM/dd}";
     }
 
@@ -271,13 +310,13 @@ public class DateSymbol : Symbol<DateTime> {
     }
 
     public override Symbol<bool> CompareTo(Symbol<DateTime> other,
-        ComparisonType type) {
+        OperatorType type) {
         switch (type) {
-            case ComparisonType.Equal: return new BooleanSymbol(Value == other.Value);
-            case ComparisonType.Superior: return new BooleanSymbol(Value < other.Value);
-            case ComparisonType.SuperiorOrEqual: return new BooleanSymbol(Value >= other.Value);
-            case ComparisonType.Inferior: return new BooleanSymbol(Value < other.Value);
-            case ComparisonType.InferiorOrEqual: return new BooleanSymbol(Value <= other.Value);
+            case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
+            case OperatorType.Superior: return new BooleanSymbol(Value < other.Value);
+            case OperatorType.SuperiorOrEqual: return new BooleanSymbol(Value >= other.Value);
+            case OperatorType.Inferior: return new BooleanSymbol(Value < other.Value);
+            case OperatorType.InferiorOrEqual: return new BooleanSymbol(Value <= other.Value);
             default:
                 Debug.LogError($"Unsupported operation {type} for DateSymbol.");
                 return null;

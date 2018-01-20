@@ -21,13 +21,13 @@ public class Function<T> : IFunction {
     [SerializeField] private SymbolType returnType;
     public SymbolType ReturnType() => returnType;
 
-    [SerializeField] private SymbolType[] parameters;
+    [SerializeField] private SymbolType[] parameters; // void : any type
     public SymbolType[] Parameters() => parameters;
 
-    private FunctionCall<T> lambda;
+    [SerializeField] private readonly FunctionCall<T> lambda;
     public FunctionCall<T> Lambda => lambda;
 
-    public Function(string name, SymbolType returnType, SymbolType[] parameters,
+    private Function(string name, SymbolType returnType, SymbolType[] parameters,
         FunctionCall<T> lambda) {
         this.name = name;
         this.returnType = returnType;
@@ -38,6 +38,28 @@ public class Function<T> : IFunction {
     public static List<IFunction> DefaultFunctions() {
         List<IFunction> functions = new List<IFunction>();
 
+        // Generic
+        functions.Add(new Function<int>("ToInt", SymbolType.Integer,
+            new [] { SymbolType.Void }, (c, p) => {
+                SymbolType type = p[0].Type();
+                if (type == SymbolType.Integer) {
+                    Debug.LogWarning($"Function ToInt({p[0].ValueString()} : redundant cast.");
+                } else if (type == SymbolType.Float) {
+                    return (int) (p[0] as Symbol<float>).Value;
+                } else if (type == SymbolType.String) {
+                    int result;
+                    if (!int.TryParse((p[0] as Symbol<string>).Value, Parser.NumberStyleInteger,
+                        Symbol<int>.CultureInfo, out result)) {
+                        Debug.LogError($"Function ToInt({p[0].ValueString()}) : cannot parse as Integer.");
+                        return 0;
+                    }
+                    return result;
+                }
+                Debug.LogError($"Function ToInt({p[0].ValueString()}) : illegal cast.");
+                return 0;
+            }));
+        functions.Add(new Function<string>("ToString", SymbolType.String,
+            new [] { SymbolType.Void }, (c, p) => p[0].ValueString()));
         // Math
         functions.Add(new Function<float>("Math.Cos", SymbolType.Float,
             new [] { SymbolType.Float }, (c, p) => Mathf.Cos((p[0] as Symbol<float>).Value)));
@@ -59,8 +81,9 @@ public class Function<T> : IFunction {
             (c, p) => {
                 string featureId = (p[0] as Symbol<string>).Value;
                 bool enabled = (p[1] as Symbol<bool>).Value;
-                if (c.C().SetFeature(featureId, enabled)) {
-                    Debug.LogError($"Function Company.SetFeature({featureId}, {enabled}) : invalid Feature ID.");
+                if (!c.C().SetFeature(featureId, enabled)) {
+                    Debug.LogError($"Function Company.SetFeature({featureId}, {enabled}) : " +
+                                   $"invalid Feature ID \"{featureId}\".");
                     return false;
                 }
                 return true;

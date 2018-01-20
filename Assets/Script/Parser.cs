@@ -66,137 +66,61 @@ public class GlobalVariable {
 [Serializable]
 public class Parser : MonoBehaviour {
     private static readonly CultureInfo DateCultureInfo = CultureInfo.InvariantCulture;
-    private const NumberStyles NumberStyleInteger = NumberStyles.Integer;
-    private const NumberStyles NumberStyleFloat =
+    public const NumberStyles NumberStyleInteger = NumberStyles.Integer;
+    public const NumberStyles NumberStyleFloat =
         NumberStyles.Float | NumberStyles.AllowThousands;
 
-    [SerializeField] private static readonly string[] TokenDelimiters = {
-        " ", "(", ")", ",",
-        "+", "-", "*", "/", "^",
-        "=", "==", "!=", ">", "<", ">=", "<=",
-    };
-
-    public static bool ParseVariableDeclaration(string declaration,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
-        IExpression expression = ParseAssignment(declaration,
-            localVariables, globalVariables, functions, true);
-        if (expression == null) {
-            Debug.LogError(
-                $"Parser.ParseVariableDeclaration(\"{declaration}\") : parsing error in declaration.");
-            return false;
-        }
-        return true;
-    }
-
-    public static bool ExecuteVariableDeclarations(IScriptContext context) {
-        foreach (LocalVariable variable in context.LocalVariables()) {
-            if (variable.Declaration == null) {
-                if (variable.Value == null)
-                    Debug.LogError(
-                        $"Parser.ExecuteVariableDeclarations : variable \"@{variable.Name}\" has no declaration.");
-                continue;
-            }
-            ISymbol value;
-            switch (variable.Type) {
-                case SymbolType.Boolean:
-                    var declBool = variable.Declaration as Expression<bool>;
-                    Assert.IsNotNull(declBool);
-                    value = declBool.Evaluate(context);
-                    break;
-                case SymbolType.Integer:
-                    var declInt = variable.Declaration as Expression<int>;
-                    Assert.IsNotNull(declInt);
-                    value = declInt.Evaluate(context);
-                    break;
-                case SymbolType.Float:
-                    var declFloat = variable.Declaration as Expression<float>;
-                    Assert.IsNotNull(declFloat);
-                    value = declFloat.Evaluate(context);
-                    break;
-                case SymbolType.Id:
-                case SymbolType.String:
-                    var declString = variable.Declaration as Expression<string>;
-                    Assert.IsNotNull(declString);
-                    value = declString.Evaluate(context);
-                    break;
-                case SymbolType.Date:
-                    var declDateTime = variable.Declaration as Expression<DateTime>;
-                    Assert.IsNotNull(declDateTime);
-                    value = declDateTime.Evaluate(context);
-                    break;
-                default:
-                    Debug.LogError(
-                        $"Parser.ExecuteVariableDeclarations : Type Error for Local Variable \"{variable.Name}\".");
-                    return false;
-            }
-            variable.Value = value;
-            if (value.Type() != variable.Type) {
-                Debug.LogError(
-                    $"Parser.ExecuteVariableDeclarations : Type Error for Local Variable \"{variable.Name}\".");
-                return false;
-            }
-            Debug.LogWarning($"Script Declaration : @{variable.Name} : {variable.Type} = {variable.Declaration.Script()} => {value.ValueString()}.");
-        }
-        return true;
-    }
-
-    public static void ExecuteScript(IScriptContext context, string script,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
-        Debug.LogWarning("script = " + script);
-        IExpression expression = ParseExpression(script,
-            localVariables, globalVariables, functions);
-        Debug.LogWarning("=> script expression = " + expression.Script());
-        ISymbol result = expression.EvaluateAsISymbol(context);
-        Debug.LogWarning("=> result = " + result.Type() + " = " + result.ValueString());
-    }
-
-    public static IExpression ParseAssignment(string assignment,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions, bool declaration = false) {
-        int decl = declaration ? 2 : 0;
-
+    private static IExpression ParseAssignment(string assignment,
+        ParserContext context) {
+        // Tokenization
         string a = assignment.Trim();
-        List<string> tokens = Tokenize(a);
+        List<string> tokens = Lexer.Tokenize(a);
         if (tokens == null) {
             Debug.LogError($"Parser.ParseAssignment(\"{a}\") : tokenization error.");
             return null;
         }
-        if (tokens.Count < 3 + decl) {
+        if (tokens.Count < 3) {
             Debug.LogError($"Parse.ParseAssignment(\"{a}\") : illegal declaration \"{a}\"");
             return null;
         }
 
-        string operation = tokens[1 + decl].Trim();
-        string variable = tokens[0].Trim();
+        // Sanity checks
+        string variable = tokens[0];
+        bool global = variable.StartsWith("$");
         string variableName = variable.Substring(1);
         if (variableName.Length < 1) {
             Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal empty variable name.");
             return null;
         }
-        bool global = variable.StartsWith("$");
-        Assert.IsTrue(global && !declaration || variable.StartsWith("@"));
-
+        bool declaration = !global && tokens[1] == ":";
+        int decl = declaration ? 2 : 0;
+        string operation = tokens[1 + decl];
         AssignmentType assignmentType;
         if (!Operations.AssignmentTypeFromString(operation, out assignmentType)) {
             Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported assignment \"{operation}\".");
             return null;
         }
+        if (assignmentType == AssignmentType.Assign && !global && !declaration) {
+            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : variable declaration for \"${variableName}\" must define a type.");
+            return null;
+        }
 
+        // Type
         SymbolType type = SymbolType.Invalid;
+        LocalVariable localVariable = null;
+        GlobalVariable globalVariable = null;
         if (declaration) {
-            if (!variable.StartsWith("@") || tokens[1].Trim() != ":") {
+            if (!variable.StartsWith("@") || tokens[1] != ":") {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal declaration \"{a}\"");
                 return null;
             }
-            string typeString = tokens[2].Trim();
+            string typeString = tokens[2];
             if (!Symbol<bool>.SymbolTypeFromString(typeString, out type)) {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported Type \"{typeString}\"");
                 return null;
             }
         } else if (variable.StartsWith("@")) { // local variable
-            LocalVariable localVariable = localVariables.Find(lv => lv.Name == variableName);
+            localVariable = context.LocalVariables.Find(lv => lv.Name == variableName);
             if (localVariable == null) {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unkown local Variable \"{variableName}\"");
                 return null;
@@ -204,8 +128,8 @@ public class Parser : MonoBehaviour {
             type = localVariable.Type;
         }
         if (variable.StartsWith("$")) { // global variable
-            Assert.IsFalse(declaration);
-            GlobalVariable globalVariable = globalVariables.Find(gv => gv.Name == variableName);
+            Assert.IsTrue(localVariable == null && !declaration);
+            globalVariable = context.GlobalVariables.Find(gv => gv.Name == variableName);
             if (globalVariable == null) {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unkown Game Variable \"{variableName}\"");
                 return null;
@@ -214,9 +138,10 @@ public class Parser : MonoBehaviour {
         }
         Assert.IsFalse(type == SymbolType.Invalid);
 
+        // Right expression
         //Debug.LogWarning($"==> parse assignment \"{a}\" => right expr tokens = {string.Join(" --- ", tokens.Skip(2+decl))}");
         IExpression rightExpression = ParseExpression(tokens.Skip(2 + decl).ToArray(),
-            localVariables, globalVariables, functions);
+            context);
         if (rightExpression == null) {
             Debug.LogError($"Parser.ParseAssignment(\"{a}\") : parsing error in declaration.");
             return null;
@@ -226,41 +151,86 @@ public class Parser : MonoBehaviour {
             return null;
         }
         if (declaration) {
-            LocalVariable localVariable = new LocalVariable(variableName, type, rightExpression);
-            localVariables.Add(localVariable);
+            Assert.IsTrue(localVariable == null && globalVariable == null);
+            localVariable = new LocalVariable(variableName, type, rightExpression) {
+                Value = GetDefaultValue(type)
+            };
+            context.LocalVariables.Add(localVariable);
         }
+        if (global) Assert.IsNotNull(globalVariable);
+        else Assert.IsNotNull(localVariable);
 
-        IExpression variableExpression = ParseToken(variable, localVariables, globalVariables,
-            declaration ? variableName : "");
-        if (variableExpression == null) {
-            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : parsing error in variable \"{variable}\".");
-            return null;
-        }
-        Assert.IsTrue(variableExpression.Script() == variable);
+        // Return type : if ends with ';' void, else returns the computed value
+        SymbolType returnType;
+        if (tokens.Last() == ";") returnType = SymbolType.Void;
+        else returnType = type;
+        bool returnsType = returnType == type;
 
-        //Debug.LogWarning($"==> parsed {type} assignment \"{a}\" : {variableExpression.Script()} {assignmentType} {rightExpression.Script()}");
+        //Debug.LogWarning($"==> parsed {type} assignment \"{a}\" : returns type = {returnsType} : " +
+        //                 $"{variable} {assignmentType} {rightExpression.Script()}");
+        IVariableExpression variableExpression;
         IExpression assignmentExpression;
         switch (type) {
             case SymbolType.Boolean:
-                assignmentExpression = new AssignmentExpression<bool>(assignmentType,
-                    variableExpression as Expression<bool>, rightExpression as Expression<bool>);
+                if (global)
+                    variableExpression = new GlobalVariableExpression<bool>(globalVariable);
+                else
+                    variableExpression = new LocalVariableExpression<bool>(localVariable);
+                if (returnsType)
+                assignmentExpression = new AssignmentExpression<bool, bool>(assignmentType,
+                    variableExpression, rightExpression as Expression<bool>, returnsType);
+                else
+                assignmentExpression = new AssignmentExpression<Void, bool>(assignmentType,
+                    variableExpression, rightExpression as Expression<bool>, returnsType);
                 break;
             case SymbolType.Integer:
-                assignmentExpression = new AssignmentExpression<int>(assignmentType,
-                    variableExpression as Expression<int>, rightExpression as Expression<int>);
+                if (global)
+                    variableExpression = new GlobalVariableExpression<int>(globalVariable);
+                else
+                    variableExpression = new LocalVariableExpression<int>(localVariable);
+                if (returnsType)
+                    assignmentExpression = new AssignmentExpression<int, int>(assignmentType,
+                        variableExpression, rightExpression as Expression<int>, returnsType);
+                else
+                    assignmentExpression = new AssignmentExpression<Void, int>(assignmentType,
+                        variableExpression, rightExpression as Expression<int>, returnsType);
                 break;
             case SymbolType.Float:
-                assignmentExpression = new AssignmentExpression<float>(assignmentType,
-                    variableExpression as Expression<float>, rightExpression as Expression<float>);
+                if (global)
+                    variableExpression = new GlobalVariableExpression<float>(globalVariable);
+                else
+                    variableExpression = new LocalVariableExpression<float>(localVariable);
+                if (returnsType)
+                    assignmentExpression = new AssignmentExpression<float, float>(assignmentType,
+                        variableExpression, rightExpression as Expression<float>, returnsType);
+                else
+                    assignmentExpression = new AssignmentExpression<Void, float>(assignmentType,
+                        variableExpression, rightExpression as Expression<float>, returnsType);
                 break;
             case SymbolType.Id:
             case SymbolType.String:
-                assignmentExpression = new AssignmentExpression<string>(assignmentType,
-                    variableExpression as Expression<string>, rightExpression as Expression<string>);
+                if (global)
+                    variableExpression = new GlobalVariableExpression<string>(globalVariable);
+                else
+                    variableExpression = new LocalVariableExpression<string>(localVariable);
+                if (returnsType)
+                    assignmentExpression = new AssignmentExpression<string, string>(assignmentType,
+                        variableExpression, rightExpression as Expression<string>, returnsType);
+                else
+                    assignmentExpression = new AssignmentExpression<Void, string>(assignmentType,
+                        variableExpression, rightExpression as Expression<string>, returnsType);
                 break;
             case SymbolType.Date:
-                assignmentExpression = new AssignmentExpression<DateTime>(assignmentType,
-                    variableExpression as Expression<DateTime>, rightExpression as Expression<DateTime>);
+                if (global)
+                    variableExpression = new GlobalVariableExpression<DateTime>(globalVariable);
+                else
+                    variableExpression = new LocalVariableExpression<DateTime>(localVariable);
+                if (returnsType)
+                    assignmentExpression = new AssignmentExpression<DateTime, DateTime>(assignmentType,
+                        variableExpression, rightExpression as Expression<DateTime>, returnsType);
+                else
+                    assignmentExpression = new AssignmentExpression<Void, DateTime>(assignmentType,
+                        variableExpression, rightExpression as Expression<DateTime>, returnsType);
                 break;
             default:
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : invalid assignment.");
@@ -269,130 +239,39 @@ public class Parser : MonoBehaviour {
         return assignmentExpression;
     }
 
-    public static Expression<bool> ParseComparison(string comparison,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
-        string c = comparison.Trim();
-        List<string> tokens = Tokenize(c);
-        if (tokens == null) {
-            Debug.LogError($"Parser.ParseComparison(\"{c}\") : tokenization error.");
-            return null;
-        }
-        if (tokens.Count < 3) {
-            Debug.LogError($"Parse.ParseComparison(\"{c}\") : illegal comparison \"{c}\"");
-            return null;
-        }
-
-        List<string> leftTokens = new List<string>(), rightTokens = new List<string>();
-        leftTokens.Add(tokens[0].Trim());
-        // Comparison type
-        bool valid = false;
-        ComparisonType comparisonType = ComparisonType.IllegalComparison;
-        foreach (string token in tokens.Skip(1)) {
-            string t = token.Trim();
-            if (valid) { // right expression
-                rightTokens.Add(t);
-                continue;
-            }
-            string found = Array.Find(Operations.ComparisonOperators, o => o == t);
-            if (!string.IsNullOrEmpty(found)) { // comparison operator
-                if (!Operations.ComparisonTypeFromString(found, out comparisonType)) {
-                    Debug.LogError($"Parse.ParseComparison(\"{c}\") : unsupported comparison \"{found}\"");
-                    return null;
-                }
-                valid = true;
-                continue;
-            }
-            // left expression
-            leftTokens.Add(t);
-
-        }
-        if (comparisonType == ComparisonType.IllegalComparison) {
-            Debug.LogError($"Parser.ParseComparison(\"{c}\") : unsupported comparison type.");
-            return null;
-        }
-
-        // Left expression
-        IExpression leftExpression = ParseExpression(leftTokens.ToArray(),
-            localVariables, globalVariables, functions);
-        if (leftExpression == null) {
-            Debug.LogError($"Parser.ParseComparison(\"{c}\") : parsing error in left expression.");
-            return null;
-        }
-
-        // Right expression
-        IExpression rightExpression = ParseExpression(rightTokens.ToArray(),
-            localVariables, globalVariables, functions);
-        if (rightExpression == null) {
-            Debug.LogError($"Parser.ParseComparison(\"{c}\") : parsing error in right expression.");
-            return null;
-        }
-
-        // Type check
-        if (leftExpression.Type() != rightExpression.Type()) {
-            Debug.LogError($"Parser.ParseComparison(\"{c}\") : left type {leftExpression.Type()} != right type {rightExpression.Type()}.");
-            return null;
-        }
-
-        IExpression comparisonExpression;
-        switch (leftExpression.Type()) {
-            case SymbolType.Boolean:
-                comparisonExpression = new ComparisonExpression<bool>(comparisonType,
-                    leftExpression as Expression<bool>, rightExpression as Expression<bool>);
-                break;
-            case SymbolType.Integer:
-                comparisonExpression = new ComparisonExpression<int>(comparisonType,
-                    leftExpression as Expression<int>, rightExpression as Expression<int>);
-                break;
-            case SymbolType.Float:
-                comparisonExpression = new ComparisonExpression<float>(comparisonType,
-                    leftExpression as Expression<float>, rightExpression as Expression<float>);
-                break;
-            case SymbolType.Id:
-            case SymbolType.String:
-                comparisonExpression = new ComparisonExpression<string>(comparisonType,
-                    leftExpression as Expression<string>, rightExpression as Expression<string>);
-                break;
-            case SymbolType.Date:
-                comparisonExpression = new ComparisonExpression<DateTime>(comparisonType,
-                    leftExpression as Expression<DateTime>, rightExpression as Expression<DateTime>);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-        return (Expression<bool>) comparisonExpression;
-    }
-
     public static IExpression ParseExpression(string expression,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
+        ParserContext context) {
         bool isAssignment, isComparison;
-        List<string> tokens = Tokenize(expression, out isAssignment, out isComparison);
+        List<string> tokens = Lexer.Tokenize(expression, out isAssignment);
         if (tokens == null) {
             Debug.LogError($"Parser.ParseExpression(\"{expression}\") : tokenization error.");
             return null;
         }
-        // comparison or assignment => special handling to simplify the algorithm
+        // assignment => special handling to simplify the algorithm
         if (isAssignment)
-            return ParseAssignment(expression, localVariables, globalVariables,
-                functions);
-        if (isComparison)
-            return ParseComparison(expression, localVariables, globalVariables,
-                functions);
-        return ParseExpression(tokens.ToArray(), localVariables, globalVariables, functions);
+            return ParseAssignment(expression, context);
+        return ParseExpression(tokens.ToArray(), context);
     }
 
     private static IExpression ParseExpression(string[] tokens,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
+        ParserContext context) {
         string expressionString = string.Join(" ", tokens);
         // use the Shunting-Yard Algorithm to transform the script into
-        // a Reverse-Polish Notation list of expressions and operators
+        // a Polish Notation (postfix) list of expressions and operators
         Stack<IExpression> output = new Stack<IExpression>();
         Stack<OperatorType> operators = new Stack<OperatorType>();
         for (int i = 0; i < tokens.Length; i++) {
-            string token = tokens[i].Trim();
+            string token = tokens[i];
             if (token == "") continue;
+            // token is ";" : expression ends
+            if (token == ";") {
+                if (i + 1 < tokens.Length)
+                    Debug.LogWarning(
+                        $"Parser.ParseExpression(\"{expressionString}\") :';' before the expression ends, ignoring the " +
+                        $"remaining tokens \"{string.Join(" ", tokens.Skip(i + 1))}\".");
+                break;
+            }
+            // is token is an operator ?
             OperatorType operatorType;
             if (Operations.OperatorTypeFromString(token, out operatorType)) {
                 if (token == "(") {
@@ -403,7 +282,8 @@ public class Parser : MonoBehaviour {
                     OperatorType operation = operators.Peek();
                     while (operation != OperatorType.OpeningParenthesis) {
                         if (ProcessOperation(output, operators) == OperatorType.IllegalOperation) {
-                            Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid operation.");
+                            Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : " +
+                                           "invalid operation.");
                             return null;
                         }
                         if (operators.Count == 0) break;
@@ -411,7 +291,8 @@ public class Parser : MonoBehaviour {
                     }
                     if (operators.Count == 0 ||
                         operators.Peek() != OperatorType.OpeningParenthesis) {
-                        Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : parentheses error (missing '(').");
+                        Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : " +
+                                       "parentheses error (missing '(').");
                         return null;
                     }
                     operators.Pop();
@@ -434,10 +315,10 @@ public class Parser : MonoBehaviour {
                 continue;
             }
             // is token the start of a function call ?
-            IFunction function = functions.Find(f => f.Name() == token);
+            IFunction function = context.Functions.Find(f => f.Name() == token);
             if (function != null) {
                 string name = token;
-                if (i + 2 >= tokens.Length || tokens[i + 1].Trim() != "(") {
+                if (i + 2 >= tokens.Length || tokens[i + 1] != "(") {
                     Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid function call for \"{token}\".");
                     return null;
                 }
@@ -446,10 +327,9 @@ public class Parser : MonoBehaviour {
                 int openingParentheses = 1, closingParentheses = 0;
                 for (int j = i + 2; j < tokens.Length; j++) {
                     string t = tokens[j];
-                    string tTrimmed = t.Trim();
                     functionCall += $"{t}";
-                    if (tTrimmed == "(") ++openingParentheses;
-                    if (tTrimmed == ")" && ++closingParentheses == openingParentheses) {
+                    if (t == "(") ++openingParentheses;
+                    if (t == ")" && ++closingParentheses == openingParentheses) {
                         i = j;
                         ends = true;
                         break;
@@ -459,8 +339,8 @@ public class Parser : MonoBehaviour {
                     Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : missing closing parenthesis for function call \"{name}\".");
                     return null;
                 }
-                IExpression callExpression = ParseFunctionCall(functionCall, function,
-                    localVariables, globalVariables, functions);
+                IExpression callExpression = ParseFunctionCall(functionCall,
+                    function, context);
                 if (callExpression == null) {
                     Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : error while parsing function call \"{functionCall}\".");
                     return null;
@@ -470,7 +350,7 @@ public class Parser : MonoBehaviour {
                 continue;
             }
             // token is a symbol (variable or literal)
-            IExpression tokenExpression = ParseToken(token, localVariables, globalVariables);
+            IExpression tokenExpression = ParseToken(token, context);
             if (tokenExpression == null) {
                 Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : parsing error in token \"{token}\".");
                 return null;
@@ -511,30 +391,59 @@ public class Parser : MonoBehaviour {
             return OperatorType.IllegalOperation;
         }
         IExpression expression;
-        switch (leftType) {
-            case SymbolType.Boolean:
-                expression = new OperationExpression<bool>(operation,
-                    left as Expression<bool>, right as Expression<bool>);
-                break;
-            case SymbolType.Integer:
-                expression = new OperationExpression<int>(operation,
-                    left as Expression<int>, right as Expression<int>);
-                break;
-            case SymbolType.Float:
-                expression = new OperationExpression<float>(operation,
-                    left as Expression<float>, right as Expression<float>);
-                break;
-            case SymbolType.Id:
-            case SymbolType.String:
-                expression = new OperationExpression<string>(operation,
-                    left as Expression<string>, right as Expression<string>);
-                break;
-            case SymbolType.Date:
-                expression = new OperationExpression<DateTime>(operation,
-                    left as Expression<DateTime>, right as Expression<DateTime>);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+        if (Operations.IsComparisonOperator(operation)) {
+            switch (leftType) {
+                case SymbolType.Boolean:
+                    expression = new ComparisonExpression<bool>(operation,
+                        left as Expression<bool>, right as Expression<bool>);
+                    break;
+                case SymbolType.Integer:
+                    expression = new ComparisonExpression<int>(operation,
+                        left as Expression<int>, right as Expression<int>);
+                    break;
+                case SymbolType.Float:
+                    expression = new ComparisonExpression<float>(operation,
+                        left as Expression<float>, right as Expression<float>);
+                    break;
+                case SymbolType.Id:
+                case SymbolType.String:
+                    expression = new ComparisonExpression<string>(operation,
+                        left as Expression<string>, right as Expression<string>);
+                    break;
+                case SymbolType.Date:
+                    expression = new ComparisonExpression<DateTime>(operation,
+                        left as Expression<DateTime>, right as Expression<DateTime>);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        else {
+            switch (leftType) {
+                case SymbolType.Boolean:
+                    expression = new OperationExpression<bool>(operation,
+                        left as Expression<bool>, right as Expression<bool>);
+                    break;
+                case SymbolType.Integer:
+                    expression = new OperationExpression<int>(operation,
+                        left as Expression<int>, right as Expression<int>);
+                    break;
+                case SymbolType.Float:
+                    expression = new OperationExpression<float>(operation,
+                        left as Expression<float>, right as Expression<float>);
+                    break;
+                case SymbolType.Id:
+                case SymbolType.String:
+                    expression = new OperationExpression<string>(operation,
+                        left as Expression<string>, right as Expression<string>);
+                    break;
+                case SymbolType.Date:
+                    expression = new OperationExpression<DateTime>(operation,
+                        left as Expression<DateTime>, right as Expression<DateTime>);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
         Assert.IsNotNull(expression);
         output.Push(expression);
@@ -542,8 +451,7 @@ public class Parser : MonoBehaviour {
     }
 
     private static IExpression ParseFunctionCall(string call, IFunction metadata,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
+        ParserContext context) {
         int startIndex = call.IndexOf('(');
         int endIndex = call.LastIndexOf(')');
         if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
@@ -578,14 +486,13 @@ public class Parser : MonoBehaviour {
         SymbolType[] parametersTypes = metadata.Parameters();
         for (int i = 0; i < arity; i++) {
             string parameterString = parametersString[i].Trim();
-            IExpression expression = ParseExpression(parameterString,
-                localVariables, globalVariables, functions);
+            IExpression expression = ParseExpression(parameterString, context);
             if (expression == null) {
                 Debug.LogError($"Parser.ParseFunctionCall(\"{call}\") : cannot parse function argument \"{parameterString}\".");
                 return null;
             }
             SymbolType type = parametersTypes[i];
-            if (expression.Type() != type) {
+            if (expression.Type() != type && type != SymbolType.Void) { // void : any type
                 Debug.LogError($"Parser.ParseFunctionCall(\"{call}\") : {expression.Type()} argument \"{parameterString}\" must be of type {type}.");
                 return null;
             }
@@ -593,6 +500,8 @@ public class Parser : MonoBehaviour {
         }
 
         switch (metadata.ReturnType()) {
+            case SymbolType.Void:
+                return new FunctionExpression<Void>(metadata as Function<Void>, parameters.ToArray());
             case SymbolType.Boolean:
                 return new FunctionExpression<bool>(metadata as Function<bool>, parameters.ToArray());
             case SymbolType.Integer:
@@ -610,16 +519,17 @@ public class Parser : MonoBehaviour {
     }
 
     private static IExpression ParseToken(string expression,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        string declaringLocalVariable = "") {
+        ParserContext context, string declaringLocalVariable = "") {
         expression = expression.Trim();
         if (expression == "") return null;
         // local variable
         if (expression.StartsWith("@")) {
             string variableName = expression.Substring(1);
-            LocalVariable localVariable = localVariables.Find(l => l.Name == variableName);
+            LocalVariable localVariable = context.LocalVariables.Find(
+                lv => lv.Name == variableName);
             if (variableName != declaringLocalVariable && localVariable == null) {
-                Debug.LogError($"Parser.ParseToken(\"{expression}\") : unkown Local Variable \"@{variableName}\".");
+                Debug.LogError($"Parser.ParseToken(\"{expression}\") : " +
+                               $"unkown Local Variable \"@{variableName}\".");
                 return null;
             }
             switch (localVariable.Type) {
@@ -635,7 +545,8 @@ public class Parser : MonoBehaviour {
         // global variable
         if (expression.StartsWith("$")) {
             string variableName = expression.Substring(1);
-            GlobalVariable globalVariable = globalVariables.Find(gv => gv.Name == variableName);
+            GlobalVariable globalVariable = context.GlobalVariables.Find(
+                gv => gv.Name == variableName);
             if (globalVariable == null) {
                 Debug.LogError($"Parser.ParseToken(\"{expression}\") : unkown Global Variable \"${variableName}\".");
                 return null;
@@ -685,7 +596,7 @@ public class Parser : MonoBehaviour {
         // string literal
         if (firstChar == '\'' || firstChar == '\"') {
             Assert.IsTrue(token.EndsWith($"{firstChar}"));
-            string literal = token.Substring(1, token.Length - 1);
+            string literal = token.Substring(1, token.Length - 2);
             return new StringSymbol(literal);
         }
         if (token.Contains("/")) {
@@ -715,91 +626,18 @@ public class Parser : MonoBehaviour {
         return DateTime.ParseExact(date, "yyyy/MM/dd", DateCultureInfo);
     }
 
-    public static List<string> Tokenize(string script) {
-        bool a, b;
-        return Tokenize(script, out a, out b);
-    }
-
-    private static List<string> Tokenize(string script,
-        out bool isAssignment, out bool isComparison) {
-        string token = "";
-        bool assignmentDoubleLetter = false;
-        isAssignment = isComparison = false;
-        List<string> tokens = new List<string>();
-        for (int i = 0; i < script.Length; i++) {
-            char c = script[i];
-            if (c == '\'') {
-                token = token.Trim();
-                if (token != "") tokens.Add(token);
-                token = $"{c}";
-                bool ends = false;
-                char openingChar = c;
-                for (int j = i + 1; j < script.Length; j++) {
-                    char character = script[j];
-                    token += character;
-                    if (character == openingChar && script[j - 1] != '\\') {
-                        tokens.Add(token);
-                        token = "";
-                        ends = true;
-                        i = j;
-                        break;
-                    }
-                }
-                if (!ends) {
-                    Debug.LogError($"Parser.Tokenize(\"{script}\") : string quote must ends.");
-                    return null;
-                }
-                continue;
-            }
-            string cString = $"{c}";
-            bool isOperator = TokenDelimiters.Contains(cString);
-            if (isOperator) {
-                if (i + 1 < script.Length) {
-                    if ((c == '=' || c == '+' || c == '-' || c == '*' || c == '/' ||
-                         c == '^' || c == '%' || c == '!' || c == '<' || c == '>') &&
-                        script[i + 1] == '=') { // "==", "+=", "-=", "!=", ">=", ...
-                        assignmentDoubleLetter = true;
-                        token += c;
-                        continue;
-                    }
-                    if ((c == '+' || c == '-') && char.IsDigit(script[i + 1])) { // number sign
-                        // TODO : support math expressions such as "3+5" => 3 + 5
-                        token += c;
-                        continue;
-                    }
-                    // date support : treat every "yyyy/MM/dd" as a single token
-                    if (i > 0 && c == '/' && char.IsDigit(script[i - 1]) &&
-                        char.IsDigit(script[i + 1])) {
-                        token += c;
-                        continue;
-                    }
-                }
-                if (assignmentDoubleLetter) token += c;
-                token = token.Trim();
-
-                // expression type basic identification
-                if (!assignmentDoubleLetter && c == '=') isAssignment = true;
-                if (!isAssignment && !isComparison) {
-                    string tested = assignmentDoubleLetter ? token : $"{c}";
-                    AssignmentType assignmentType;
-                    if (Operations.AssignmentTypeFromString(tested, out assignmentType)) // assignment ?
-                        isAssignment = true;
-                    ComparisonType comparisonType;
-                    if (!isAssignment &&
-                        Operations.ComparisonTypeFromString(tested, out comparisonType)) // comparison ?
-                        isComparison = true;
-                }
-
-                if (token != "") tokens.Add(token);
-                if (!assignmentDoubleLetter && c != ' ') tokens.Add(cString);
-                assignmentDoubleLetter = false;
-                token = "";
-                continue;
-            }
-            token += c;
+    private static ISymbol GetDefaultValue(SymbolType type) {
+        switch (type) {
+            case SymbolType.Invalid: return null;
+            case SymbolType.Void: return new VoidSymbol();
+            case SymbolType.Boolean: return new BooleanSymbol(false);
+            case SymbolType.Integer: return new IntegerSymbol(0);
+            case SymbolType.Float: return new FloatSymbol(0);
+            case SymbolType.Id: return new IdSymbol("");
+            case SymbolType.String: return new StringSymbol("");
+            case SymbolType.Date: return new DateSymbol(DateTime.Now);
+            default: throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }
-        tokens.Add(token.Trim());
-        return tokens;
     }
 }
 

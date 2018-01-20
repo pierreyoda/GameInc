@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing;
 using System.Linq;
 using Database;
 using Script;
@@ -9,7 +8,7 @@ using UnityEngine.Assertions;
 using Random = UnityEngine.Random;
 
 public class GameDevCompany : MonoBehaviour {
-    public static string[] SUPPORTED_FEATURES = {
+    private static readonly string[] SupportedFeatures = {
         "Engine.CanDevelop",
     };
 
@@ -60,16 +59,15 @@ public class GameDevCompany : MonoBehaviour {
 
     private void Start() {
         List<CompanyFeature> features = new List<CompanyFeature>();
-        foreach (string featureName in SUPPORTED_FEATURES) {
+        foreach (string featureName in SupportedFeatures) {
             features.Add(new CompanyFeature(featureName, false));
         }
         this.features = features.ToArray();
     }
 
-    public void Init(Database.Database.DatabaseCollection<Database.Skill> skills,
-        List<LocalVariable> localVariables, List<GlobalVariable> globalVariables,
-        List<IFunction> functions) {
-        employeesManager.InitSkillsTypes(skills, localVariables, globalVariables, functions);
+    public void Init(Database.Database.DatabaseCollection<Skill> skills,
+        ParserContext parserContext) {
+        employeesManager.InitSkillsTypes(skills, parserContext);
     }
 
     public void StartProject(Project project, DateTime gameDate) {
@@ -92,7 +90,7 @@ public class GameDevCompany : MonoBehaviour {
     }
 
     public bool SetFeature(string featureName, bool featureEnabled) {
-        CompanyFeature feature = features.FirstOrDefault(f => f.Name == featureName);
+        CompanyFeature feature = Array.Find(features, f => f.Name == featureName);
         if (feature == null) {
             Debug.LogError($"GameDevCompany.SetFeature(\"{featureName}\", {featureEnabled}) : unkown feature.");
             return false;
