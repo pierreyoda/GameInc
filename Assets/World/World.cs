@@ -7,10 +7,10 @@ using static Database.Database;
 public class World : MonoBehaviour {
     [Header("Game World")]
     [SerializeField] private WorldController worldController;
-    [SerializeField] private EventsController eventsController;
     [SerializeField] private GameDevCompany playerCompany;
     [SerializeField] private Building companyBuilding;
     [SerializeField] private Database.Database database;
+    [SerializeField] private Market globalMarket;
 
     [Header("Date Simulation")]
     [SerializeField] private bool firstDay = true;
@@ -34,6 +34,7 @@ public class World : MonoBehaviour {
     [SerializeField] private BuildRoomSelectionMenu buildRoomSelectionMenu;
 
     private void Start() {
+        // Database loading
         Debug.Log("Loading the game database...", gameObject);
         database = new Database.Database();
         const string filesPrefix = "Assets/Resources/Core";
@@ -42,6 +43,7 @@ public class World : MonoBehaviour {
             .AddDataFile($"{filesPrefix}/genres.json", DataFileType.GameGenre)
             .AddDataFile($"{filesPrefix}/themes.json", DataFileType.GameTheme)
             .AddDataFolder("Assets/Resources/Core/platforms", DataFileType.GamingPlatform)
+            .AddDataFolder("Assets/Resources/Core/games", DataFileType.GameSeries)
             .AddDataFile($"{filesPrefix}/engine_features.json", DataFileType.EngineFeature)
             .AddDataFile($"{filesPrefix}/rooms.json", DataFileType.Room)
             .AddDataFile($"{filesPrefix}/objects.json", DataFileType.RoomObject)
@@ -55,6 +57,7 @@ public class World : MonoBehaviour {
             UnityEditor.EditorApplication.isPlaying = false;
             #endif
             Application.Quit();
+            return;
         }
         database.PrintDatabaseInfo();
 
@@ -63,6 +66,7 @@ public class World : MonoBehaviour {
         dayPercentage = 0f;
         gameDateTime = new DateTime(gameStartYear, gameStartMonth, gameStartDay);
 
+        globalMarket.Init(gameDateTime, database.GameSeries.Collection);
         worldController.OnGameStarted(database, gameDateTime, playerCompany);
         worldController.OnDateModified(gameDateTime);
         worldController.OnPlayerCompanyModified();
@@ -142,6 +146,8 @@ public class World : MonoBehaviour {
     private void NewDay() {
         previousDayMonth = gameDateTime.Month;
         gameDateTime = gameDateTime.AddDays(1.0);
+
+        globalMarket.OnNewDay(gameDateTime);
 
         companyBuilding.OnNewDay();
         playerCompany.OnNewDay(worldController);

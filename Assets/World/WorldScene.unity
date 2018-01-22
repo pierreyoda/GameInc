@@ -535,7 +535,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1082800132}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &106001931
 MonoBehaviour:
@@ -839,6 +839,49 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 145100444}
+--- !u!1 &166891747
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 166891748}
+  - component: {fileID: 166891749}
+  m_Layer: 0
+  m_Name: GlobalMarket
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &166891748
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 166891747}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 1082800132}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &166891749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 166891747}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a53b08a459d247e42b67b7c57ab4d112, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  marketSize: 100
+  competitorSeries: []
+  releasedGames: []
 --- !u!1 &174410829
 GameObject:
   m_ObjectHideFlags: 0
@@ -1584,7 +1627,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1877568626}
   m_HandleRect: {fileID: 1877568625}
   m_Direction: 2
-  m_Value: 0.9999997
+  m_Value: 0.9999994
   m_Size: 0.6666665
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -2453,7 +2496,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.0000035570783, y: 0.00003050869}
+  m_AnchoredPosition: {x: 0.000011967127, y: 0.00003050869}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &518196597
@@ -4607,6 +4650,7 @@ Transform:
   m_LocalPosition: {x: -10, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
+  - {fileID: 166891748}
   - {fileID: 1709252435}
   - {fileID: 106001930}
   - {fileID: 1418979560}
@@ -4625,9 +4669,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   worldController: {fileID: 1068444075}
-  eventsController: {fileID: 1730790485}
   playerCompany: {fileID: 1709252436}
   companyBuilding: {fileID: 2069030189}
+  globalMarket: {fileID: 166891749}
   firstDay: 1
   millisecondsPerDay: 1000
   gameStartYear: 1984
@@ -4637,7 +4681,7 @@ MonoBehaviour:
   dayPercentage: 0
   simulationRunning: 0
   pauseButton: {fileID: 761103752}
-  simulationSpeedMultiplier: 2
+  simulationSpeedMultiplier: 4
   speedButton: {fileID: 1756391265}
   gameMenu: {fileID: 1775206632}
   buildRoomSelectionMenu: {fileID: 1229371446}
@@ -5771,7 +5815,7 @@ Transform:
   m_Children:
   - {fileID: 2053819543}
   m_Father: {fileID: 1082800132}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1420685486
 GameObject:
@@ -6019,13 +6063,17 @@ MonoBehaviour:
     info:
       id: 
       name: 
-      triggerConditions: []
-      triggerActions: []
+      onInit: 
+      triggerCondition: 
+      triggerAction: 
       triggerLimit: 
       descriptionEnglish: 
-      variables: []
     triggersCount: 0
     active: 0
+    onInit:
+      type: 0
+    action:
+      type: 0
     cachedTitle: 
     cachedDescription: 
   dialogTitle: {fileID: 779727030}
@@ -7478,7 +7526,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 1082800132}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1709252436
 MonoBehaviour:
@@ -9326,7 +9374,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   worldFeatures: []
-  authorizedFeaturesIDs: []
 --- !u!1 &2053819542
 GameObject:
   m_ObjectHideFlags: 0

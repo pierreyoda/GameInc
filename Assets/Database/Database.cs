@@ -18,6 +18,7 @@ public class Database {
         GameGenre,
         GameTheme,
         GamingPlatform,
+        GameSeries,
         Room,
         RoomObject,
         EngineFeature,
@@ -63,6 +64,9 @@ public class Database {
 
     private DatabaseCollection<Platform> platforms = new DatabaseCollection<Platform>(true, DataFileType.GamingPlatform);
     public DatabaseCollection<Platform> Platforms => platforms;
+
+    private DatabaseCollection<GameSeries> gameSeries = new DatabaseCollection<GameSeries>(true, DataFileType.GameSeries);
+    public DatabaseCollection<GameSeries> GameSeries => gameSeries;
 
     private DatabaseCollection<EngineFeature> engineFeatures = new DatabaseCollection<EngineFeature>(true, DataFileType.EngineFeature);
     public DatabaseCollection<EngineFeature> EngineFeatures => engineFeatures;
@@ -132,6 +136,10 @@ public class Database {
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, platforms))
                         return null;
                     break;
+                case DataFileType.GameSeries:
+                    if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, gameSeries))
+                        return null;
+                    break;
                 case DataFileType.EngineFeature:
                     if (!LoadDataFile(sourceFile.Item1, sourceFile.Item2, engineFeatures))
                         return null;
@@ -169,6 +177,7 @@ public class Database {
         PrintCollectionInfo(genres);
         PrintCollectionInfo(themes);
         PrintCollectionInfo(platforms);
+        PrintCollectionInfo(gameSeries);
         PrintCollectionInfo(engineFeatures);
         PrintCollectionInfo(rooms);
         PrintCollectionInfo(objects);
@@ -178,7 +187,10 @@ public class Database {
     }
 
     private void PrintCollectionInfo<T>(DatabaseCollection<T> collection) where T : DatabaseElement {
-        string plural = (collection.Type == DataFileType.News || collection.Type == DataFileType.CommonNames) ? "" : "s";
+        string plural = collection.Type == DataFileType.GameSeries ||
+                        collection.Type == DataFileType.News ||
+                        collection.Type == DataFileType.CommonNames
+            ? "" : "s";
         Debug.Log($"Database - Loaded {collection.Collection.Count} {collection.Type}{plural}.");
     }
 

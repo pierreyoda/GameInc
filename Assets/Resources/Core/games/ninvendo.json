@@ -1,0 +1,18 @@
+{
+// Ninvendo Games Collection
+"Company": "Ninvendo",
+"Collection": [
+    {
+        "id": "MonkeyKongSeries",
+        "name": "Monkey Kong",
+        "releases": [
+            {
+                "date": "1984/02/01",
+                "platforms": ["NES"],
+                "ratingsDistribution": "60-85",
+                "beforeName": "", "afterName": "",
+            },
+        ],
+    }
+],
+}
