@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.WSA;
 
@@ -19,10 +21,12 @@ public enum SymbolType {
     Id,
     String,
     Date,
+    Array,
 }
 
 public interface ISymbol {
     SymbolType Type();
+    SymbolType ArrayType();
     string ValueString();
 }
 
@@ -42,7 +46,10 @@ public abstract class Symbol<T> : ISymbol {
     public string Expression => expression;
 
     [SerializeField] private SymbolType type;
-    public SymbolType Type() { return type; }
+    public SymbolType Type() => type;
+
+    [SerializeField] protected SymbolType arrayType = SymbolType.Invalid;
+    public SymbolType ArrayType() => arrayType;
 
     protected Symbol(T value, string expression, SymbolType type) {
         this.value = value;
@@ -55,31 +62,8 @@ public abstract class Symbol<T> : ISymbol {
 
     public abstract Symbol<T> Operation(Symbol<T> right, OperatorType type);
     public abstract Symbol<T> Assignment(Symbol<T> right, AssignmentType type);
-    public abstract Symbol<bool> CompareTo(Symbol<T> other, OperatorType type);
-
-    protected Symbol<T> InvokeFunction(IScriptContext context,
-        string fullFunctionName, ISymbol[] parameters) {
-        IFunction function = context.Functions().Find(
-            f => f.Name() == fullFunctionName);
-        if (function == null) {
-            Debug.LogError($"Symbol.InvokeFunction : no \"{fullFunctionName}\" function found.");
-            return null;
-        }
-        Function<T> typedFunction = function as Function<T>;
-        if (typedFunction == null) {
-            Debug.LogError($"Symbol.InvokeFunction : \"{fullFunctionName}\" returns " +
-                           $"{function.ReturnType()} instead of {type}.");
-            return null;
-        }
-        Symbol<T> result = SymbolFromValue(typedFunction.Lambda(context, parameters),
-            typedFunction.ReturnType());
-        if (result == null) {
-            Debug.LogError($"Symbol.InvokeFunction(\"{fullFunctionName}\", ...) :" +
-                            " execution error.");
-            return null;
-        }
-        return result;
-    }
+    public abstract Symbol<bool> CompareTo(Symbol<T> other, OperatorType type,
+        IScriptContext context);
 
     protected Symbol<T> IllegalAssignment(Symbol<T> right, string label) {
         Debug.LogError($"Script Error : illegal assignment : {expression} {label} {right.expression}");
@@ -90,13 +74,16 @@ public abstract class Symbol<T> : ISymbol {
         return null;
     }
 
-    protected Symbol<T> IllegalInvocation(string functionName) {
-        Debug.LogError($"Script Error : illegal invocation on type {type} for " +
-                       $"function \"{functionName}\".");
-        return null;
-    }
-
     public static bool SymbolTypeFromString(string name, out SymbolType type) {
+        // array
+        if (name.EndsWith("[]")) {
+            type = SymbolType.Array;
+            int index = name.IndexOf('[');
+            string arrayType = name.Substring(0, index);
+            SymbolType tmp;
+            return SymbolTypeFromString(arrayType, out tmp);
+        }
+        // scalar
         switch (name) {
             case "bool": type = SymbolType.Boolean; return true;
             case "int": type = SymbolType.Integer; return true;
@@ -154,7 +141,8 @@ public class VoidSymbol : Symbol<Void> {
         return IllegalAssignment(right, "of any kind");
     }
 
-    public override Symbol<bool> CompareTo(Symbol<Void> other, OperatorType type) {
+    public override Symbol<bool> CompareTo(Symbol<Void> other, OperatorType type,
+        IScriptContext context) {
         Debug.LogError("Unsupported comparison of any kind for VoidSymbol.");
         return null;
     }
@@ -183,12 +171,12 @@ public class BooleanSymbol : Symbol<bool> {
     public override Symbol<bool> Assignment(Symbol<bool> right, AssignmentType type) {
         switch (type) {
             case AssignmentType.Assign: Value = right.Value; return this;
-            default: return IllegalAssignment(right, "=");
+            default: return IllegalAssignment(right, type.ToString());
         }
     }
 
-    public override Symbol<bool> CompareTo(Symbol<bool> other,
-        OperatorType type) {
+    public override Symbol<bool> CompareTo(Symbol<bool> other, OperatorType type,
+        IScriptContext context) {
         switch (type) {
             case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
             default:
@@ -213,7 +201,7 @@ public class IntegerSymbol : Symbol<int> {
             case OperatorType.Division: return new IntegerSymbol(Value / right.Value);
             case OperatorType.Modulo: return new IntegerSymbol(Value % right.Value);
             case OperatorType.Power: return new IntegerSymbol(Value ^ right.Value);
-            default: return IllegalOperation(right, "");
+            default: return IllegalOperation(right, type.ToString());
         }
     }
 
@@ -226,12 +214,12 @@ public class IntegerSymbol : Symbol<int> {
             case AssignmentType.DivideBy: Value /= right.Value; return this;
             case AssignmentType.PoweredBy: Value %= right.Value; return this;
             case AssignmentType.ModuloBy: Value ^= right.Value; return this;
-            default: return IllegalAssignment(right, "");
+            default: return IllegalAssignment(right, type.ToString());
         }
     }
 
-    public override Symbol<bool> CompareTo(Symbol<int> other,
-        OperatorType type) {
+    public override Symbol<bool> CompareTo(Symbol<int> other, OperatorType type,
+        IScriptContext context) {
         switch (type) {
             case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
             case OperatorType.Superior: return new BooleanSymbol(Value > other.Value);
@@ -258,7 +246,7 @@ public class FloatSymbol : Symbol<float> {
             case OperatorType.Division: return new FloatSymbol(Value / right.Value);
             case OperatorType.Modulo: return new FloatSymbol(Value % right.Value);
             case OperatorType.Power: return new FloatSymbol(Mathf.Pow(Value, right.Value));
-            default: return IllegalOperation(right, "");
+            default: return IllegalOperation(right, type.ToString());
         }
     }
 
@@ -271,12 +259,12 @@ public class FloatSymbol : Symbol<float> {
             case AssignmentType.DivideBy: Value /= right.Value; return this;
             case AssignmentType.PoweredBy: Value %= right.Value; return this;
             case AssignmentType.ModuloBy: Value = Mathf.Pow(Value, right.Value); return this;
-            default: return IllegalAssignment(right, "");
+            default: return IllegalAssignment(right, type.ToString());
         }
     }
 
-    public override Symbol<bool> CompareTo(Symbol<float> other,
-        OperatorType type) {
+    public override Symbol<bool> CompareTo(Symbol<float> other, OperatorType type,
+        IScriptContext context) {
         switch (type) {
             case OperatorType.Equal: return new BooleanSymbol(Math.Abs(Value - other.Value) < FLOAT_EPSILON);
             case OperatorType.Superior: return new BooleanSymbol(Value > other.Value);
@@ -305,12 +293,12 @@ public class IdSymbol : Symbol<string> {
     public override Symbol<string> Assignment(Symbol<string> right, AssignmentType type) {
         switch (type) {
             case AssignmentType.Assign: Value = right.Value; return this;
-            default: return IllegalAssignment(right, $"(type = {type})");
+            default: return IllegalAssignment(right, type.ToString());
         }
     }
 
-    public override Symbol<bool> CompareTo(Symbol<string> other,
-        OperatorType type) {
+    public override Symbol<bool> CompareTo(Symbol<string> other, OperatorType type,
+        IScriptContext context) {
         switch (type) {
             case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
             default:
@@ -338,12 +326,12 @@ public class StringSymbol : Symbol<string> {
         switch (type) {
             case AssignmentType.Assign: Value = right.Value; return this;
             case AssignmentType.AddDifference: Value += right.Value; return this;
-            default: return IllegalAssignment(right, $"(type = {type})");
+            default: return IllegalAssignment(right, type.ToString());
         }
     }
 
-    public override Symbol<bool> CompareTo(Symbol<string> other,
-        OperatorType type) {
+    public override Symbol<bool> CompareTo(Symbol<string> other, OperatorType type,
+        IScriptContext context) {
         switch (type) {
             case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
             default:
@@ -369,12 +357,12 @@ public class DateSymbol : Symbol<DateTime> {
     public override Symbol<DateTime> Assignment(Symbol<DateTime> right, AssignmentType type) {
         switch (type) {
             case AssignmentType.Assign: Value = right.Value; return this;
-            default: return IllegalAssignment(right, $"(type = {type})");
+            default: return IllegalAssignment(right, type.ToString());
         }
     }
 
-    public override Symbol<bool> CompareTo(Symbol<DateTime> other,
-        OperatorType type) {
+    public override Symbol<bool> CompareTo(Symbol<DateTime> other, OperatorType type,
+        IScriptContext context) {
         switch (type) {
             case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
             case OperatorType.Superior: return new BooleanSymbol(Value > other.Value);
@@ -383,6 +371,76 @@ public class DateSymbol : Symbol<DateTime> {
             case OperatorType.InferiorOrEqual: return new BooleanSymbol(Value <= other.Value);
             default:
                 Debug.LogError($"Unsupported operation {type} for DateSymbol.");
+                return null;
+        }
+    }
+}
+
+[Serializable]
+public class ArraySymbol<T> : Symbol<T> {
+    [SerializeField] private List<Expression<T>> elements;
+    public IReadOnlyList<Expression<T>> Elements => elements.AsReadOnly();
+
+    public ArraySymbol(List<Expression<T>> elements)
+        : base(default(T), $"[{string.Join(", ", elements.Select(s => s.Script()))}]",
+            SymbolType.Array) {
+        this.elements = elements;
+        arrayType = elements.Count == 0 ? SymbolType.Void : elements.First().Type();
+    }
+
+    protected override String AsString() {
+        return '[' + string.Join(", ", elements.Select(v => v.Script())) + ']';
+    }
+
+    public override Symbol<T> Operation(Symbol<T> right, OperatorType type) {
+        ArraySymbol<T> rightArray = right as ArraySymbol<T>;
+        Assert.IsNotNull(rightArray);
+        switch (type) {
+            case OperatorType.Addition:
+                List<Expression<T>> list = new List<Expression<T>>(elements);
+                list.AddRange(rightArray.elements);
+                return new ArraySymbol<T>(list);
+            default:
+                return IllegalOperation(right, type.ToString());
+        }
+    }
+
+    public override Symbol<T> Assignment(Symbol<T> right, AssignmentType type) {
+        ArraySymbol<T> rightArray = right as ArraySymbol<T>;
+        Assert.IsNotNull(rightArray);
+        switch (type) {
+            case AssignmentType.Assign: elements = new List<Expression<T>>(rightArray.elements); return this;
+            default: return IllegalAssignment(right, type.ToString());
+        }
+    }
+
+    public override Symbol<bool> CompareTo(Symbol<T> other, OperatorType type,
+        IScriptContext context) {
+        ArraySymbol<T> otherArray = other as ArraySymbol<T>;
+        Assert.IsNotNull(otherArray);
+        switch (type) {
+            case OperatorType.Equal:
+                if (elements.Count != otherArray.elements.Count)
+                    return new BooleanSymbol(false);
+                for (int i = 0; i < elements.Count; i++) {
+                    Symbol<T> left = elements[i].Evaluate(context);
+                    if (left == null) {
+                        Debug.LogError($"ArraySymbol<{typeof(T)}>.CompareTo : evaluation " +
+                                       $"error for self Array at element n°{i}.");
+                        return new BooleanSymbol(false);
+                    }
+                    Symbol<T> right = otherArray.elements[i].Evaluate(context);
+                    if (right == null) {
+                        Debug.LogError($"ArraySymbol<{typeof(T)}>.CompareTo : evaluation " +
+                                       $"error for other Array at element n°{i}.");
+                        return new BooleanSymbol(false);
+                    }
+                    if (!left.CompareTo(right, OperatorType.Equal, context).Value)
+                        return new BooleanSymbol(false);
+                }
+                return new BooleanSymbol(true);
+            default:
+                Debug.LogError($"Unsupported operation {type} for ArraySymbol.");
                 return null;
         }
     }

@@ -27,7 +27,7 @@ public class TypedExecutable<T> {
                            $"parsing error in  :\n{script}");
             return null;
         }
-        if (!Executable.TypeCompatibility<T>(executable.Type)) {
+        if (!Executable.TypeCompatibility<T>(executable.Type, executable.ArrayType)) {
             Debug.LogError($"TypedExecutable<T = {typeof(T)}>.FromScript : T " +
                            $"is not compatible with {executable.Type}.");
             return null;
@@ -54,6 +54,9 @@ public class TypedExecutable<T> {
 public class Executable {
     [SerializeField] private SymbolType type;
     public SymbolType Type => type;
+
+    [SerializeField] private SymbolType arrayType;
+    public SymbolType ArrayType => arrayType;
 
     [SerializeField] private List<IExpression> expressions;
 
@@ -90,9 +93,10 @@ public class Executable {
         if (currentExpression != "") expressionsString.Add(currentExpression);
 
         // Expressions parsing
-        SymbolType returnType;
+        SymbolType returnType, returnArrayType;
         List<IExpression> expressions = ParseExpressionSequence(
-            expressionsString.ToArray(), parserContext, out returnType);
+            expressionsString.ToArray(), parserContext, out returnType,
+            out returnArrayType);
         if (returnType == SymbolType.Invalid) {
             Debug.LogError( "Executable.FromScript(...) : could not determing Type " +
                            $"from last expression \"{expressions.Last()}\".");
@@ -104,8 +108,9 @@ public class Executable {
 
     private static List<IExpression> ParseExpressionSequence(
         string[] expressionsString, ParserContext context,
-        out SymbolType returnType) {
+        out SymbolType returnType, out SymbolType returnArrayType) {
         returnType = SymbolType.Invalid;
+        returnArrayType = SymbolType.Invalid;
         List<IExpression> expressions = new List<IExpression>();
         if (expressionsString.Length == 0) {
             returnType = SymbolType.Void;
@@ -122,6 +127,7 @@ public class Executable {
                 return null;
             }
             if (i == expressionsString.Length - 1) { // last expression determines return Type
+                returnArrayType = expression.ArrayType();
                 if (expressionString.EndsWith(";")) returnType = SymbolType.Void;
                 else returnType = expression.Type();
             }
@@ -144,7 +150,8 @@ public class Executable {
         return result;
     }
 
-    public bool ExecuteExpecting<T>(IScriptContext context, out T result) {
+    public bool ExecuteExpecting<T>(IScriptContext context, out T result)
+        where T: class {
         result = default(T);
         if (type == SymbolType.Void) {
             Debug.LogError("Executable.ExecuteExpecting : cannot expect void. " +
@@ -156,10 +163,41 @@ public class Executable {
             Debug.LogError("Executable.ExecuteExpecting : execution error.");
             return false;
         }
-        if (!TypeCompatibility<T>(lastResult.Type())) {
+        if (!TypeCompatibility<T>(lastResult.Type(), lastResult.ArrayType())) {
             Debug.LogError($"Executable.ExecuteExpecting : result type {typeof(T)} " +
                            $"imcompatible with executable type {type}.");
             return false;
+        }
+        if (lastResult.Type() == SymbolType.Array) {
+            switch (lastResult.ArrayType()) {
+                case SymbolType.Void:
+                    result = ((ArraySymbol<Void>) lastResult).Elements.Select(
+                        e => e.Evaluate(context).Value).ToArray() as T;
+                    break;
+                case SymbolType.Boolean:
+                    result = ((ArraySymbol<bool>) lastResult).Elements.Select(
+                        e => e.Evaluate(context).Value).ToArray() as T;
+                    break;
+                case SymbolType.Integer:
+                    result = ((ArraySymbol<int>) lastResult).Elements.Select(
+                        e => e.Evaluate(context).Value).ToArray() as T;
+                    break;
+                case SymbolType.Float:
+                    result = ((ArraySymbol<float>) lastResult).Elements.Select(
+                        e => e.Evaluate(context).Value).ToArray() as T;
+                    break;
+                case SymbolType.Id:
+                case SymbolType.String:
+                    result = ((ArraySymbol<string>) lastResult).Elements.Select(
+                        e => e.Evaluate(context).Value).ToArray() as T;
+                    break;
+                case SymbolType.Date:
+                    result = ((ArraySymbol<DateTime>) lastResult).Elements.Select(
+                        e => e.Evaluate(context).Value).ToArray() as T;
+                    break;
+                default: throw new ArgumentOutOfRangeException();
+            }
+            return true;
         }
         Symbol<T> lastResultTyped = lastResult as Symbol<T>;
         Assert.IsNotNull(lastResultTyped);
@@ -167,8 +205,15 @@ public class Executable {
         return true;
     }
 
-    public static bool TypeCompatibility<T>(SymbolType type) {
+    public static bool TypeCompatibility<T>(SymbolType type, SymbolType arrayType) {
         // TODO : differenciate ID and String
+        if (type == SymbolType.Array)
+            return typeof(T) == typeof(bool[]) && arrayType == SymbolType.Boolean ||
+               typeof(T) == typeof(int[]) && arrayType == SymbolType.Integer ||
+               typeof(T) == typeof(float[]) && arrayType == SymbolType.Float ||
+               typeof(T) == typeof(string[]) && (arrayType == SymbolType.Id ||
+                                                 arrayType == SymbolType.String) ||
+               typeof(T) == typeof(DateTime[]) && arrayType == SymbolType.Date;
         return typeof(T) == typeof(bool) && type == SymbolType.Boolean ||
             typeof(T) == typeof(int) && type == SymbolType.Integer ||
             typeof(T) == typeof(float) && type == SymbolType.Float ||

@@ -9,6 +9,7 @@ namespace Script {
 public interface IExpression {
     string Script();
     SymbolType Type();
+    SymbolType ArrayType();
     ISymbol EvaluateAsISymbol(IScriptContext context);
 }
 
@@ -16,6 +17,9 @@ public interface IExpression {
 public abstract class Expression<T> : IExpression {
     [SerializeField] private SymbolType type;
     public SymbolType Type() => type;
+
+    [SerializeField] protected SymbolType arrayType = SymbolType.Invalid;
+    public SymbolType ArrayType() => arrayType;
 
     [SerializeField] private string script;
     public string Script() => script;
@@ -40,6 +44,17 @@ public abstract class Expression<T> : IExpression {
             case SymbolType.Id:
             case SymbolType.String: return result as Symbol<string>;
             case SymbolType.Date: return result as Symbol<DateTime>;
+            case SymbolType.Array:
+                switch (result.ArrayType()) {
+                    case SymbolType.Void: return result as Symbol<Void>;
+                    case SymbolType.Boolean: return result as Symbol<bool>;
+                    case SymbolType.Integer: return result as Symbol<int>;
+                    case SymbolType.Float: return result as Symbol<float>;
+                    case SymbolType.Id:
+                    case SymbolType.String: return result as Symbol<string>;
+                    case SymbolType.Date: return result as Symbol<DateTime>;
+                    default: throw new ArgumentOutOfRangeException();
+                }
             default:
                 Debug.LogError($"Script : Expression.EvaluateAsISymbol : type error in \"{script}\".");
                 return null;
@@ -61,6 +76,8 @@ public class LocalVariableExpression<T> : Expression<T>, IVariableExpression {
         : base($"{localVariable.Name}", localVariable.Type) {
         Assert.IsNotNull(localVariable);
         this.localVariable = localVariable;
+        if (localVariable.Type == SymbolType.Array)
+            arrayType = localVariable.ArrayType;
     }
 
     public override Symbol<T> Evaluate(IScriptContext c) {
@@ -101,6 +118,8 @@ public class GlobalVariableExpression<T> : Expression<T>, IVariableExpression {
     public GlobalVariableExpression(GlobalVariable globalVariable)
         : base($"${globalVariable.Name}", globalVariable.Type) {
         this.globalVariable = globalVariable;
+        if (globalVariable.Type == SymbolType.Array)
+            arrayType = globalVariable.ArrayType;
     }
 
     public override Symbol<T> Evaluate(IScriptContext c) {
@@ -184,7 +203,8 @@ public class AssignmentExpression<TR, T>: Expression<TR> {
     public override Symbol<TR> Evaluate(IScriptContext c) {
         ISymbol value = expression.Evaluate(c);
         if (value == null) {
-            Debug.LogError($"Script : AssignmentExpression(type = {type}) : right operand evaluation error (\"{expression.Script()}\").");
+            Debug.LogError($"Script : AssignmentExpression(type = {type}) : right " +
+                           $"operand evaluation error (\"{expression.Script()}\").");
             return null;
         }
         ISymbol resultUntyped = variable.Assign(c, type, value);
@@ -220,7 +240,7 @@ public class ComparisonExpression<T> : Expression<bool> {
     public override Symbol<bool> Evaluate(IScriptContext c) {
         Symbol<T> leftValue = left.Evaluate(c);
         Symbol<T> rightValue = right.Evaluate(c);
-        return leftValue.CompareTo(rightValue, type);
+        return leftValue.CompareTo(rightValue, type, c);
     }
 }
 
@@ -267,40 +287,28 @@ public class FunctionExpression<T> : Expression<T> {
 }
 
 [Serializable]
-public class InvocationExpression<T> : Expression<T> {
-    [SerializeField] private Function<T> metadata;
-    [SerializeField] private ISymbol symbol;
-    [SerializeField] private IExpression[] parameters;
+public class ArrayExpression<T> : Expression<T> {
+    [SerializeField] private ArraySymbol<T> array;
 
-    public InvocationExpression(Function<T> metadata, ISymbol symbol,
-        IExpression[] parameters) : base($"{metadata.Name()}({symbol.Type()}, {string.Join(", ", parameters.Select(p => p.Script()))})",
-        metadata.ReturnType()) {
-        Assert.IsTrue(metadata.Parameters().Length == parameters.Length);
-        this.metadata = metadata;
-        this.symbol = symbol;
-        this.parameters = parameters;
+    public ArrayExpression(ArraySymbol<T> array, SymbolType arrayType)
+        : base($"[{string.Join(", ", array.Elements.Select(e => e.Script()))}]",
+            SymbolType.Array) {
+        this.array = array;
+        this.arrayType = arrayType;
     }
 
     public override Symbol<T> Evaluate(IScriptContext c) {
-        List<ISymbol> symbols = new List<ISymbol> { symbol };
-        for (int i = 0; i < parameters.Length; i++) {
-            IExpression parameter = parameters[i];
-            ISymbol parameterSymbol = parameter.EvaluateAsISymbol(c);
-            if (parameterSymbol == null) {
-                Debug.LogError($"Script Error : Function Invocation \"{metadata.Name()}\" : " +
-                               $"error while evaluating parameter n°{i+1} (\"{parameter.Script()}\").");
+        List<Expression<T>> items = new List<Expression<T>>();
+        for (int i = 0; i < array.Elements.Count; i++) {
+            Symbol<T> item = array.Elements[i].Evaluate(c);
+            if (item == null) {
+                Debug.LogError( "Script Error : ArrayExpression.Evaluate : " +
+                               $"evaluation error for element n°{i+1}.");
                 return null;
             }
-            symbols.Add(parameterSymbol);
+            items.Add(new SymbolExpression<T>(item));
         }
-        T resultValue = metadata.Lambda(c, symbols.ToArray());
-        Symbol<T> result = Symbol<T>.SymbolFromValue(resultValue,
-            metadata.ReturnType());
-        if (result == null) {
-            Debug.LogError($"Script Error : Function Invocation \"{metadata.Name()}\" : type error.");
-            return null;
-        }
-        return result;
+        return new ArraySymbol<T>(items);
     }
 }
 

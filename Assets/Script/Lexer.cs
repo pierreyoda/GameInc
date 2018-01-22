@@ -6,7 +6,7 @@ namespace Script {
 
 public static class Lexer {
     private static readonly string[] TokenDelimiters = {
-        " ", "(", ")", ",", ":", ";",
+        " ", "(", ")", "[", "]", ",", ":", ";",
         "+", "-", "*", "/", "^",
         "=", "==", "!=", ">", "<", ">=", "<=",
     };

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Database;
 using Script;
 using UnityEngine;
@@ -100,16 +101,15 @@ public class WorldController : MonoBehaviour, IScriptContext {
         // test
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
             "testVariable", new FloatSymbol(0f)));
-        string script = @"
-            let a: float = 2.0;
-            let b: string = '6';
-            let c: int = b.ToInt();
-            a.ToInt() + c
+        const string script = @"
+            let a: int[] = [1, 2];
+            let b: float = 2.5 * 2.0;
+            a + [3, 2 * 2, b.ToInt()]
         ";
         Executable executable = Executable.FromScript(script, parserContext);
-        int scriptResult;
+        int[] scriptResult;
         executable.ExecuteExpecting(this, out scriptResult);
-        Debug.LogWarning("===> executable result = " + scriptResult);
+        Debug.LogWarning($"===> executable result = [{string.Join(", ", scriptResult.Select(i => i.ToString()))}]");
 
         // scripts parsing
         eventsController.CreateEvents(db.Events.Collection, parserContext);
