@@ -8,13 +8,13 @@
         "descriptionEnglish" : """
 Looks like you're in troubles !
 
-Just this once, the government will bail you out with {Company.BailOut.Amount}k.
+Just this once, the government will bail you out with {Company_BailOut_Amount}k.
 
 Be careful now, next time will be game over...
 """,
-        "onInit": "let Company.BailOut.Trigger : float = -200.0; let Company.BailOut.Amount : float = 400.0;",
-        "triggerCondition": "($Company.NeverBailedOut) && ($Company.Money < Company.BailOut.Trigger)",
-        "triggerAction": "$Company.NeverBailedOut = false; $Company.Money += Company.BailOut.Amount;",
+        "onInit": "let Company_BailOut_Trigger : float = -200.0; let Company_BailOut_Amount : float = 400.0;",
+        "triggerCondition": "($Company.NeverBailedOut) && ($Company.Money < Company_BailOut_Trigger)",
+        "triggerAction": "$Company.NeverBailedOut = false; $Company.Money += Company_BailOut_Amount;",
         "triggerLimit": "1",
     },
 
@@ -22,14 +22,14 @@ Be careful now, next time will be game over...
     {
         "id": "Company_Engine_CanDevelop",
         "name": "Custom Engine development unlocked !",
-        "descriptionEnglish": "Having completed {Engine.CanDevelop.MinGames} games, you can now develop your own Game Engine !",
+        "descriptionEnglish": "Having completed {Engine_CanDevelop_MinGames} games, you can now develop your own Game Engine !",
         "onInit": """
-let Engine.CanDevelop.MinGames : int = 3;
-let Engine.CanDevelop.MinDate : date = 1984/02/01;
+let Engine_CanDevelop_MinGames : int = 3;
+let Engine_CanDevelop_MinDate : date = 1984/02/01;
 """,
         "triggerCondition": """
-(Company.Projects.CompletedGamesCount() >= Engine.CanDevelop.MinGames) &&
-($World.CurrentDate >= Engine.CanDevelop.MinDate)
+(Company.Projects.CompletedGamesCount() >= Engine_CanDevelop_MinGames) &&
+($World.CurrentDate >= Engine_CanDevelop_MinDate)
 """,
         "triggerAction": "Company.SetFeature(@Engine.CanDevelop, true)",
         "triggerLimit": "1",

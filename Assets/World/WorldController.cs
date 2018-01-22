@@ -86,9 +86,9 @@ public class WorldController : MonoBehaviour, IScriptContext {
         }
         // additional local variables
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
-            "Employee.HiringCost", new FloatSymbol(0)));
+            "Employee_HiringCost", new FloatSymbol(0)));
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
-            "Employee.Salary", new FloatSymbol(0)));
+            "Employee_Salary", new FloatSymbol(0)));
         // parser context
         ParserContext parserContext = new ParserContext {
             Grammar = Grammar.DefaultGrammar(),
@@ -101,13 +101,13 @@ public class WorldController : MonoBehaviour, IScriptContext {
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
             "testVariable", new FloatSymbol(0f)));
         string script = @"
-            let alpha : int = 3;
-            let beta : int = (alpha + 7) / 2;
-            let gamma : int = ToInt('4') + ToInt(-2.0);
-            let str : string = 'beta=' + ToString(beta) + '; gamma=' + ToString(gamma) + ';'
+            let a: float = 2.0;
+            let b: string = '6';
+            let c: int = b.ToInt();
+            a.ToInt() + c
         ";
         Executable executable = Executable.FromScript(script, parserContext);
-        string scriptResult;
+        int scriptResult;
         executable.ExecuteExpecting(this, out scriptResult);
         Debug.LogWarning("===> executable result = " + scriptResult);
 
@@ -166,6 +166,10 @@ public class WorldController : MonoBehaviour, IScriptContext {
 
     public void OnConstructionStarted(float constructionCost) {
         world.OnConstructionStarted(constructionCost);
+    }
+
+    public List<IFunction> Functions() {
+        return scriptFunctions;
     }
 
     public List<LocalVariable> LocalVariables() {

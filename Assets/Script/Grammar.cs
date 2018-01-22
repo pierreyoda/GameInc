@@ -23,7 +23,7 @@ public class Grammar {
         if (!char.IsLetter(variableName[0])) return false;
         for (int i = 1; i < variableName.Length; i++) {
             char c = variableName[i];
-            if (!char.IsLetterOrDigit(c) && c != '.') return false;
+            if (!char.IsLetterOrDigit(c) && c != '_') return false;
         }
         return true;
     }

@@ -162,12 +162,11 @@ public class OperationExpression<T>: Expression<T> {
     }
 }
 [Serializable]
-public class AssignmentExpression<R, T>: Expression<R> {
+public class AssignmentExpression<TR, T>: Expression<TR> {
     [SerializeField] private AssignmentType type;
     [SerializeField] private IVariableExpression variable;
     [SerializeField] private Expression<T> expression;
     [SerializeField] private bool returnsValue;
-    [SerializeField] private bool global;
 
     public AssignmentExpression(AssignmentType type, IVariableExpression variable,
         Expression<T> expression, bool returnsValue)
@@ -176,14 +175,13 @@ public class AssignmentExpression<R, T>: Expression<R> {
         this.variable = variable;
         this.expression = expression;
         this.returnsValue = returnsValue;
-        global = variable.Representation().StartsWith("$");
         // type checking
         Assert.IsTrue(variable.VariableType() == expression.Type());
-        if (returnsValue) Assert.IsTrue(typeof(R) == typeof(T));
-        else Assert.IsTrue(typeof(R) == typeof(Void));
+        if (returnsValue) Assert.IsTrue(typeof(TR) == typeof(T));
+        else Assert.IsTrue(typeof(TR) == typeof(Void));
     }
 
-    public override Symbol<R> Evaluate(IScriptContext c) {
+    public override Symbol<TR> Evaluate(IScriptContext c) {
         ISymbol value = expression.Evaluate(c);
         if (value == null) {
             Debug.LogError($"Script : AssignmentExpression(type = {type}) : right operand evaluation error (\"{expression.Script()}\").");
@@ -195,11 +193,11 @@ public class AssignmentExpression<R, T>: Expression<R> {
             return null;
         }
         if (returnsValue) {
-            Symbol<R> resultTyped = resultUntyped as Symbol<R>;
+            Symbol<TR> resultTyped = resultUntyped as Symbol<TR>;
             Assert.IsNotNull(resultTyped);
             return resultTyped;
         }
-        return new VoidSymbol() as Symbol<R>;
+        return new VoidSymbol() as Symbol<TR>;
     }
 }
 
@@ -245,27 +243,64 @@ public class FunctionExpression<T> : Expression<T> {
             SymbolType type = metadata.Parameters()[i];
             IExpression parameter = parameters[i];
             if (parameter.Type() != type && type != SymbolType.Void) { // void : any type
-                Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : parameter n°{i+1} must be of type {type} (\"{parameter.Script()}\").");
+                Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : " +
+                               $"parameter n°{i+1} must be of type {type} (\"{parameter.Script()}\").");
                 return null;
             }
             ISymbol symbol = parameter.EvaluateAsISymbol(c);
             if (symbol == null) {
-                Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : error while evaluating parameter n°{i+1} (\"{parameter.Script()}\").");
+                Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : " +
+                               $"error while evaluating parameter n°{i+1} (\"{parameter.Script()}\").");
                 return null;
             }
             symbols.Add(symbol);
         }
-        T result = metadata.Lambda(c, symbols.ToArray());
-        switch (metadata.ReturnType()) {
-            case SymbolType.Void: return new VoidSymbol() as Symbol<T>;
-            case SymbolType.Boolean: return new BooleanSymbol(Convert.ToBoolean(result)) as Symbol<T>;
-            case SymbolType.Integer: return new IntegerSymbol(Convert.ToInt32(result)) as Symbol<T>;
-            case SymbolType.Float: return new FloatSymbol(Convert.ToSingle(result)) as Symbol<T>;
-            case SymbolType.Id: return new IdSymbol(Convert.ToString(result)) as Symbol<T>;
-            case SymbolType.String: return new StringSymbol(Convert.ToString(result)) as Symbol<T>;
-            case SymbolType.Date: return new DateSymbol(Convert.ToDateTime(result)) as Symbol<T>;
-            default: return null;
+        T resultValue = metadata.Lambda(c, symbols.ToArray());
+        Symbol<T> result = Symbol<T>.SymbolFromValue(resultValue,
+            metadata.ReturnType());
+        if (result == null) {
+            Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : type error.");
+            return null;
         }
+        return result;
+    }
+}
+
+[Serializable]
+public class InvocationExpression<T> : Expression<T> {
+    [SerializeField] private Function<T> metadata;
+    [SerializeField] private ISymbol symbol;
+    [SerializeField] private IExpression[] parameters;
+
+    public InvocationExpression(Function<T> metadata, ISymbol symbol,
+        IExpression[] parameters) : base($"{metadata.Name()}({symbol.Type()}, {string.Join(", ", parameters.Select(p => p.Script()))})",
+        metadata.ReturnType()) {
+        Assert.IsTrue(metadata.Parameters().Length == parameters.Length);
+        this.metadata = metadata;
+        this.symbol = symbol;
+        this.parameters = parameters;
+    }
+
+    public override Symbol<T> Evaluate(IScriptContext c) {
+        List<ISymbol> symbols = new List<ISymbol> { symbol };
+        for (int i = 0; i < parameters.Length; i++) {
+            IExpression parameter = parameters[i];
+            ISymbol parameterSymbol = parameter.EvaluateAsISymbol(c);
+            if (parameterSymbol == null) {
+                Debug.LogError($"Script Error : Function Invocation \"{metadata.Name()}\" : " +
+                               $"error while evaluating parameter n°{i+1} (\"{parameter.Script()}\").");
+                return null;
+            }
+            symbols.Add(parameterSymbol);
+        }
+        T resultValue = metadata.Lambda(c, symbols.ToArray());
+        Symbol<T> result = Symbol<T>.SymbolFromValue(resultValue,
+            metadata.ReturnType());
+        if (result == null) {
+            Debug.LogError($"Script Error : Function Invocation \"{metadata.Name()}\" : type error.");
+            return null;
+        }
+        return result;
     }
 }
 

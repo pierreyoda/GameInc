@@ -15,27 +15,5 @@
         "textEnglish": "Pierre Trudeau annouces that he will step down as Canada's Prime Minister after 15 years.",
         "countries": "Canada",
     },
-
-    // multiple news prompter test
-    {
-        "id": "TestNews1",
-        "name": "TestNews1",
-        "date": "1984/01/25",
-        "textEnglish": "test1",
-        "countries": "Canada",
-    },
-    {
-        "id": "TestNews2",
-        "name": "TestNews2",
-        "date": "1984/01/26",
-        "textEnglish": "test3",
-        "countries": "Canada",
-    },    {
-        "id": "TestNews3",
-        "name": "TestNews3",
-        "date": "1984/01/27",
-        "textEnglish": "test2",
-        "countries": "Canada",
-    },
 ],
 }

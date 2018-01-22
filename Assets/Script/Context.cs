@@ -5,6 +5,7 @@ using UnityEngine;
 namespace Script {
 
 public interface IScriptContext {
+    List<IFunction> Functions();
     List<LocalVariable> LocalVariables();
     bool SetGlobalVariable(string name, ISymbol value);
 
@@ -24,7 +25,7 @@ public abstract class ScriptContext {
                 $"ScriptContext.AddVariable : \"{name}\" already exists.");
             return false;
         }
-        LocalVariable localVariable = new LocalVariable(name, value.Type(), null);
+        LocalVariable localVariable = new LocalVariable(name, value.Type());
         localVariable.Value = value;
         localVariables.Add(localVariable);
         return true;

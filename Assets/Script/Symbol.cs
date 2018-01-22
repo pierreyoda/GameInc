@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
 using UnityEngine.WSA;
@@ -56,12 +57,42 @@ public abstract class Symbol<T> : ISymbol {
     public abstract Symbol<T> Assignment(Symbol<T> right, AssignmentType type);
     public abstract Symbol<bool> CompareTo(Symbol<T> other, OperatorType type);
 
+    protected Symbol<T> InvokeFunction(IScriptContext context,
+        string fullFunctionName, ISymbol[] parameters) {
+        IFunction function = context.Functions().Find(
+            f => f.Name() == fullFunctionName);
+        if (function == null) {
+            Debug.LogError($"Symbol.InvokeFunction : no \"{fullFunctionName}\" function found.");
+            return null;
+        }
+        Function<T> typedFunction = function as Function<T>;
+        if (typedFunction == null) {
+            Debug.LogError($"Symbol.InvokeFunction : \"{fullFunctionName}\" returns " +
+                           $"{function.ReturnType()} instead of {type}.");
+            return null;
+        }
+        Symbol<T> result = SymbolFromValue(typedFunction.Lambda(context, parameters),
+            typedFunction.ReturnType());
+        if (result == null) {
+            Debug.LogError($"Symbol.InvokeFunction(\"{fullFunctionName}\", ...) :" +
+                            " execution error.");
+            return null;
+        }
+        return result;
+    }
+
     protected Symbol<T> IllegalAssignment(Symbol<T> right, string label) {
         Debug.LogError($"Script Error : illegal assignment : {expression} {label} {right.expression}");
         return null;
     }
     protected Symbol<T> IllegalOperation(Symbol<T> right, string label) {
         Debug.LogError($"Script Error : illegal operation {label} between \"{expression}\" and \"{right.expression}\".");
+        return null;
+    }
+
+    protected Symbol<T> IllegalInvocation(string functionName) {
+        Debug.LogError($"Script Error : illegal invocation on type {type} for " +
+                       $"function \"{functionName}\".");
         return null;
     }
 
@@ -74,6 +105,38 @@ public abstract class Symbol<T> : ISymbol {
             case "string": type = SymbolType.String; return true;
             case "date": type = SymbolType.Date; return true;
             default: type = SymbolType.Invalid; return false;
+        }
+    }
+
+    public static Symbol<T> SymbolFromValue(T value, SymbolType type) {
+        switch (type) {
+            case SymbolType.Void: return new VoidSymbol() as Symbol<T>;
+            case SymbolType.Boolean: return new BooleanSymbol(Convert.ToBoolean(value)) as Symbol<T>;
+            case SymbolType.Integer: return new IntegerSymbol(Convert.ToInt32(value)) as Symbol<T>;
+            case SymbolType.Float: return new FloatSymbol(Convert.ToSingle(value)) as Symbol<T>;
+            case SymbolType.Id: return new IdSymbol(Convert.ToString(value)) as Symbol<T>;
+            case SymbolType.String: return new StringSymbol(Convert.ToString(value)) as Symbol<T>;
+            case SymbolType.Date: return new DateSymbol(Convert.ToDateTime(value)) as Symbol<T>;
+            default: return null;
+        }
+    }
+
+    public static string FunctionNameFromInvocation(string invocationName,
+        SymbolType type) {
+        switch (invocationName) {
+            case "ToInt":
+                switch (type) {
+                    case SymbolType.Float: return "float.ToInt";
+                    case SymbolType.String: return "string.ToInt";
+                    default: return null;
+                }
+            case "ToFloat":
+                switch (type) {
+                    case SymbolType.Integer: return "int.ToFloat";
+                    case SymbolType.String: return "string.ToFloat";
+                    default: return null;
+                }
+            default: return null;
         }
     }
 }

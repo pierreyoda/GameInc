@@ -5,7 +5,7 @@ using Random = UnityEngine.Random;
 
 namespace Script {
 
-public delegate T FunctionCall<T>(IScriptContext c, ISymbol[] p);
+public delegate T FunctionCall<out T>(IScriptContext c, ISymbol[] p);
 
 public interface IFunction {
     string Name();
@@ -38,26 +38,32 @@ public class Function<T> : IFunction {
     public static List<IFunction> DefaultFunctions() {
         List<IFunction> functions = new List<IFunction>();
 
-        // Generic
-        functions.Add(new Function<int>("ToInt", SymbolType.Integer,
-            new [] { SymbolType.Void }, (c, p) => {
-                SymbolType type = p[0].Type();
-                if (type == SymbolType.Integer) {
-                    Debug.LogWarning($"Function ToInt({p[0].ValueString()} : redundant cast.");
-                } else if (type == SymbolType.Float) {
-                    return (int) (p[0] as FloatSymbol).Value;
-                } else if (type == SymbolType.String) {
-                    int result;
-                    if (!int.TryParse((p[0] as StringSymbol).Value, Parser.NumberStyleInteger,
-                        Symbol<int>.CultureInfo, out result)) {
-                        Debug.LogError($"Function ToInt({p[0].ValueString()}) : cannot parse as Integer.");
-                        return 0;
-                    }
-                    return result;
+        // Conversion
+        functions.Add(new Function<int>("float.ToInt", SymbolType.Integer,
+            new[] {SymbolType.Float}, (c, p) => (int) (p[0] as FloatSymbol).Value));
+        functions.Add(new Function<int>("string.ToInt", SymbolType.Integer,
+            new[] {SymbolType.String}, (c, p) => {
+                int result;
+                if (!int.TryParse((p[0] as StringSymbol).Value, Parser.NumberStyleInteger,
+                    Symbol<int>.CultureInfo, out result)) {
+                    Debug.LogError($"Function ToInt({p[0].ValueString()}) : cannot parse as Integer.");
+                    return 0;
                 }
-                Debug.LogError($"Function ToInt({p[0].ValueString()}) : illegal cast.");
-                return 0;
+                return result;
             }));
+        functions.Add(new Function<float>("int.ToFloat", SymbolType.Float,
+            new[] {SymbolType.Integer}, (c, p) => (float) (p[0] as IntegerSymbol).Value));
+        functions.Add(new Function<float>("string.ToFloat", SymbolType.Float,
+            new[] {SymbolType.String}, (c, p) => {
+                float result;
+                if (!float.TryParse((p[0] as StringSymbol).Value, Parser.NumberStyleFloat,
+                    Symbol<float>.CultureInfo, out result)) {
+                    Debug.LogError($"Function ToFloat({p[0].ValueString()}) : cannot parse as Float.");
+                    return 0f;
+                }
+                return result;
+            }));
+        // Generic
         functions.Add(new Function<string>("ToString", SymbolType.String,
             new [] { SymbolType.Void }, (c, p) => p[0].ValueString()));
         // Math

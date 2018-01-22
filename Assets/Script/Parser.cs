@@ -26,12 +26,9 @@ public class LocalVariable {
         set { this.value = value; }
     }
 
-    [SerializeField] private IExpression declaration;
-
-    public LocalVariable(string name, SymbolType type, IExpression declaration) {
+    public LocalVariable(string name, SymbolType type) {
         this.name = name;
         this.type = type;
-        this.declaration = declaration;
     }
 }
 
@@ -66,7 +63,7 @@ public class GlobalVariable {
 public class Parser : MonoBehaviour {
     private static readonly CultureInfo DateCultureInfo = CultureInfo.InvariantCulture;
     public const NumberStyles NumberStyleInteger = NumberStyles.Integer;
-    private const NumberStyles NumberStyleFloat =
+    public const NumberStyles NumberStyleFloat =
         NumberStyles.Float | NumberStyles.AllowThousands;
 
     private static IExpression ParseAssignment(string assignment,
@@ -89,7 +86,7 @@ public class Parser : MonoBehaviour {
         bool global = variable.StartsWith("$");
         string variableName = global ? variable.Substring(1) : variable;
         if (variableName.Length < (global ? 2 : 1) ||
-            !context.Grammar.ValidateVariableName(variableName)) {
+            !global && !context.Grammar.ValidateVariableName(variableName)) {
             Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal variable name.");
             return null;
         }
@@ -111,12 +108,12 @@ public class Parser : MonoBehaviour {
         GlobalVariable globalVariable = null;
         if (declaration) {
             if (tokens[2] != context.Grammar.TypeDeclarator) {
-                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal declaration \"{a}\"");
+                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal declaration \"{a}\".");
                 return null;
             }
             string typeString = tokens[3];
             if (!Symbol<bool>.SymbolTypeFromString(typeString, out type)) {
-                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported Type \"{typeString}\"");
+                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported Type \"{typeString}\".");
                 return null;
             }
         } else if (!global) { // local variable
@@ -156,7 +153,7 @@ public class Parser : MonoBehaviour {
         }
         if (declaration) {
             Assert.IsTrue(localVariable == null && globalVariable == null);
-            localVariable = new LocalVariable(variableName, type, rightExpression) {
+            localVariable = new LocalVariable(variableName, type) {
                 Value = GetDefaultValue(type)
             };
             context.LocalVariables.Add(localVariable);
@@ -318,11 +315,14 @@ public class Parser : MonoBehaviour {
             // is token the start of a function call ?
             IFunction function = context.Functions.Find(f => f.Name() == token);
             if (function != null) {
+                // sanity checks
                 string name = token;
                 if (i + 2 >= tokens.Length || tokens[i + 1] != "(") {
-                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid function call for \"{token}\".");
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") " +
+                                   $": invalid function call for \"{token}\".");
                     return null;
                 }
+                // call parsing
                 bool ends = false;
                 string functionCall = $"{name}(";
                 int openingParentheses = 1, closingParentheses = 0;
@@ -337,16 +337,84 @@ public class Parser : MonoBehaviour {
                     }
                 }
                 if (!ends) {
-                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : missing closing parenthesis for function call \"{name}\".");
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : " +
+                                   $"missing closing parenthesis for function call \"{name}\".");
                     return null;
                 }
                 IExpression callExpression = ParseFunctionCall(functionCall,
                     function, context);
                 if (callExpression == null) {
-                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : error while parsing function call \"{functionCall}\".");
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : " +
+                                   $"error while parsing function call \"{functionCall}\".");
                     return null;
                 }
                 //Debug.LogWarning($"Parser.ParseExpression(\"{expressionString}\") => function call \"{functionCall}\" => \"{callExpression.Script()}\"");
+                output.Push(callExpression);
+                continue;
+            }
+            // is token the start of a function invocation on a symbol ?
+            // eg : a.ToInt() => float.ToInt(a) if a : float
+            int invocationIndex = token.IndexOf('.');
+            if (invocationIndex > 0 && !token.StartsWith("@") && // exlude ID literals
+                !char.IsDigit(token[invocationIndex - 1]) && // exclude float literals
+                !token.StartsWith("$")) { // exlude global variables
+                // sanity checks
+                string[] subtokens = token.Split('.');
+                if (subtokens.Length != 2 || i == tokens.Length -1 || tokens[i + 1] != "(") {
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") " +
+                                   $": invalid function invocation for \"{token}\".");
+                    return null;
+                }
+                // function identification
+                string variableName = token.Substring(0, invocationIndex);
+                string functionName = token.Substring(invocationIndex + 1);
+                LocalVariable localVariable = context.LocalVariables.Find(
+                    lv => lv.Name == variableName);
+                if (localVariable == null) {
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid invocation " +
+                                   $"of \"{functionName}\" : unkown Local Variable \"{variableName}\".");
+                    return null;
+                }
+                string fullFunctionName = Symbol<Void>.FunctionNameFromInvocation(
+                    functionName, localVariable.Type);
+                if (string.IsNullOrEmpty(fullFunctionName)) {
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid invocation of " +
+                                   $"\"{functionName}\" on {localVariable.Type}: unkown function \"{functionName}\".");
+                    return null;
+                }
+                IFunction invocation = context.Functions.Find(f => f.Name() == fullFunctionName);
+                if (invocation == null) {
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid invocation of " +
+                                   $"\"{functionName}\" on {localVariable.Type}: unkown function \"{fullFunctionName}\".");
+                    return null;
+                }
+                // call parsing
+                string functionCall = $"{functionName}({localVariable.Name}";
+                bool ends = false;
+                int openingParentheses = 1, closingParentheses = 0;
+                for (int j = i + 2; j < tokens.Length; j++) {
+                    string t = tokens[j];
+                    functionCall += $"{t}";
+                    if (t == "(") ++openingParentheses;
+                    if (t == ")" && ++closingParentheses == openingParentheses) {
+                        i = j;
+                        ends = true;
+                        break;
+                    }
+                }
+                if (!ends) {
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : " +
+                                   $"missing closing parenthesis for function invocation \"{functionName}\".");
+                    return null;
+                }
+                IExpression callExpression = ParseFunctionInvocation(functionCall,
+                    invocation, context);
+                if (callExpression == null) {
+                    Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : " +
+                                   $"error while parsing function invocation \"{functionCall}\".");
+                    return null;
+                }
+                //Debug.LogWarning($"Parser.ParseExpression(\"{expressionString}\") => function invocation \"{functionCall}\" => \"{callExpression.Script()}\"");
                 output.Push(callExpression);
                 continue;
             }
@@ -453,48 +521,30 @@ public class Parser : MonoBehaviour {
 
     private static IExpression ParseFunctionCall(string call, IFunction metadata,
         ParserContext context) {
-        int startIndex = call.IndexOf('(');
-        int endIndex = call.LastIndexOf(')');
-        if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
-            Debug.LogError($"ScriptParser.ParseFunctionCall(\"{call}\") : syntax error.");
-            return null;
-        }
-
         // Parameters identification
-        string current = "";
-        List<string> parametersString = new List<string>();
-        int openedParentheses = 0, closedParentheses = 0;
-        for (int i = startIndex + 1; i < endIndex; i++) {
-            char c = call[i];
-            if (c == ',' && closedParentheses == openedParentheses) {
-                parametersString.Add(current.Trim());
-                current = "";
-                continue;
-            }
-            current += c;
-            if (c == '(') ++openedParentheses;
-            else if (c == ')') ++closedParentheses;
-        }
-        current = current.Trim();
-        if (current != "") parametersString.Add(current);
+        List<string> parametersString = ProcessList(call, '(', ')', ',');
         int arity = metadata.Parameters().Length;
         if (parametersString.Count != arity) {
-            Debug.LogError($"Parser.ParseFunctionCall(\"{call}\") : wrong arity ({parametersString.Count} instead of {arity}).");
+            Debug.LogError($"Parser.ParseFunctionCall(\"{call}\") : wrong arity " +
+                           $"({parametersString.Count} instead of {arity}).");
             return null;
         }
 
+        // Parameters parsing
         List<IExpression> parameters = new List<IExpression>();
         SymbolType[] parametersTypes = metadata.Parameters();
         for (int i = 0; i < arity; i++) {
             string parameterString = parametersString[i].Trim();
             IExpression expression = ParseExpression(parameterString, context);
             if (expression == null) {
-                Debug.LogError($"Parser.ParseFunctionCall(\"{call}\") : cannot parse function argument \"{parameterString}\".");
+                Debug.LogError($"Parser.ParseFunctionCall(\"{call}\") : cannot " +
+                               $"parse function argument \"{parameterString}\".");
                 return null;
             }
             SymbolType type = parametersTypes[i];
             if (expression.Type() != type && type != SymbolType.Void) { // void : any type
-                Debug.LogError($"Parser.ParseFunctionCall(\"{call}\") : {expression.Type()} argument \"{parameterString}\" must be of type {type}.");
+                Debug.LogError($"Parser.ParseFunctionCall(\"{call}\") : {expression.Type()} " +
+                               $"argument \"{parameterString}\" must be of type {type}.");
                 return null;
             }
             parameters.Add(expression);
@@ -517,6 +567,81 @@ public class Parser : MonoBehaviour {
             default:
                 return null;
         }
+    }
+
+    /// <summary>
+    /// Parse a function invocation on a symbol.
+    /// For instance, if 'a' is a FloatSymbol :
+    /// 'a.ToInt()' will be treated as 'float.ToInt(a)'.
+    /// </summary>
+    private static IExpression ParseFunctionInvocation(string call,
+        IFunction metadata, ParserContext context) {
+        // Parameters identification
+        List<string> parametersString = ProcessList(call, '(', ')', ',');
+        int arity = metadata.Parameters().Length;
+        if (parametersString.Count != arity) {
+            Debug.LogError($"Parser.ParseFunctionInvocation(\"{call}\") : wrong arity " +
+                           $"({parametersString.Count} instead of {arity}).");
+            return null;
+        }
+
+        // Parameters parsing
+        List<IExpression> parameters = new List<IExpression>();
+        for (int i = 0; i < parametersString.Count; i++) {
+            string parameterString = parametersString[i].Trim();
+            IExpression expression = ParseExpression(parameterString, context);
+            if (expression == null) {
+                Debug.LogError($"Parser.ParseFunctionInvocation(\"{call}\") : cannot " +
+                               $"parse function argument n°{i} \"{parameterString}\".");
+                return null;
+            }
+            parameters.Add(expression);
+        }
+
+        switch (metadata.ReturnType()) {
+            case SymbolType.Void:
+                return new FunctionExpression<Void>(metadata as Function<Void>, parameters.ToArray());
+            case SymbolType.Boolean:
+                return new FunctionExpression<bool>(metadata as Function<bool>, parameters.ToArray());
+            case SymbolType.Integer:
+                return new FunctionExpression<int>(metadata as Function<int>, parameters.ToArray());
+            case SymbolType.Float:
+                return new FunctionExpression<float>(metadata as Function<float>, parameters.ToArray());
+            case SymbolType.Id:
+            case SymbolType.String:
+                return new FunctionExpression<string>(metadata as Function<string>, parameters.ToArray());
+            case SymbolType.Date:
+                return new FunctionExpression<DateTime>(metadata as Function<DateTime>, parameters.ToArray());
+            default:
+                return null;
+        }
+    }
+
+    private static List<string> ProcessList(string listString, char openingChar,
+        char closingChar, char separator) {
+        int startIndex = listString.IndexOf(openingChar);
+        int endIndex = listString.LastIndexOf(closingChar);
+        if (startIndex == -1 || endIndex == -1 || startIndex > endIndex) {
+            Debug.LogError($"ScriptParser.ParseList(\"{listString}\") : syntax error.");
+            return null;
+        }
+        string current = "";
+        List<string> list = new List<string>();
+        int openedParentheses = 0, closedParentheses = 0;
+        for (int i = startIndex + 1; i < endIndex; i++) {
+            char c = listString[i];
+            if (c == separator && closedParentheses == openedParentheses) {
+                list.Add(current.Trim());
+                current = "";
+                continue;
+            }
+            current += c;
+            if (c == '(') ++openedParentheses;
+            else if (c == ')') ++closedParentheses;
+        }
+        current = current.Trim();
+        if (current != "") list.Add(current);
+        return list;
     }
 
     private static IExpression ParseToken(string expression,
@@ -598,8 +723,8 @@ public class Parser : MonoBehaviour {
             string literal = token.Substring(1, token.Length - 2);
             return new StringSymbol(literal);
         }
+        // date literal
         if (token.Contains("/")) {
-            // date literal
             try {
                 DateTime date = ParseDate(token);
                 return new DateSymbol(date);

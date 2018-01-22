@@ -96,7 +96,7 @@ public class Staff : MonoBehaviour {
             }
 
             int proficiency = Random.Range(skillDistribution.Item2,
-                skillDistribution.Item3); // upper bound is inclusive by convention
+                skillDistribution.Item3 + 1); // upper bound is inclusive by convention
             skills[i] = new EmployeeSkill(skillId, skillInfo.Name, proficiency);
         }
 
@@ -118,7 +118,7 @@ public class Staff : MonoBehaviour {
 
     private float ComputeEmployeeHiringCost(IScriptContext context) {
         Assert.IsTrue(ScriptContext.SetLocalVariableValue(context,
-            "Employee.HiringCost", new FloatSymbol(0f)));
+            "Employee_HiringCost", new FloatSymbol(0f)));
         foreach (SkillType skillType in skillTypes) {
             if (skillType == null) continue;
             if (skillType.HiringCost.Execute(context) == null) {
@@ -127,14 +127,14 @@ public class Staff : MonoBehaviour {
             }
         }
         Symbol<float> hiringCost = ScriptContext.GetLocalVariableValue(context,
-            "Employee.HiringCost") as Symbol<float>;
+            "Employee_HiringCost") as Symbol<float>;
         Assert.IsNotNull(hiringCost);
         return hiringCost.Value;
     }
 
     private float ComputeEmployeeSalary(IScriptContext context) {
         Assert.IsTrue(ScriptContext.SetLocalVariableValue(context,
-            "Employee.Salary", new FloatSymbol(0f)));
+            "Employee_Salary", new FloatSymbol(0f)));
         foreach (SkillType skillType in skillTypes) {
             if (skillType.Salary.Execute(context) == null) {
                 Debug.LogError($"Staff : error while evaluating salary for Skill \"{skillType.Id}\".");
@@ -142,7 +142,7 @@ public class Staff : MonoBehaviour {
             }
         }
         Symbol<float> salary = ScriptContext.GetLocalVariableValue(context,
-            "Employee.HiringCost") as Symbol<float>;
+            "Employee_Salary") as Symbol<float>;
         Assert.IsNotNull(salary);
         return salary.Value;
     }
