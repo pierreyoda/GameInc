@@ -7,10 +7,10 @@
         "name": "Monkey Kong",
         "releases": [
             {
-                "date": "1984/02/01",
+                "date": "1984/01/21",
                 "platforms": ["NES"],
                 "ratingsDistribution": "60-85",
-                "beforeName": "", "afterName": "",
+                "beforeName": "[TEST]", "afterName": "[TEST]",
             },
         ],
     }

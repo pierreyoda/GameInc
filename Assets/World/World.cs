@@ -151,6 +151,8 @@ public class World : MonoBehaviour {
 
         companyBuilding.OnNewDay();
         playerCompany.OnNewDay(worldController);
+        if (gameDateTime.DayOfWeek == DayOfWeek.Monday)
+            globalMarket.OnNewWeek();
         if (gameDateTime.Month != previousDayMonth)
             playerCompany.OnNewMonth(companyBuilding.Rent, companyBuilding.Upkeep());
 

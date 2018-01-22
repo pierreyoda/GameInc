@@ -879,9 +879,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a53b08a459d247e42b67b7c57ab4d112, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  marketSize: 100
+  marketSize: 100000
+  minimumWeeksOnSale: 4
+  salesCutOffPercentage: 0.2
+  popularityFromScoreFactor: 0.0125
   competitorSeries: []
-  releasedGames: []
+  activeProducts: []
 --- !u!1 &174410829
 GameObject:
   m_ObjectHideFlags: 0
