@@ -4,12 +4,22 @@ using System.Globalization;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.WSA;
 
 namespace Script {
 
 [Serializable]
 public class Void { }
+
+[Serializable]
+public struct Id {
+    public readonly string Identifier;
+
+    public Id(string value) {
+        Identifier = value;
+    }
+
+    public override String ToString() => Identifier;
+}
 
 [Serializable]
 public enum SymbolType {
@@ -101,8 +111,8 @@ public abstract class Symbol<T> : ISymbol {
             case SymbolType.Boolean: return new BooleanSymbol(Convert.ToBoolean(value)) as Symbol<T>;
             case SymbolType.Integer: return new IntegerSymbol(Convert.ToInt32(value)) as Symbol<T>;
             case SymbolType.Float: return new FloatSymbol(Convert.ToSingle(value)) as Symbol<T>;
-            case SymbolType.Id: return new IdSymbol(Convert.ToString(value)) as Symbol<T>;
-            case SymbolType.String: return new StringSymbol(Convert.ToString(value)) as Symbol<T>;
+            case SymbolType.Id: return new IdSymbol(value.ToString()) as Symbol<T>; // TODO : find better way ?
+            case SymbolType.String: return new StringSymbol(value as string) as Symbol<T>;
             case SymbolType.Date: return new DateSymbol(Convert.ToDateTime(value)) as Symbol<T>;
             default: return null;
         }
@@ -281,28 +291,28 @@ public class FloatSymbol : Symbol<float> {
 }
 
 [Serializable]
-public class IdSymbol : Symbol<string> {
+public class IdSymbol : Symbol<Id> {
     public IdSymbol(string value)
-        : base(value, $"@{value}", SymbolType.Id) {
+        : base(new Id(value), $"@{value}", SymbolType.Id) {
     }
 
-    protected override string AsString() => $"@{Value}";
+    protected override string AsString() => $"@{Value.Identifier}";
 
-    public override Symbol<string> Operation(Symbol<string> right, OperatorType type) {
+    public override Symbol<Id> Operation(Symbol<Id> right, OperatorType type) {
         return IllegalOperation(right, "of any kind");
     }
 
-    public override Symbol<string> Assignment(Symbol<string> right, AssignmentType type) {
+    public override Symbol<Id> Assignment(Symbol<Id> right, AssignmentType type) {
         switch (type) {
-            case AssignmentType.Assign: Value = right.Value; return this;
+            case AssignmentType.Assign: Value = new Id(right.Value.Identifier); return this;
             default: return IllegalAssignment(right, type.ToString());
         }
     }
 
-    public override Symbol<bool> CompareTo(Symbol<string> other, OperatorType type,
+    public override Symbol<bool> CompareTo(Symbol<Id> other, OperatorType type,
         IScriptContext context) {
         switch (type) {
-            case OperatorType.Equal: return new BooleanSymbol(Value == other.Value);
+            case OperatorType.Equal: return new BooleanSymbol(Value.Identifier == other.Value.Identifier);
             default:
                 Debug.LogError($"Unsupported operation {type} for IdSymbol.");
                 return null;

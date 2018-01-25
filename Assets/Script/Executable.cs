@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -211,6 +209,9 @@ public class Executable {
                     e => e.Evaluate(context).Value).ToArray() as T;
                 break;
             case SymbolType.Id:
+                result = ((ArraySymbol<Id>) lastResult).Elements.Select(
+                    e => e.Evaluate(context).Value.Identifier).ToArray() as T;
+                break;
             case SymbolType.String:
                 result = ((ArraySymbol<string>) lastResult).Elements.Select(
                     e => e.Evaluate(context).Value).ToArray() as T;
@@ -230,13 +231,14 @@ public class Executable {
             return typeof(T) == typeof(bool[]) && arrayType == SymbolType.Boolean ||
                typeof(T) == typeof(int[]) && arrayType == SymbolType.Integer ||
                typeof(T) == typeof(float[]) && arrayType == SymbolType.Float ||
-               typeof(T) == typeof(string[]) && (arrayType == SymbolType.Id ||
-                                                 arrayType == SymbolType.String) ||
+               typeof(T) == typeof(Id[]) && arrayType == SymbolType.Id ||
+               typeof(T) == typeof(string[]) && arrayType == SymbolType.String ||
                typeof(T) == typeof(DateTime[]) && arrayType == SymbolType.Date;
         return typeof(T) == typeof(bool) && type == SymbolType.Boolean ||
             typeof(T) == typeof(int) && type == SymbolType.Integer ||
             typeof(T) == typeof(float) && type == SymbolType.Float ||
-            typeof(T) == typeof(string) && (type == SymbolType.Id || type == SymbolType.String) ||
+            typeof(T) == typeof(Id) && type == SymbolType.Id ||
+            typeof(T) == typeof(string) && type == SymbolType.String ||
             typeof(T) == typeof(DateTime) && type == SymbolType.Date;
     }
 }

@@ -102,12 +102,11 @@ public class WorldController : MonoBehaviour, IScriptContext {
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
             "testVariable", new FloatSymbol(0f)));
         const string script = @"
-            let a: int[] = [1, 2];
-            let b: float = 2.5 * 2.0;
-            a.Count() + b.ToInt()
+            let a: id = @ID;
+            a
         ";
         Executable executable = Executable.FromScript(script, parserContext);
-        int scriptResult;
+        Id scriptResult;
         executable.ExecuteExpecting(this, out scriptResult);
         Debug.LogWarning($"===> executable result = {scriptResult}");
 

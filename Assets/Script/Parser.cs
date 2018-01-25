@@ -1,14 +1,9 @@
 ﻿using System;
-using System.CodeDom;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Linq.Expressions;
-using NUnit.Framework.Constraints;
 using UnityEngine;
 using UnityEngine.Assertions;
-using UnityEngine.Networking;
 
 namespace Script {
 
@@ -195,6 +190,8 @@ public class Parser : MonoBehaviour {
                         symbol = new ArraySymbol<float>(new List<Expression<float>>(), arrayType);
                         break;
                     case SymbolType.Id:
+                        symbol = new ArraySymbol<Id>(new List<Expression<Id>>(), arrayType);
+                        break;
                     case SymbolType.String:
                         symbol = new ArraySymbol<string>(new List<Expression<string>>(), arrayType);
                         break;
@@ -264,6 +261,17 @@ public class Parser : MonoBehaviour {
                         variableExpression, rightExpression as Expression<float>, returnsType);
                 break;
             case SymbolType.Id:
+                if (global)
+                    variableExpression = new GlobalVariableExpression<Id>(globalVariable);
+                else
+                    variableExpression = new LocalVariableExpression<Id>(localVariable);
+                if (returnsType)
+                    assignmentExpression = new AssignmentExpression<Id, Id>(assignmentType,
+                        variableExpression, rightExpression as Expression<Id>, returnsType);
+                else
+                    assignmentExpression = new AssignmentExpression<Void, Id>(assignmentType,
+                        variableExpression, rightExpression as Expression<Id>, returnsType);
+                break;
             case SymbolType.String:
                 if (global)
                     variableExpression = new GlobalVariableExpression<string>(globalVariable);
@@ -339,6 +347,17 @@ public class Parser : MonoBehaviour {
                                 variableExpression, rightExpression as Expression<float>, returnsType);
                         break;
                     case SymbolType.Id:
+                        if (global)
+                            variableExpression = new GlobalVariableExpression<Id>(globalVariable);
+                        else
+                            variableExpression = new LocalVariableExpression<Id>(localVariable);
+                        if (returnsType)
+                            assignmentExpression = new AssignmentExpression<Id, Id>(assignmentType,
+                                variableExpression, rightExpression as Expression<Id>, returnsType);
+                        else
+                            assignmentExpression = new AssignmentExpression<Void, Id>(assignmentType,
+                                variableExpression, rightExpression as Expression<Id>, returnsType);
+                        break;
                     case SymbolType.String:
                         if (global)
                             variableExpression = new GlobalVariableExpression<string>(globalVariable);
@@ -649,6 +668,9 @@ public class Parser : MonoBehaviour {
                         left as Expression<float>, right as Expression<float>);
                     break;
                 case SymbolType.Id:
+                    expression = new ComparisonExpression<Id>(operation,
+                        left as Expression<Id>, right as Expression<Id>);
+                    break;
                 case SymbolType.String:
                     expression = new ComparisonExpression<string>(operation,
                         left as Expression<string>, right as Expression<string>);
@@ -676,6 +698,9 @@ public class Parser : MonoBehaviour {
                                 left as Expression<float>, right as Expression<float>);
                             break;
                         case SymbolType.Id:
+                            expression = new ComparisonExpression<Id>(operation,
+                                left as Expression<Id>, right as Expression<Id>);
+                            break;
                         case SymbolType.String:
                             expression = new ComparisonExpression<string>(operation,
                                 left as Expression<string>, right as Expression<string>);
@@ -707,6 +732,9 @@ public class Parser : MonoBehaviour {
                         left as Expression<float>, right as Expression<float>);
                     break;
                 case SymbolType.Id:
+                    expression = new OperationExpression<Id>(operation,
+                        left as Expression<Id>, right as Expression<Id>);
+                    break;
                 case SymbolType.String:
                     expression = new OperationExpression<string>(operation,
                         left as Expression<string>, right as Expression<string>);
@@ -734,6 +762,9 @@ public class Parser : MonoBehaviour {
                                 left as Expression<float>, right as Expression<float>);
                             break;
                         case SymbolType.Id:
+                            expression = new OperationExpression<Id>(operation,
+                                left as Expression<Id>, right as Expression<Id>);
+                            break;
                         case SymbolType.String:
                             expression = new OperationExpression<string>(operation,
                                 left as Expression<string>, right as Expression<string>);
@@ -796,6 +827,7 @@ public class Parser : MonoBehaviour {
             case SymbolType.Float:
                 return new FunctionExpression<float>(metadata as Function<float>, parameters.ToArray());
             case SymbolType.Id:
+                return new FunctionExpression<Id>(metadata as Function<Id>, parameters.ToArray());
             case SymbolType.String:
                 return new FunctionExpression<string>(metadata as Function<string>, parameters.ToArray());
             case SymbolType.Date:
@@ -844,6 +876,7 @@ public class Parser : MonoBehaviour {
             case SymbolType.Float:
                 return new FunctionExpression<float>(metadata as Function<float>, parameters.ToArray());
             case SymbolType.Id:
+                return new FunctionExpression<Id>(metadata as Function<Id>, parameters.ToArray());
             case SymbolType.String:
                 return new FunctionExpression<string>(metadata as Function<string>, parameters.ToArray());
             case SymbolType.Date:
@@ -898,9 +931,9 @@ public class Parser : MonoBehaviour {
                 Assert.IsNotNull(floats);
                 return new ArrayExpression<float>(new ArraySymbol<float>(floats, elementsType), SymbolType.Float);
             case SymbolType.Id:
-                List<Expression<string>> ids = elements.Cast<Expression<string>>().ToList();
+                List<Expression<Id>> ids = elements.Cast<Expression<Id>>().ToList();
                 Assert.IsNotNull(ids);
-                return new ArrayExpression<string>(new ArraySymbol<string>(ids, elementsType), SymbolType.Id);
+                return new ArrayExpression<Id>(new ArraySymbol<Id>(ids, elementsType), SymbolType.Id);
             case SymbolType.String:
                 List<Expression<string>> strings = elements.Cast<Expression<string>>().ToList();
                 Assert.IsNotNull(strings);
@@ -954,7 +987,7 @@ public class Parser : MonoBehaviour {
                 case SymbolType.Boolean: return new LocalVariableExpression<bool>(localVariable);
                 case SymbolType.Integer: return new LocalVariableExpression<int>(localVariable);
                 case SymbolType.Float: return new LocalVariableExpression<float>(localVariable);
-                case SymbolType.Id:
+                case SymbolType.Id: return new LocalVariableExpression<Id>(localVariable);
                 case SymbolType.String: return new LocalVariableExpression<string>(localVariable);
                 case SymbolType.Date: return new LocalVariableExpression<DateTime>(localVariable);
                 case SymbolType.Array:
@@ -963,7 +996,7 @@ public class Parser : MonoBehaviour {
                         case SymbolType.Boolean: return new LocalVariableExpression<bool>(localVariable);
                         case SymbolType.Integer: return new LocalVariableExpression<int>(localVariable);
                         case SymbolType.Float: return new LocalVariableExpression<float>(localVariable);
-                        case SymbolType.Id:
+                        case SymbolType.Id: return new LocalVariableExpression<Id>(localVariable);
                         case SymbolType.String: return new LocalVariableExpression<string>(localVariable);
                         case SymbolType.Date: return new LocalVariableExpression<DateTime>(localVariable);
                         default: throw new ArgumentOutOfRangeException();
@@ -985,18 +1018,18 @@ public class Parser : MonoBehaviour {
                 case SymbolType.Boolean: return new GlobalVariableExpression<bool>(globalVariable);
                 case SymbolType.Integer: return new GlobalVariableExpression<int>(globalVariable);
                 case SymbolType.Float: return new GlobalVariableExpression<float>(globalVariable);
-                case SymbolType.Id:
+                case SymbolType.Id: return new GlobalVariableExpression<Id>(globalVariable);
                 case SymbolType.String: return new GlobalVariableExpression<string>(globalVariable);
                 case SymbolType.Date: return new GlobalVariableExpression<DateTime>(globalVariable);
                 case SymbolType.Array:
                     switch (localVariable.ArrayType) {
-                        case SymbolType.Void: return new GlobalVariableExpression<Void[]>(globalVariable);
-                        case SymbolType.Boolean: return new GlobalVariableExpression<bool[]>(globalVariable);
-                        case SymbolType.Integer: return new GlobalVariableExpression<int[]>(globalVariable);
-                        case SymbolType.Float: return new GlobalVariableExpression<float[]>(globalVariable);
-                        case SymbolType.Id:
-                        case SymbolType.String: return new GlobalVariableExpression<string[]>(globalVariable);
-                        case SymbolType.Date: return new GlobalVariableExpression<DateTime[]>(globalVariable);
+                        case SymbolType.Void: return new GlobalVariableExpression<Void>(globalVariable);
+                        case SymbolType.Boolean: return new GlobalVariableExpression<bool>(globalVariable);
+                        case SymbolType.Integer: return new GlobalVariableExpression<int>(globalVariable);
+                        case SymbolType.Float: return new GlobalVariableExpression<float>(globalVariable);
+                        case SymbolType.Id: return new GlobalVariableExpression<Id>(globalVariable);
+                        case SymbolType.String: return new GlobalVariableExpression<string>(globalVariable);
+                        case SymbolType.Date: return new GlobalVariableExpression<DateTime>(globalVariable);
                         default: throw new ArgumentOutOfRangeException();
                     }
                 default: throw new ArgumentOutOfRangeException();
@@ -1016,7 +1049,7 @@ public class Parser : MonoBehaviour {
             case SymbolType.Boolean: return new SymbolExpression<bool>(constant as Symbol<bool>);
             case SymbolType.Integer: return new SymbolExpression<int>(constant as Symbol<int>);
             case SymbolType.Float: return new SymbolExpression<float>(constant as Symbol<float>);
-            case SymbolType.Id:
+            case SymbolType.Id: return new SymbolExpression<Id>(constant as Symbol<Id>);
             case SymbolType.String: return new SymbolExpression<string>(constant as Symbol<string>);
             case SymbolType.Date: return new SymbolExpression<DateTime>(constant as Symbol<DateTime>);
             default: throw new ArgumentOutOfRangeException();

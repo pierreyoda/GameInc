@@ -89,7 +89,7 @@ public class Function<T> : IFunction {
                     case SymbolType.Boolean: return ((ArraySymbol<bool>) p[0]).Elements.Count;
                     case SymbolType.Integer: return ((ArraySymbol<int>) p[0]).Elements.Count;
                     case SymbolType.Float: return ((ArraySymbol<float>) p[0]).Elements.Count;
-                    case SymbolType.Id:
+                    case SymbolType.Id: return ((ArraySymbol<Id>) p[0]).Elements.Count;
                     case SymbolType.String: return ((ArraySymbol<string>) p[0]).Elements.Count;
                     case SymbolType.Date: return ((ArraySymbol<DateTime>) p[0]).Elements.Count;
                     default:
@@ -101,14 +101,12 @@ public class Function<T> : IFunction {
         functions.Add(new Function<bool>("Company.SetFeature",
             SymbolType.Boolean, new [] { SymbolType.Id, SymbolType.Boolean },
             (c, p) => {
-                string featureId = ((IdSymbol) p[0]).Value;
+                string featureId = ((IdSymbol) p[0]).Value.Identifier;
                 bool enabled = ((BooleanSymbol) p[1]).Value;
-                if (!c.C().SetFeature(featureId, enabled)) {
-                    Debug.LogError($"Function Company.SetFeature({featureId}, {enabled}) : " +
-                                   $"invalid Feature ID \"{featureId}\".");
-                    return false;
-                }
-                return true;
+                if (c.C().SetFeature(featureId, enabled)) return true;
+                Debug.LogError($"Function Company.SetFeature({featureId}, {enabled}) : " +
+                               $"invalid Feature ID \"{featureId}\".");
+                return false;
             }));
         // Projects Statistics
         functions.Add(new Function<int>("Company.Projects.CompletedGamesCount",
@@ -116,29 +114,28 @@ public class Function<T> : IFunction {
             (c, p) => c.C().CompletedProjects.Games.Count));
         functions.Add(new Function<int>("Company.Projects.CompletedGames.WithEngineFeatureCount",
             SymbolType.Integer, new [] { SymbolType.Id },
-            (c, p) => c.C().CompletedProjects.GamesWithEngineFeature(((IdSymbol) p[0]).Value).Count));
+            (c, p) => c.C().CompletedProjects.GamesWithEngineFeature(
+                ((IdSymbol) p[0]).Value.Identifier).Count));
         // Games
         functions.Add(new Function<float>("CurrentGame.Score",
             SymbolType.Float, new [] { SymbolType.Id },
             (c, p) => {
                 GameProject game = c.C().CurrentGame();
-                string scoreId = ((IdSymbol) p[0]).Value;
+                string scoreId = ((IdSymbol) p[0]).Value.Identifier;
                 if (game == null) {
                     Debug.LogError($"Function Company.CurrentGame.Score({scoreId}) : no current Game Project.");
                     return 0f;
                 }
                 Project.ProjectScore score = game.Scores.Find(s => s.Id == scoreId);
-                if (score == null) {
-                    Debug.LogError($"Function Company.CurrentGame.Score({scoreId}) : no such Score ID.");
-                    return 0f;
-                }
-                return score.score;
+                if (score != null) return score.score;
+                Debug.LogError($"Function Company.CurrentGame.Score({scoreId}) : no such Score ID.");
+                return 0f;
             }));
         functions.Add(new Function<float>("CurrentGame.ModifyScore",
             SymbolType.Float, new [] { SymbolType.Id, SymbolType.Float },
             (c, p) => {
                 GameProject game = c.C().CurrentGame();
-                string scoreId = ((IdSymbol) p[0]).Value;
+                string scoreId = ((IdSymbol) p[0]).Value.Identifier;
                 if (game == null) {
                     Debug.LogError($"Function Company.CurrentGame.Score({scoreId}) : no current Game Project.");
                     return 0f;
@@ -155,7 +152,7 @@ public class Function<T> : IFunction {
         functions.Add(new Function<float>("CurrentEmployee.Skill",
             SymbolType.Float, new [] { SymbolType.Id },
             (c, p) => {
-                string skillId = ((IdSymbol) p[0]).Value;
+                string skillId = ((IdSymbol) p[0]).Value.Identifier;
                 Employee employee = c.CurrentEmployee();
                 if (employee == null) {
                     Debug.LogError($"Function CurrentEmployee.Skill({skillId}) : no current Employee set.");

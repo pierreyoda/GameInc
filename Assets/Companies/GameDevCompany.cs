@@ -89,14 +89,14 @@ public class GameDevCompany : MonoBehaviour {
         currentProject = null;
     }
 
-    public bool SetFeature(string featureName, bool featureEnabled) {
-        CompanyFeature feature = Array.Find(features, f => f.Name == featureName);
+    public bool SetFeature(string featureId, bool featureEnabled) {
+        CompanyFeature feature = Array.Find(features, f => f.Name == featureId);
         if (feature == null) {
-            Debug.LogError($"GameDevCompany.SetFeature(\"{featureName}\", {featureEnabled}) : unkown feature.");
+            Debug.LogError($"GameDevCompany.SetFeature(\"{featureId}\", {featureEnabled}) : unkown feature ID.");
             return false;
         }
         feature.Enabled = featureEnabled;
-        Debug.Log($"GameDevCompany.Feature(\"{featureName}\") = {featureEnabled}.");
+        Debug.Log($"GameDevCompany.Feature(\"{featureId}\") = {featureEnabled}.");
         return true;
     }
 
