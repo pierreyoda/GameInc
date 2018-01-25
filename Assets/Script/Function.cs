@@ -40,11 +40,11 @@ public class Function<T> : IFunction {
 
         // Conversion
         functions.Add(new Function<int>("float.ToInt", SymbolType.Integer,
-            new[] {SymbolType.Float}, (c, p) => (int) (p[0] as FloatSymbol).Value));
+            new[] {SymbolType.Float}, (c, p) => (int) ((FloatSymbol) p[0]).Value));
         functions.Add(new Function<int>("string.ToInt", SymbolType.Integer,
             new[] {SymbolType.String}, (c, p) => {
                 int result;
-                if (!int.TryParse((p[0] as StringSymbol).Value, Parser.NumberStyleInteger,
+                if (!int.TryParse(((StringSymbol) p[0]).Value, Parser.NumberStyleInteger,
                     Symbol<int>.CultureInfo, out result)) {
                     Debug.LogError($"Function ToInt({p[0].ValueString()}) : cannot parse as Integer.");
                     return 0;
@@ -52,11 +52,11 @@ public class Function<T> : IFunction {
                 return result;
             }));
         functions.Add(new Function<float>("int.ToFloat", SymbolType.Float,
-            new[] {SymbolType.Integer}, (c, p) => (float) (p[0] as IntegerSymbol).Value));
+            new[] {SymbolType.Integer}, (c, p) => (float) ((IntegerSymbol) p[0]).Value));
         functions.Add(new Function<float>("string.ToFloat", SymbolType.Float,
             new[] {SymbolType.String}, (c, p) => {
                 float result;
-                if (!float.TryParse((p[0] as StringSymbol).Value, Parser.NumberStyleFloat,
+                if (!float.TryParse(((StringSymbol) p[0]).Value, Parser.NumberStyleFloat,
                     Symbol<float>.CultureInfo, out result)) {
                     Debug.LogError($"Function ToFloat({p[0].ValueString()}) : cannot parse as Float.");
                     return 0f;
@@ -68,25 +68,41 @@ public class Function<T> : IFunction {
             new [] { SymbolType.Void }, (c, p) => p[0].ValueString()));
         // Math
         functions.Add(new Function<float>("Math.Cos", SymbolType.Float,
-            new [] { SymbolType.Float }, (c, p) => Mathf.Cos((p[0] as FloatSymbol).Value)));
+            new [] { SymbolType.Float }, (c, p) => Mathf.Cos(((FloatSymbol) p[0]).Value)));
         functions.Add(new Function<float>("Math.Sin", SymbolType.Float,
-            new [] { SymbolType.Float }, (c, p) => Mathf.Sin((p[0] as FloatSymbol).Value)));
+            new [] { SymbolType.Float }, (c, p) => Mathf.Sin(((FloatSymbol) p[0]).Value)));
         functions.Add(new Function<float>("Math.Tan", SymbolType.Float,
-            new [] { SymbolType.Float }, (c, p) => Mathf.Tan((p[0] as FloatSymbol).Value)));
+            new [] { SymbolType.Float }, (c, p) => Mathf.Tan(((FloatSymbol) p[0]).Value)));
         functions.Add(new Function<float>("Math.Abs", SymbolType.Float,
-            new [] { SymbolType.Float }, (c, p) => Mathf.Abs((p[0] as FloatSymbol).Value)));
+            new [] { SymbolType.Float }, (c, p) => Mathf.Abs(((FloatSymbol) p[0]).Value)));
         // Random
         functions.Add(new Function<float>("Random.Next", SymbolType.Float,
             new SymbolType[0], (c, p) => Random.value));
         functions.Add(new Function<float>("Random.Range", SymbolType.Float,
             new [] { SymbolType.Float, SymbolType.Float },
-            (c, p) => Random.Range((p[0] as FloatSymbol).Value, (p[1] as FloatSymbol).Value)));
+            (c, p) => Random.Range(((FloatSymbol) p[0]).Value, ((FloatSymbol) p[1]).Value)));
+        // Arrays
+        functions.Add(new Function<int>("array.Count", SymbolType.Integer,
+            new [] { SymbolType.Array }, (c, p) => {
+                switch (p[0].ArrayType()) {
+                    case SymbolType.Void: return ((ArraySymbol<Void>) p[0]).Elements.Count;
+                    case SymbolType.Boolean: return ((ArraySymbol<bool>) p[0]).Elements.Count;
+                    case SymbolType.Integer: return ((ArraySymbol<int>) p[0]).Elements.Count;
+                    case SymbolType.Float: return ((ArraySymbol<float>) p[0]).Elements.Count;
+                    case SymbolType.Id:
+                    case SymbolType.String: return ((ArraySymbol<string>) p[0]).Elements.Count;
+                    case SymbolType.Date: return ((ArraySymbol<DateTime>) p[0]).Elements.Count;
+                    default:
+                        Debug.LogError($"Function array.Count : invalid Array type {p[0].ArrayType()}.");
+                        return -1;
+                }
+            }));
         // Company
         functions.Add(new Function<bool>("Company.SetFeature",
             SymbolType.Boolean, new [] { SymbolType.Id, SymbolType.Boolean },
             (c, p) => {
-                string featureId = (p[0] as IdSymbol).Value;
-                bool enabled = (p[1] as BooleanSymbol).Value;
+                string featureId = ((IdSymbol) p[0]).Value;
+                bool enabled = ((BooleanSymbol) p[1]).Value;
                 if (!c.C().SetFeature(featureId, enabled)) {
                     Debug.LogError($"Function Company.SetFeature({featureId}, {enabled}) : " +
                                    $"invalid Feature ID \"{featureId}\".");
@@ -100,13 +116,13 @@ public class Function<T> : IFunction {
             (c, p) => c.C().CompletedProjects.Games.Count));
         functions.Add(new Function<int>("Company.Projects.CompletedGames.WithEngineFeatureCount",
             SymbolType.Integer, new [] { SymbolType.Id },
-            (c, p) => c.C().CompletedProjects.GamesWithEngineFeature((p[0] as IdSymbol).Value).Count));
+            (c, p) => c.C().CompletedProjects.GamesWithEngineFeature(((IdSymbol) p[0]).Value).Count));
         // Games
         functions.Add(new Function<float>("CurrentGame.Score",
             SymbolType.Float, new [] { SymbolType.Id },
             (c, p) => {
                 GameProject game = c.C().CurrentGame();
-                string scoreId = (p[0] as IdSymbol).Value;
+                string scoreId = ((IdSymbol) p[0]).Value;
                 if (game == null) {
                     Debug.LogError($"Function Company.CurrentGame.Score({scoreId}) : no current Game Project.");
                     return 0f;
@@ -122,7 +138,7 @@ public class Function<T> : IFunction {
             SymbolType.Float, new [] { SymbolType.Id, SymbolType.Float },
             (c, p) => {
                 GameProject game = c.C().CurrentGame();
-                string scoreId = (p[0] as IdSymbol).Value;
+                string scoreId = ((IdSymbol) p[0]).Value;
                 if (game == null) {
                     Debug.LogError($"Function Company.CurrentGame.Score({scoreId}) : no current Game Project.");
                     return 0f;
@@ -132,14 +148,14 @@ public class Function<T> : IFunction {
                     Debug.LogError($"Function Company.CurrentGame.Score({scoreId}) : no such Score ID.");
                     return 0f;
                 }
-                score.score += (p[1] as FloatSymbol).Value;
+                score.score += ((FloatSymbol) p[1]).Value;
                 return score.score;
             }));
         // Employee Skills Proficiency
         functions.Add(new Function<float>("CurrentEmployee.Skill",
             SymbolType.Float, new [] { SymbolType.Id },
             (c, p) => {
-                string skillId = (p[0] as IdSymbol).Value;
+                string skillId = ((IdSymbol) p[0]).Value;
                 Employee employee = c.CurrentEmployee();
                 if (employee == null) {
                     Debug.LogError($"Function CurrentEmployee.Skill({skillId}) : no current Employee set.");

@@ -104,12 +104,12 @@ public class WorldController : MonoBehaviour, IScriptContext {
         const string script = @"
             let a: int[] = [1, 2];
             let b: float = 2.5 * 2.0;
-            a + [3, 2 * 2, b.ToInt()]
+            a.Count() + b.ToInt()
         ";
         Executable executable = Executable.FromScript(script, parserContext);
-        int[] scriptResult;
+        int scriptResult;
         executable.ExecuteExpecting(this, out scriptResult);
-        Debug.LogWarning($"===> executable result = [{string.Join(", ", scriptResult.Select(i => i.ToString()))}]");
+        Debug.LogWarning($"===> executable result = {scriptResult}");
 
         // scripts parsing
         eventsController.CreateEvents(db.Events.Collection, parserContext);

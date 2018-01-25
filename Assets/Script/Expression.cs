@@ -36,29 +36,7 @@ public abstract class Expression<T> : IExpression {
             Debug.LogError($"Script : Expression.EvaluateAsISymbol : evaluation error in \"{script}\".");
             return null;
         }
-        switch (result.Type()) {
-            case SymbolType.Void: return new VoidSymbol();
-            case SymbolType.Boolean: return result as Symbol<bool>;
-            case SymbolType.Integer: return result as Symbol<int>;
-            case SymbolType.Float: return result as Symbol<float>;
-            case SymbolType.Id:
-            case SymbolType.String: return result as Symbol<string>;
-            case SymbolType.Date: return result as Symbol<DateTime>;
-            case SymbolType.Array:
-                switch (result.ArrayType()) {
-                    case SymbolType.Void: return result as Symbol<Void>;
-                    case SymbolType.Boolean: return result as Symbol<bool>;
-                    case SymbolType.Integer: return result as Symbol<int>;
-                    case SymbolType.Float: return result as Symbol<float>;
-                    case SymbolType.Id:
-                    case SymbolType.String: return result as Symbol<string>;
-                    case SymbolType.Date: return result as Symbol<DateTime>;
-                    default: throw new ArgumentOutOfRangeException();
-                }
-            default:
-                Debug.LogError($"Script : Expression.EvaluateAsISymbol : type error in \"{script}\".");
-                return null;
-        }
+        return result;
     }
 }
 
@@ -308,7 +286,7 @@ public class ArrayExpression<T> : Expression<T> {
             }
             items.Add(new SymbolExpression<T>(item));
         }
-        return new ArraySymbol<T>(items);
+        return new ArraySymbol<T>(items, arrayType);
     }
 }
 

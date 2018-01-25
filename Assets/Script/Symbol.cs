@@ -123,6 +123,8 @@ public abstract class Symbol<T> : ISymbol {
                     case SymbolType.String: return "string.ToFloat";
                     default: return null;
                 }
+            case "Count":
+                return type == SymbolType.Array ? "array.Count" : null;
             default: return null;
         }
     }
@@ -381,14 +383,14 @@ public class ArraySymbol<T> : Symbol<T> {
     [SerializeField] private List<Expression<T>> elements;
     public IReadOnlyList<Expression<T>> Elements => elements.AsReadOnly();
 
-    public ArraySymbol(List<Expression<T>> elements)
+    public ArraySymbol(List<Expression<T>> elements, SymbolType arrayType)
         : base(default(T), $"[{string.Join(", ", elements.Select(s => s.Script()))}]",
             SymbolType.Array) {
         this.elements = elements;
-        arrayType = elements.Count == 0 ? SymbolType.Void : elements.First().Type();
+        this.arrayType = arrayType;
     }
 
-    protected override String AsString() {
+    protected override string AsString() {
         return '[' + string.Join(", ", elements.Select(v => v.Script())) + ']';
     }
 
@@ -399,7 +401,7 @@ public class ArraySymbol<T> : Symbol<T> {
             case OperatorType.Addition:
                 List<Expression<T>> list = new List<Expression<T>>(elements);
                 list.AddRange(rightArray.elements);
-                return new ArraySymbol<T>(list);
+                return new ArraySymbol<T>(list, arrayType);
             default:
                 return IllegalOperation(right, type.ToString());
         }

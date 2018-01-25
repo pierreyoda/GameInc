@@ -132,7 +132,7 @@ public class Parser : MonoBehaviour {
         } else if (!global) { // local variable
             localVariable = context.LocalVariables.Find(lv => lv.Name == variableName);
             if (localVariable == null) {
-                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unkown local Variable \"{variableName}\"");
+                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unknown local Variable \"{variableName}\"");
                 return null;
             }
             type = localVariable.Type;
@@ -145,7 +145,7 @@ public class Parser : MonoBehaviour {
             }
             globalVariable = context.GlobalVariables.Find(gv => gv.Name == variableName);
             if (globalVariable == null) {
-                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unkown Game Variable \"{variableName}\"");
+                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unknown Game Variable \"{variableName}\"");
                 return null;
             }
             type = globalVariable.Type;
@@ -182,13 +182,25 @@ public class Parser : MonoBehaviour {
             if (type == SymbolType.Array) {
                 ISymbol symbol;
                 switch (arrayType) {
-                    case SymbolType.Void: symbol = new ArraySymbol<Void>(new List<Expression<Void>>()); break;
-                    case SymbolType.Boolean: symbol = new ArraySymbol<bool>(new List<Expression<bool>>()); break;
-                    case SymbolType.Integer: symbol = new ArraySymbol<int>(new List<Expression<int>>()); break;
-                    case SymbolType.Float: symbol = new ArraySymbol<float>(new List<Expression<float>>()); break;
+                    case SymbolType.Void:
+                        symbol = new ArraySymbol<Void>(new List<Expression<Void>>(), arrayType);
+                        break;
+                    case SymbolType.Boolean:
+                        symbol = new ArraySymbol<bool>(new List<Expression<bool>>(), arrayType);
+                        break;
+                    case SymbolType.Integer:
+                        symbol = new ArraySymbol<int>(new List<Expression<int>>(), arrayType);
+                        break;
+                    case SymbolType.Float:
+                        symbol = new ArraySymbol<float>(new List<Expression<float>>(), arrayType);
+                        break;
                     case SymbolType.Id:
-                    case SymbolType.String: symbol = new ArraySymbol<string>(new List<Expression<string>>()); break;
-                    case SymbolType.Date: symbol = new ArraySymbol<DateTime>(new List<Expression<DateTime>>()); break;
+                    case SymbolType.String:
+                        symbol = new ArraySymbol<string>(new List<Expression<string>>(), arrayType);
+                        break;
+                    case SymbolType.Date:
+                        symbol = new ArraySymbol<DateTime>(new List<Expression<DateTime>>(), arrayType);
+                        break;
                     default:
                         Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported Array type \"{arrayType}[]\".");
                         return null;
@@ -527,20 +539,20 @@ public class Parser : MonoBehaviour {
                     lv => lv.Name == variableName);
                 if (localVariable == null) {
                     Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid invocation " +
-                                   $"of \"{functionName}\" : unkown Local Variable \"{variableName}\".");
+                                   $"of \"{functionName}\" : unknown Local Variable \"{variableName}\".");
                     return null;
                 }
                 string fullFunctionName = Symbol<Void>.FunctionNameFromInvocation(
                     functionName, localVariable.Type);
                 if (string.IsNullOrEmpty(fullFunctionName)) {
                     Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid invocation of " +
-                                   $"\"{functionName}\" on {localVariable.Type}: unkown function \"{functionName}\".");
+                                   $"\"{functionName}\" on {localVariable.Type}: unknown function \"{functionName}\".");
                     return null;
                 }
                 IFunction invocation = context.Functions.Find(f => f.Name() == fullFunctionName);
                 if (invocation == null) {
                     Debug.LogError($"Parser.ParseExpression(\"{expressionString}\") : invalid invocation of " +
-                                   $"\"{functionName}\" on {localVariable.Type}: unkown function \"{fullFunctionName}\".");
+                                   $"\"{functionName}\" on {localVariable.Type}: unknown function \"{fullFunctionName}\".");
                     return null;
                 }
                 // call parsing
@@ -866,37 +878,37 @@ public class Parser : MonoBehaviour {
         // empty array
         if (elements.Count == 0)
             return new ArrayExpression<Void>(new ArraySymbol<Void>(
-                new List<Expression<Void>>()), SymbolType.Void);
+                new List<Expression<Void>>(), SymbolType.Void), SymbolType.Void);
 
         switch (elementsType) {
             case SymbolType.Void:
                 List<Expression<Void>> voids = elements.Cast<Expression<Void>>().ToList();
                 Assert.IsNotNull(voids);
-                return new ArrayExpression<Void>(new ArraySymbol<Void>(voids), SymbolType.Void);
+                return new ArrayExpression<Void>(new ArraySymbol<Void>(voids, elementsType), SymbolType.Void);
             case SymbolType.Boolean:
                 List<Expression<bool>> bools = elements.Cast<Expression<bool>>().ToList();
                 Assert.IsNotNull(bools);
-                return new ArrayExpression<bool>(new ArraySymbol<bool>(bools), SymbolType.Boolean);
+                return new ArrayExpression<bool>(new ArraySymbol<bool>(bools, elementsType), SymbolType.Boolean);
             case SymbolType.Integer:
                 List<Expression<int>> ints = elements.Cast<Expression<int>>().ToList();
                 Assert.IsNotNull(ints);
-                return new ArrayExpression<int>(new ArraySymbol<int>(ints), SymbolType.Integer);
+                return new ArrayExpression<int>(new ArraySymbol<int>(ints, elementsType), SymbolType.Integer);
             case SymbolType.Float:
                 List<Expression<float>> floats = elements.Cast<Expression<float>>().ToList();
                 Assert.IsNotNull(floats);
-                return new ArrayExpression<float>(new ArraySymbol<float>(floats), SymbolType.Float);
+                return new ArrayExpression<float>(new ArraySymbol<float>(floats, elementsType), SymbolType.Float);
             case SymbolType.Id:
                 List<Expression<string>> ids = elements.Cast<Expression<string>>().ToList();
                 Assert.IsNotNull(ids);
-                return new ArrayExpression<string>(new ArraySymbol<string>(ids), SymbolType.Id);
+                return new ArrayExpression<string>(new ArraySymbol<string>(ids, elementsType), SymbolType.Id);
             case SymbolType.String:
                 List<Expression<string>> strings = elements.Cast<Expression<string>>().ToList();
                 Assert.IsNotNull(strings);
-                return new ArrayExpression<string>(new ArraySymbol<string>(strings), SymbolType.String);
+                return new ArrayExpression<string>(new ArraySymbol<string>(strings, elementsType), SymbolType.String);
             case SymbolType.Date:
                 List<Expression<DateTime>> dates = elements.Cast<Expression<DateTime>>().ToList();
                 Assert.IsNotNull(dates);
-                return new ArrayExpression<DateTime>(new ArraySymbol<DateTime>(dates), SymbolType.Date);
+                return new ArrayExpression<DateTime>(new ArraySymbol<DateTime>(dates, elementsType), SymbolType.Date);
             default:
                 return null;
         }
@@ -965,7 +977,7 @@ public class Parser : MonoBehaviour {
             GlobalVariable globalVariable = context.GlobalVariables.Find(
                 gv => gv.Name == variableName);
             if (globalVariable == null) {
-                Debug.LogError($"Parser.ParseToken(\"{expression}\") : unkown Global Variable \"${variableName}\".");
+                Debug.LogError($"Parser.ParseToken(\"{expression}\") : unknown Global Variable \"${variableName}\".");
                 return null;
             }
             switch (globalVariable.Type) {
