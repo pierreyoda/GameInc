@@ -25,8 +25,7 @@ public abstract class ScriptContext {
                 $"ScriptContext.AddVariable : \"{name}\" already exists.");
             return false;
         }
-        LocalVariable localVariable = new LocalVariable(name, value.Type());
-        localVariable.Value = value;
+        LocalVariable localVariable = new LocalVariable(name, value);
         localVariables.Add(localVariable);
         return true;
     }

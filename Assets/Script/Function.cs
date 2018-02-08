@@ -85,13 +85,13 @@ public class Function<T> : IFunction {
         functions.Add(new Function<int>("array.Count", SymbolType.Integer,
             new [] { SymbolType.Array }, (c, p) => {
                 switch (p[0].ArrayType()) {
-                    case SymbolType.Void: return ((ArraySymbol<Void>) p[0]).Elements.Count;
-                    case SymbolType.Boolean: return ((ArraySymbol<bool>) p[0]).Elements.Count;
-                    case SymbolType.Integer: return ((ArraySymbol<int>) p[0]).Elements.Count;
-                    case SymbolType.Float: return ((ArraySymbol<float>) p[0]).Elements.Count;
-                    case SymbolType.Id: return ((ArraySymbol<Id>) p[0]).Elements.Count;
-                    case SymbolType.String: return ((ArraySymbol<string>) p[0]).Elements.Count;
-                    case SymbolType.Date: return ((ArraySymbol<DateTime>) p[0]).Elements.Count;
+                    case SymbolType.Void: return ((ArraySymbol<Void>) p[0]).Value.Elements.Count;
+                    case SymbolType.Boolean: return ((ArraySymbol<bool>) p[0]).Value.Elements.Count;
+                    case SymbolType.Integer: return ((ArraySymbol<int>) p[0]).Value.Elements.Count;
+                    case SymbolType.Float: return ((ArraySymbol<float>) p[0]).Value.Elements.Count;
+                    case SymbolType.Id: return ((ArraySymbol<Id>) p[0]).Value.Elements.Count;
+                    case SymbolType.String: return ((ArraySymbol<string>) p[0]).Value.Elements.Count;
+                    case SymbolType.Date: return ((ArraySymbol<DateTime>) p[0]).Value.Elements.Count;
                     default:
                         Debug.LogError($"Function array.Count : invalid Array type {p[0].ArrayType()}.");
                         return -1;

@@ -12,14 +12,8 @@ public class LocalVariable {
     [SerializeField] private string name;
     public string Name => name;
 
-    [SerializeField] private SymbolType type;
-    public SymbolType Type => type;
-
-    [SerializeField] private SymbolType arrayType = SymbolType.Invalid;
-    public SymbolType ArrayType {
-        get { return arrayType; }
-        set { arrayType = value; }
-    }
+    public SymbolType Type => value.Type();
+    public SymbolType ArrayType => value.ArrayType();
 
     [SerializeField] private ISymbol value;
     public ISymbol Value {
@@ -27,9 +21,9 @@ public class LocalVariable {
         set { this.value = value; }
     }
 
-    public LocalVariable(string name, SymbolType type) {
+    public LocalVariable(string name, ISymbol value) {
         this.name = name;
-        this.type = type;
+        this.value = value;
     }
 }
 
@@ -94,7 +88,7 @@ public class Parser : MonoBehaviour {
         string variableName = global ? variable.Substring(1) : variable;
         if (variableName.Length < (global ? 2 : 1) ||
             !global && !context.Grammar.ValidateVariableName(variableName)) {
-            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal variable name.");
+            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : illegal variable name \"{variableName}\".");
             return null;
         }
         int decl = declaration ? 3 : 0;
@@ -202,15 +196,10 @@ public class Parser : MonoBehaviour {
                         Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported Array type \"{arrayType}[]\".");
                         return null;
                 }
-                localVariable = new LocalVariable(variableName, type) {
-                    ArrayType = arrayType,
-                    Value = symbol,
-                };
+                localVariable = new LocalVariable(variableName, symbol);
             }
             else
-                localVariable = new LocalVariable(variableName, type) {
-                    Value = GetDefaultValue(type),
-                };
+                localVariable = new LocalVariable(variableName, GetDefaultValue(type));
             context.LocalVariables.Add(localVariable);
         }
         if (global) Assert.IsNotNull(globalVariable);
@@ -300,87 +289,87 @@ public class Parser : MonoBehaviour {
                 switch (arrayType) {
                     case SymbolType.Void:
                         if (global)
-                            variableExpression = new GlobalVariableExpression<Void>(globalVariable);
+                            variableExpression = new GlobalVariableExpression<Array<Void>>(globalVariable);
                         else
-                            variableExpression = new LocalVariableExpression<Void>(localVariable);
+                            variableExpression = new LocalVariableExpression<Array<Void>>(localVariable);
+                        ArrayAssignmentExpression<Void> voidArrayAssignment = new ArrayAssignmentExpression<Void>(
+                            assignmentType, variableExpression, (ArrayExpression<Void, Array<Void>>) rightExpression);
                         if (returnsType)
-                            assignmentExpression = new AssignmentExpression<Void, Void>(assignmentType,
-                                variableExpression, rightExpression as Expression<Void>, returnsType);
+                            assignmentExpression = voidArrayAssignment;
                         else
-                            assignmentExpression = new AssignmentExpression<Void, Void>(assignmentType,
-                                variableExpression, rightExpression as Expression<Void>, returnsType);
+                            assignmentExpression = new VoidArrayAssignmentExpression<Void>(voidArrayAssignment);
                         break;
                     case SymbolType.Boolean:
                         if (global)
-                            variableExpression = new GlobalVariableExpression<bool>(globalVariable);
+                            variableExpression = new GlobalVariableExpression<Array<bool>>(globalVariable);
                         else
-                            variableExpression = new LocalVariableExpression<bool>(localVariable);
+                            variableExpression = new LocalVariableExpression<Array<bool>>(localVariable);
+                        ArrayAssignmentExpression<bool> boolArrayAssignment = new ArrayAssignmentExpression<bool>(
+                            assignmentType, variableExpression, (ArrayExpression<bool, Array<bool>>) rightExpression);
                         if (returnsType)
-                            assignmentExpression = new AssignmentExpression<bool, bool>(assignmentType,
-                                variableExpression, rightExpression as Expression<bool>, returnsType);
+                            assignmentExpression = boolArrayAssignment;
                         else
-                            assignmentExpression = new AssignmentExpression<Void, bool>(assignmentType,
-                                variableExpression, rightExpression as Expression<bool>, returnsType);
+                            assignmentExpression = new VoidArrayAssignmentExpression<bool>(boolArrayAssignment);
                         break;
                     case SymbolType.Integer:
                         if (global)
-                            variableExpression = new GlobalVariableExpression<int>(globalVariable);
+                            variableExpression = new GlobalVariableExpression<Array<int>>(globalVariable);
                         else
-                            variableExpression = new LocalVariableExpression<int>(localVariable);
+                            variableExpression = new LocalVariableExpression<Array<int>>(localVariable);
+                        ArrayAssignmentExpression<int> intArrayAssignment = new ArrayAssignmentExpression<int>(
+                            assignmentType, variableExpression, (ArrayExpression<int, Array<int>>) rightExpression);
                         if (returnsType)
-                            assignmentExpression = new AssignmentExpression<int, int>(assignmentType,
-                                variableExpression, rightExpression as Expression<int>, returnsType);
+                            assignmentExpression = intArrayAssignment;
                         else
-                            assignmentExpression = new AssignmentExpression<Void, int>(assignmentType,
-                                variableExpression, rightExpression as ArrayExpression<int>, returnsType);
+                            assignmentExpression = new VoidArrayAssignmentExpression<int>(intArrayAssignment);
                         break;
                     case SymbolType.Float:
                         if (global)
-                            variableExpression = new GlobalVariableExpression<float>(globalVariable);
+                            variableExpression = new GlobalVariableExpression<Array<float>>(globalVariable);
                         else
-                            variableExpression = new LocalVariableExpression<float>(localVariable);
+                            variableExpression = new LocalVariableExpression<Array<float>>(localVariable);
+                        ArrayAssignmentExpression<float> floatArrayAssignment = new ArrayAssignmentExpression<float>(
+                            assignmentType, variableExpression, (ArrayExpression<float, Array<float>>) rightExpression);
                         if (returnsType)
-                            assignmentExpression = new AssignmentExpression<float, float>(assignmentType,
-                                variableExpression, rightExpression as Expression<float>, returnsType);
+                            assignmentExpression = floatArrayAssignment;
                         else
-                            assignmentExpression = new AssignmentExpression<Void, float>(assignmentType,
-                                variableExpression, rightExpression as Expression<float>, returnsType);
+                            assignmentExpression = new VoidArrayAssignmentExpression<float>(floatArrayAssignment);
                         break;
                     case SymbolType.Id:
                         if (global)
-                            variableExpression = new GlobalVariableExpression<Id>(globalVariable);
+                            variableExpression = new GlobalVariableExpression<Array<Id>>(globalVariable);
                         else
-                            variableExpression = new LocalVariableExpression<Id>(localVariable);
+                            variableExpression = new LocalVariableExpression<Array<Id>>(localVariable);
+                        ArrayAssignmentExpression<Id> idArrayAssignment = new ArrayAssignmentExpression<Id>(
+                            assignmentType, variableExpression, (ArrayExpression<Id, Array<Id>>) rightExpression);
                         if (returnsType)
-                            assignmentExpression = new AssignmentExpression<Id, Id>(assignmentType,
-                                variableExpression, rightExpression as Expression<Id>, returnsType);
+                            assignmentExpression = idArrayAssignment;
                         else
-                            assignmentExpression = new AssignmentExpression<Void, Id>(assignmentType,
-                                variableExpression, rightExpression as Expression<Id>, returnsType);
+                            assignmentExpression = new VoidArrayAssignmentExpression<Id>(idArrayAssignment);
                         break;
                     case SymbolType.String:
                         if (global)
-                            variableExpression = new GlobalVariableExpression<string>(globalVariable);
+                            variableExpression = new GlobalVariableExpression<Array<string>>(globalVariable);
                         else
-                            variableExpression = new LocalVariableExpression<string>(localVariable);
+                            variableExpression = new LocalVariableExpression<Array<string>>(localVariable);
+                        ArrayAssignmentExpression<string> stringArrayAssignment = new ArrayAssignmentExpression<string>(
+                            assignmentType, variableExpression, (ArrayExpression<string, Array<string>>) rightExpression);
                         if (returnsType)
-                            assignmentExpression = new AssignmentExpression<string, string>(assignmentType,
-                                variableExpression, rightExpression as Expression<string>, returnsType);
+                            assignmentExpression = stringArrayAssignment;
                         else
-                            assignmentExpression = new AssignmentExpression<Void, string>(assignmentType,
-                                variableExpression, rightExpression as Expression<string>, returnsType);
+                            assignmentExpression = new VoidArrayAssignmentExpression<string>(stringArrayAssignment);
                         break;
                     case SymbolType.Date:
                         if (global)
-                            variableExpression = new GlobalVariableExpression<DateTime>(globalVariable);
+                            variableExpression = new GlobalVariableExpression<Array<DateTime>>(globalVariable);
                         else
-                            variableExpression = new LocalVariableExpression<DateTime>(localVariable);
+                            variableExpression = new LocalVariableExpression<Array<DateTime>>(localVariable);
+                        ArrayAssignmentExpression<DateTime> dateArrayAssignment = new ArrayAssignmentExpression<DateTime>(
+                            assignmentType, variableExpression, (ArrayExpression<DateTime, Array<DateTime>>) rightExpression);
                         if (returnsType)
-                            assignmentExpression = new AssignmentExpression<DateTime, DateTime>(assignmentType,
-                                variableExpression, rightExpression as Expression<DateTime>, returnsType);
+                            assignmentExpression = dateArrayAssignment;
                         else
-                            assignmentExpression = new AssignmentExpression<Void, DateTime>(assignmentType,
-                                variableExpression, rightExpression as Expression<DateTime>, returnsType);
+                            assignmentExpression = new VoidArrayAssignmentExpression<DateTime>(dateArrayAssignment);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -910,38 +899,38 @@ public class Parser : MonoBehaviour {
 
         // empty array
         if (elements.Count == 0)
-            return new ArrayExpression<Void>(new ArraySymbol<Void>(
+            return new ArrayExpression<Void, Array<Void>>(new ArraySymbol<Void>(
                 new List<Expression<Void>>(), SymbolType.Void), SymbolType.Void);
 
         switch (elementsType) {
             case SymbolType.Void:
                 List<Expression<Void>> voids = elements.Cast<Expression<Void>>().ToList();
                 Assert.IsNotNull(voids);
-                return new ArrayExpression<Void>(new ArraySymbol<Void>(voids, elementsType), SymbolType.Void);
+                return new ArrayExpression<Void, Array<Void>>(new ArraySymbol<Void>(voids, elementsType), SymbolType.Void);
             case SymbolType.Boolean:
                 List<Expression<bool>> bools = elements.Cast<Expression<bool>>().ToList();
                 Assert.IsNotNull(bools);
-                return new ArrayExpression<bool>(new ArraySymbol<bool>(bools, elementsType), SymbolType.Boolean);
+                return new ArrayExpression<bool, Array<bool>>(new ArraySymbol<bool>(bools, elementsType), SymbolType.Boolean);
             case SymbolType.Integer:
                 List<Expression<int>> ints = elements.Cast<Expression<int>>().ToList();
                 Assert.IsNotNull(ints);
-                return new ArrayExpression<int>(new ArraySymbol<int>(ints, elementsType), SymbolType.Integer);
+                return new ArrayExpression<int, Array<int>>(new ArraySymbol<int>(ints, elementsType), SymbolType.Integer);
             case SymbolType.Float:
                 List<Expression<float>> floats = elements.Cast<Expression<float>>().ToList();
                 Assert.IsNotNull(floats);
-                return new ArrayExpression<float>(new ArraySymbol<float>(floats, elementsType), SymbolType.Float);
+                return new ArrayExpression<float, Array<float>>(new ArraySymbol<float>(floats, elementsType), SymbolType.Float);
             case SymbolType.Id:
                 List<Expression<Id>> ids = elements.Cast<Expression<Id>>().ToList();
                 Assert.IsNotNull(ids);
-                return new ArrayExpression<Id>(new ArraySymbol<Id>(ids, elementsType), SymbolType.Id);
+                return new ArrayExpression<Id, Array<Id>>(new ArraySymbol<Id>(ids, elementsType), SymbolType.Id);
             case SymbolType.String:
                 List<Expression<string>> strings = elements.Cast<Expression<string>>().ToList();
                 Assert.IsNotNull(strings);
-                return new ArrayExpression<string>(new ArraySymbol<string>(strings, elementsType), SymbolType.String);
+                return new ArrayExpression<string, Array<string>>(new ArraySymbol<string>(strings, elementsType), SymbolType.String);
             case SymbolType.Date:
                 List<Expression<DateTime>> dates = elements.Cast<Expression<DateTime>>().ToList();
                 Assert.IsNotNull(dates);
-                return new ArrayExpression<DateTime>(new ArraySymbol<DateTime>(dates, elementsType), SymbolType.Date);
+                return new ArrayExpression<DateTime, Array<DateTime>>(new ArraySymbol<DateTime>(dates, elementsType), SymbolType.Date);
             default:
                 return null;
         }
@@ -992,13 +981,13 @@ public class Parser : MonoBehaviour {
                 case SymbolType.Date: return new LocalVariableExpression<DateTime>(localVariable);
                 case SymbolType.Array:
                     switch (localVariable.ArrayType) {
-                        case SymbolType.Void: return new LocalVariableExpression<Void>(localVariable);
-                        case SymbolType.Boolean: return new LocalVariableExpression<bool>(localVariable);
-                        case SymbolType.Integer: return new LocalVariableExpression<int>(localVariable);
-                        case SymbolType.Float: return new LocalVariableExpression<float>(localVariable);
-                        case SymbolType.Id: return new LocalVariableExpression<Id>(localVariable);
-                        case SymbolType.String: return new LocalVariableExpression<string>(localVariable);
-                        case SymbolType.Date: return new LocalVariableExpression<DateTime>(localVariable);
+                        case SymbolType.Void: return new LocalVariableExpression<Array<Void>>(localVariable);
+                        case SymbolType.Boolean: return new LocalVariableExpression<Array<bool>>(localVariable);
+                        case SymbolType.Integer: return new LocalVariableExpression<Array<int>>(localVariable);
+                        case SymbolType.Float: return new LocalVariableExpression<Array<float>>(localVariable);
+                        case SymbolType.Id: return new LocalVariableExpression<Array<Id>>(localVariable);
+                        case SymbolType.String: return new LocalVariableExpression<Array<string>>(localVariable);
+                        case SymbolType.Date: return new LocalVariableExpression<Array<DateTime>>(localVariable);
                         default: throw new ArgumentOutOfRangeException();
                     }
                 default: throw new ArgumentOutOfRangeException();
@@ -1022,14 +1011,14 @@ public class Parser : MonoBehaviour {
                 case SymbolType.String: return new GlobalVariableExpression<string>(globalVariable);
                 case SymbolType.Date: return new GlobalVariableExpression<DateTime>(globalVariable);
                 case SymbolType.Array:
-                    switch (localVariable.ArrayType) {
-                        case SymbolType.Void: return new GlobalVariableExpression<Void>(globalVariable);
-                        case SymbolType.Boolean: return new GlobalVariableExpression<bool>(globalVariable);
-                        case SymbolType.Integer: return new GlobalVariableExpression<int>(globalVariable);
-                        case SymbolType.Float: return new GlobalVariableExpression<float>(globalVariable);
-                        case SymbolType.Id: return new GlobalVariableExpression<Id>(globalVariable);
-                        case SymbolType.String: return new GlobalVariableExpression<string>(globalVariable);
-                        case SymbolType.Date: return new GlobalVariableExpression<DateTime>(globalVariable);
+                    switch (globalVariable.ArrayType) {
+                        case SymbolType.Void: return new GlobalVariableExpression<Array<Void>>(globalVariable);
+                        case SymbolType.Boolean: return new GlobalVariableExpression<Array<bool>>(globalVariable);
+                        case SymbolType.Integer: return new GlobalVariableExpression<Array<int>>(globalVariable);
+                        case SymbolType.Float: return new GlobalVariableExpression<Array<float>>(globalVariable);
+                        case SymbolType.Id: return new GlobalVariableExpression<Array<Id>>(globalVariable);
+                        case SymbolType.String: return new GlobalVariableExpression<Array<string>>(globalVariable);
+                        case SymbolType.Date: return new GlobalVariableExpression<Array<DateTime>>(globalVariable);
                         default: throw new ArgumentOutOfRangeException();
                     }
                 default: throw new ArgumentOutOfRangeException();

@@ -125,10 +125,11 @@ public class Executable {
                                 $"expression n°{i+1} \"{expressionString}\".");
                 return null;
             }
-            if (i == expressionsString.Length - 1) { // last expression determines return Type
+            if (i == expressionsString.Length - 1) {
+                // last expression determines return Type
                 returnArrayType = expression.ArrayType();
-                if (expressionString.EndsWith(";")) returnType = SymbolType.Void;
-                else returnType = expression.Type();
+                returnType = expressionString.EndsWith(";") ?
+                    SymbolType.Void : expression.Type();
             }
             expressions.Add(expression);
         }
@@ -159,7 +160,7 @@ public class Executable {
         }
         ISymbol lastResult = Execute(context);
         if (lastResult == null || lastResult.Type() != type) {
-            Debug.LogError("Executable.ExecuteExpectingArray : execution error.");
+            Debug.LogError("Executable.ExecuteExpecting : execution error.");
             return false;
         }
         if (!TypeCompatibility<T>(lastResult.Type(), lastResult.ArrayType())) {
@@ -177,8 +178,8 @@ public class Executable {
         where T: class {
         result = default(T);
         if (type != SymbolType.Array) {
-            Debug.LogError("Executable.ExecuteExpectingArray : cannot expect {typeof(T)}. " +
-                           "Use Execute() or ExecuteExpecting() instead.");
+            Debug.LogError($"Executable.ExecuteExpectingArray : cannot expect {typeof(T)}. " +
+                            "Use Execute() or ExecuteExpecting() instead.");
             return false;
         }
         ISymbol lastResult = Execute(context);
@@ -193,31 +194,31 @@ public class Executable {
         }
         switch (lastResult.ArrayType()) {
             case SymbolType.Void:
-                result = ((ArraySymbol<Void>) lastResult).Elements.Select(
+                result = ((ArraySymbol<Void>) lastResult).Value.Elements.Select(
                     e => e.Evaluate(context).Value).ToArray() as T;
                 break;
             case SymbolType.Boolean:
-                result = ((ArraySymbol<bool>) lastResult).Elements.Select(
+                result = ((ArraySymbol<bool>) lastResult).Value.Elements.Select(
                     e => e.Evaluate(context).Value).ToArray() as T;
                 break;
             case SymbolType.Integer:
-                result = ((ArraySymbol<int>) lastResult).Elements.Select(
+                result = ((ArraySymbol<int>) lastResult).Value.Elements.Select(
                     e => e.Evaluate(context).Value).ToArray() as T;
                 break;
             case SymbolType.Float:
-                result = ((ArraySymbol<float>) lastResult).Elements.Select(
+                result = ((ArraySymbol<float>) lastResult).Value.Elements.Select(
                     e => e.Evaluate(context).Value).ToArray() as T;
                 break;
             case SymbolType.Id:
-                result = ((ArraySymbol<Id>) lastResult).Elements.Select(
+                result = ((ArraySymbol<Id>) lastResult).Value.Elements.Select(
                     e => e.Evaluate(context).Value.Identifier).ToArray() as T;
                 break;
             case SymbolType.String:
-                result = ((ArraySymbol<string>) lastResult).Elements.Select(
+                result = ((ArraySymbol<string>) lastResult).Value.Elements.Select(
                     e => e.Evaluate(context).Value).ToArray() as T;
                 break;
             case SymbolType.Date:
-                result = ((ArraySymbol<DateTime>) lastResult).Elements.Select(
+                result = ((ArraySymbol<DateTime>) lastResult).Value.Elements.Select(
                     e => e.Evaluate(context).Value).ToArray() as T;
                 break;
             default: throw new ArgumentOutOfRangeException();

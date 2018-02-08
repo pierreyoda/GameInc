@@ -32,11 +32,10 @@ public abstract class Expression<T> : IExpression {
     public abstract Symbol<T> Evaluate(IScriptContext c);
     public ISymbol EvaluateAsISymbol(IScriptContext c) {
         ISymbol result = Evaluate(c);
-        if (result == null) {
-            Debug.LogError($"Script : Expression.EvaluateAsISymbol : evaluation error in \"{script}\".");
-            return null;
-        }
-        return result;
+        if (result != null) return result;
+        Debug.LogWarning($"{typeof(T)} : {script}");
+        Debug.LogError($"Script : Expression.EvaluateAsISymbol : evaluation error in \"{script}\".");
+        return null;
     }
 }
 
@@ -69,12 +68,11 @@ public class LocalVariableExpression<T> : Expression<T>, IVariableExpression {
         ISymbol right) {
         if (right.Type() != localVariable.Type) {
             Debug.LogError($"LocalVariableExpression({localVariable.Name}).Assign : " +
-                           $"type mismatch ({right.Type()} instead of {localVariable.Type}");
+                           $"type mismatch ({right.Type()} instead of {localVariable.Type}.");
             return null;
         }
         Symbol<T> rightValue = right as Symbol<T>;
         Assert.IsNotNull(rightValue);
-        //Debug.LogWarning($"===> lv assignment : {localVariable.Type} = {right.ValueString()} = {rightValue.Value}");
         Symbol<T> localValue = localVariable.Value as Symbol<T>;
         Assert.IsNotNull(localValue);
         Symbol<T> assignmentResult = localValue.Assignment(rightValue,
@@ -155,9 +153,22 @@ public class OperationExpression<T>: Expression<T> {
     }
 
     public override Symbol<T> Evaluate(IScriptContext c) {
-        return left.Evaluate(c).Operation(right.Evaluate(c), type);
+        Symbol<T> leftValue = left.Evaluate(c);
+        if (leftValue == null) {
+            Debug.LogError($"Script : OperatorExpression(type = {type}) : left " +
+                           $"operand evaluation error (\"{left.Script()}\").");
+            return null;
+        }
+        Symbol<T> rightValue = right.Evaluate(c);
+        if (rightValue == null) {
+            Debug.LogError($"Script : OperatorExpression(type = {type}) : right " +
+                           $"operand evaluation error (\"{left.Script()}\").");
+            return null;
+        }
+        return leftValue.Operation(rightValue, type);
     }
 }
+
 [Serializable]
 public class AssignmentExpression<TR, T>: Expression<TR> {
     [SerializeField] private AssignmentType type;
@@ -190,12 +201,63 @@ public class AssignmentExpression<TR, T>: Expression<TR> {
             Debug.LogError($"Script : AssignmentExpression(type = {type}) : error while assigning.");
             return null;
         }
-        if (returnsValue) {
-            Symbol<TR> resultTyped = resultUntyped as Symbol<TR>;
-            Assert.IsNotNull(resultTyped);
-            return resultTyped;
+        if (!returnsValue) return new VoidSymbol() as Symbol<TR>;
+        Symbol<TR> resultTyped = resultUntyped as Symbol<TR>;
+        Assert.IsNotNull(resultTyped);
+        return resultTyped;
+    }
+}
+
+[Serializable]
+public class ArrayAssignmentExpression<T>: Expression<Array<T>> { // TODO : refactor AssignmentExpression to remove this if possible
+    [SerializeField] private AssignmentType type;
+    [SerializeField] private IVariableExpression variable;
+    [SerializeField] private ArrayExpression<T, Array<T>> expression;
+
+    public ArrayAssignmentExpression(AssignmentType type, IVariableExpression variable,
+        ArrayExpression<T, Array<T>> expression)
+        : base($"{variable.Representation()} {type} {expression.Script()}", variable.VariableType()) {
+        this.type = type;
+        this.variable = variable;
+        this.expression = expression;
+        arrayType = expression.ArrayType();
+        // type checking
+        Assert.IsTrue(variable.VariableType() == expression.Type());
+    }
+
+    public override Symbol<Array<T>> Evaluate(IScriptContext c) {
+        ISymbol value = expression.Evaluate(c);
+        if (value == null) {
+            Debug.LogError($"Script : ArrayAssignmentExpression(type = {type}) : right " +
+                           $"operand evaluation error (\"{expression.Script()}\").");
+            return null;
         }
-        return new VoidSymbol() as Symbol<TR>;
+        ISymbol resultUntyped = variable.Assign(c, type, value);
+        if (resultUntyped == null) {
+            Debug.LogError($"Script : ArrayAssignmentExpression(type = {type}) : error while assigning.");
+            return null;
+        }
+        Symbol<Array<T>> resultTyped = resultUntyped as Symbol<Array<T>>;
+        Assert.IsNotNull(resultTyped);
+        return resultTyped;
+    }
+}
+
+[Serializable]
+public class VoidArrayAssignmentExpression<T>: Expression<Void> { // TODO : avoid this
+    [SerializeField] private ArrayAssignmentExpression<T> arrayAssignment;
+
+    public VoidArrayAssignmentExpression(ArrayAssignmentExpression<T> arrayAssignment)
+        : base(arrayAssignment.Script(), SymbolType.Array) {
+        this.arrayAssignment = arrayAssignment;
+    }
+
+    public override Symbol<Void> Evaluate(IScriptContext c) {
+        ISymbol value = arrayAssignment.Evaluate(c);
+        if (value != null) return new VoidSymbol();
+        Debug.LogError( "Script : VoidArrayAssignmentExpression : Array assignment " +
+                        $"evaluation error (\"{arrayAssignment.Script()}\").");
+        return null;
     }
 }
 
@@ -241,13 +303,13 @@ public class FunctionExpression<T> : Expression<T> {
             SymbolType type = metadata.Parameters()[i];
             IExpression parameter = parameters[i];
             if (parameter.Type() != type && type != SymbolType.Void) { // void : any type
-                Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : " +
+                Debug.LogError($"Script : Function Call \"{metadata.Name()}\" : " +
                                $"parameter n°{i+1} must be of type {type} (\"{parameter.Script()}\").");
                 return null;
             }
             ISymbol symbol = parameter.EvaluateAsISymbol(c);
             if (symbol == null) {
-                Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : " +
+                Debug.LogError($"Script : Function Call \"{metadata.Name()}\" : " +
                                $"error while evaluating parameter n°{i+1} (\"{parameter.Script()}\").");
                 return null;
             }
@@ -256,37 +318,35 @@ public class FunctionExpression<T> : Expression<T> {
         T resultValue = metadata.Lambda(c, symbols.ToArray());
         Symbol<T> result = Symbol<T>.SymbolFromValue(resultValue,
             metadata.ReturnType());
-        if (result == null) {
-            Debug.LogError($"Script Error : Function Call \"{metadata.Name()}\" : type error.");
-            return null;
-        }
-        return result;
+        if (result != null) return result;
+        Debug.LogError($"Script : Function Call \"{metadata.Name()}\" : type error.");
+        return null;
     }
 }
 
 [Serializable]
-public class ArrayExpression<T> : Expression<T> {
-    [SerializeField] private ArraySymbol<T> array;
+public class ArrayExpression<TA, T> : Expression<T> {
+    [SerializeField] private ArraySymbol<TA> array;
 
-    public ArrayExpression(ArraySymbol<T> array, SymbolType arrayType)
-        : base($"[{string.Join(", ", array.Elements.Select(e => e.Script()))}]",
+    public ArrayExpression(ArraySymbol<TA> array, SymbolType arrayType)
+        : base($"[{string.Join(", ", array.Value.Elements.Select(e => e.Script()))}]",
             SymbolType.Array) {
         this.array = array;
         this.arrayType = arrayType;
     }
 
     public override Symbol<T> Evaluate(IScriptContext c) {
-        List<Expression<T>> items = new List<Expression<T>>();
-        for (int i = 0; i < array.Elements.Count; i++) {
-            Symbol<T> item = array.Elements[i].Evaluate(c);
+        List<Expression<TA>> items = new List<Expression<TA>>();
+        for (int i = 0; i < array.Value.Elements.Count; i++) {
+            Symbol<TA> item = array.Value.Elements[i].Evaluate(c);
             if (item == null) {
-                Debug.LogError( "Script Error : ArrayExpression.Evaluate : " +
+                Debug.LogError( "Script : ArrayExpression.Evaluate : " +
                                $"evaluation error for element n°{i+1}.");
                 return null;
             }
-            items.Add(new SymbolExpression<T>(item));
+            items.Add(new SymbolExpression<TA>(item));
         }
-        return new ArraySymbol<T>(items, arrayType);
+        return new ArraySymbol<TA>(items, arrayType) as Symbol<T>;
     }
 }
 

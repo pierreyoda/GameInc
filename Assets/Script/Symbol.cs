@@ -18,7 +18,23 @@ public struct Id {
         Identifier = value;
     }
 
-    public override String ToString() => Identifier;
+    public override string ToString() => Identifier;
+}
+
+[Serializable]
+public class Array<T> {
+    public SymbolType ArrayType;
+    public List<Expression<T>> Elements;
+
+    public Array(SymbolType arrayType) {
+        ArrayType = arrayType;
+        Elements = new List<Expression<T>>();
+    }
+
+    public Array(SymbolType arrayType, List<Expression<T>> elements) {
+        ArrayType = arrayType;
+        Elements = elements;
+    }
 }
 
 [Serializable]
@@ -389,59 +405,59 @@ public class DateSymbol : Symbol<DateTime> {
 }
 
 [Serializable]
-public class ArraySymbol<T> : Symbol<T> {
-    [SerializeField] private List<Expression<T>> elements;
-    public IReadOnlyList<Expression<T>> Elements => elements.AsReadOnly();
-
+public class ArraySymbol<T> : Symbol<Array<T>> {
     public ArraySymbol(List<Expression<T>> elements, SymbolType arrayType)
-        : base(default(T), $"[{string.Join(", ", elements.Select(s => s.Script()))}]",
+        : base(new Array<T>(arrayType, elements),
+            $"[{string.Join(", ", elements.Select(s => s.Script()))}]",
             SymbolType.Array) {
-        this.elements = elements;
         this.arrayType = arrayType;
     }
 
     protected override string AsString() {
-        return '[' + string.Join(", ", elements.Select(v => v.Script())) + ']';
+        return '[' + string.Join(", ", Value.Elements.Select(v => v.Script())) + ']';
     }
 
-    public override Symbol<T> Operation(Symbol<T> right, OperatorType type) {
+    public override Symbol<Array<T>> Operation(Symbol<Array<T>> right, OperatorType type) {
         ArraySymbol<T> rightArray = right as ArraySymbol<T>;
         Assert.IsNotNull(rightArray);
         switch (type) {
             case OperatorType.Addition:
-                List<Expression<T>> list = new List<Expression<T>>(elements);
-                list.AddRange(rightArray.elements);
+                List<Expression<T>> list = new List<Expression<T>>(Value.Elements);
+                list.AddRange(rightArray.Value.Elements);
                 return new ArraySymbol<T>(list, arrayType);
             default:
                 return IllegalOperation(right, type.ToString());
         }
     }
 
-    public override Symbol<T> Assignment(Symbol<T> right, AssignmentType type) {
+    public override Symbol<Array<T>> Assignment(Symbol<Array<T>> right, AssignmentType type) {
         ArraySymbol<T> rightArray = right as ArraySymbol<T>;
         Assert.IsNotNull(rightArray);
         switch (type) {
-            case AssignmentType.Assign: elements = new List<Expression<T>>(rightArray.elements); return this;
-            default: return IllegalAssignment(right, type.ToString());
+            case AssignmentType.Assign:
+                Value.Elements = new List<Expression<T>>(rightArray.Value.Elements);
+                return this;
+            default:
+                return IllegalAssignment(right, type.ToString());
         }
     }
 
-    public override Symbol<bool> CompareTo(Symbol<T> other, OperatorType type,
+    public override Symbol<bool> CompareTo(Symbol<Array<T>> other, OperatorType type,
         IScriptContext context) {
         ArraySymbol<T> otherArray = other as ArraySymbol<T>;
         Assert.IsNotNull(otherArray);
         switch (type) {
             case OperatorType.Equal:
-                if (elements.Count != otherArray.elements.Count)
+                if (Value.Elements.Count != otherArray.Value.Elements.Count)
                     return new BooleanSymbol(false);
-                for (int i = 0; i < elements.Count; i++) {
-                    Symbol<T> left = elements[i].Evaluate(context);
+                for (int i = 0; i < Value.Elements.Count; i++) {
+                    Symbol<T> left = Value.Elements[i].Evaluate(context);
                     if (left == null) {
                         Debug.LogError($"ArraySymbol<{typeof(T)}>.CompareTo : evaluation " +
                                        $"error for self Array at element n°{i}.");
                         return new BooleanSymbol(false);
                     }
-                    Symbol<T> right = otherArray.elements[i].Evaluate(context);
+                    Symbol<T> right = otherArray.Value.Elements[i].Evaluate(context);
                     if (right == null) {
                         Debug.LogError($"ArraySymbol<{typeof(T)}>.CompareTo : evaluation " +
                                        $"error for other Array at element n°{i}.");
