@@ -60,6 +60,12 @@ public class NewGameDialog : MonoBehaviour {
         gameEngines = engines;
         submitNewGameDialog = onSubmit;
 
+        // Clear dropdowns
+        dropdownGenre.ClearOptions();
+        dropdownTheme.ClearOptions();
+        dropdownPlatform.ClearOptions();
+        dropdownEngine.ClearOptions();
+
         // Populate dropdowns
         List<string> genresOptions = new List<string>();
         List<string> themesOptions = new List<string>();
