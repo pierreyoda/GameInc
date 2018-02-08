@@ -23,16 +23,9 @@ public struct Id {
 
 [Serializable]
 public class Array<T> {
-    public SymbolType ArrayType;
     public List<Expression<T>> Elements;
 
-    public Array(SymbolType arrayType) {
-        ArrayType = arrayType;
-        Elements = new List<Expression<T>>();
-    }
-
-    public Array(SymbolType arrayType, List<Expression<T>> elements) {
-        ArrayType = arrayType;
+    public Array(List<Expression<T>> elements) {
         Elements = elements;
     }
 }
@@ -407,7 +400,7 @@ public class DateSymbol : Symbol<DateTime> {
 [Serializable]
 public class ArraySymbol<T> : Symbol<Array<T>> {
     public ArraySymbol(List<Expression<T>> elements, SymbolType arrayType)
-        : base(new Array<T>(arrayType, elements),
+        : base(new Array<T>(elements),
             $"[{string.Join(", ", elements.Select(s => s.Script()))}]",
             SymbolType.Array) {
         this.arrayType = arrayType;
