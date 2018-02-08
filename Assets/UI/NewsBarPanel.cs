@@ -1,6 +1,5 @@
 ﻿using System;
 using Database;
-using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
 

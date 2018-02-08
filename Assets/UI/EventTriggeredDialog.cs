@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UI;
-using Event = Database.Event;
 
 public class EventTriggeredDialog : MonoBehaviour {
     [SerializeField] private WorldEvent triggeredEvent;

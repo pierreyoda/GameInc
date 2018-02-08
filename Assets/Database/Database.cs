@@ -7,8 +7,8 @@ using UnityEngine;
 namespace Database {
 
 /// <summary>
-/// Loads from data files all the informations about the different game genres, themes
-/// and game platforms.
+/// Loads from data files all the informations about the different game genres, themes,
+/// game platforms, events...
 /// </summary>
 [Serializable]
 public class Database {
@@ -91,10 +91,9 @@ public class Database {
 
     public Database AddDataFile(string dataFile, DataFileType dataType) {
         if (!File.Exists(dataFile)) {
-            Debug.LogWarningFormat("Database - Cannot find data file \"{0}\".", dataFile);
+            Debug.LogWarning($"Database - Cannot find data file \"{dataFile}\".");
             return this;
         }
-
         dataFiles.Add(new Tuple<string, DataFileType>(dataFile, dataType));
         Debug.Log($"Database - Added {dataType} data file \"{dataFile}\".");
         return this;
