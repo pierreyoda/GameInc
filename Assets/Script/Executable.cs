@@ -49,6 +49,12 @@ public class TypedExecutable<T> {
     }
 }
 
+/// <summary>
+/// The Executable class allows to easily parse and evaluate a
+/// sequence of type-checked instructions.
+///
+/// Single-line comments ('//') are supported.
+/// </summary>
 [Serializable]
 public class Executable {
     [SerializeField] private SymbolType type;
@@ -69,7 +75,7 @@ public class Executable {
     ///
     /// The return Type is determined by the last Expression : if it ends with ';',
     /// then it is considered as evaluating to Void, otherwise the Type will be
-    /// inferred from this Expression's script.
+    /// inferred from the script of that Expression.
     /// </summary>
     public static Executable FromScript(string script,
         ParserContext parserContext) {
@@ -79,12 +85,34 @@ public class Executable {
         List<string> expressionsString = new List<string>();
         for (int i = 0; i < script.Length; i++) {
             char c = script[i];
+            if (c == '/' && i + 1 < script.Length && script[i + 1] == '/') { // single-line comments
+                i = i + 2;
+                for (int j = i; j < script.Length; j++) {
+                    if (script[j] == '\n') {
+                        i = j;
+                        break;
+                    }
+                    if (j + 1 < script.Length &&
+                        script[j] == '\r' && script[j + 1] == '\n') { // C# verbatim strings use "\r\n"
+                        i = j + 1;
+                        break;
+                    }
+                }
+                currentExpression = currentExpression.Trim();
+                if (currentExpression != "")
+                    expressionsString.Add(currentExpression.Trim());
+                currentExpression = "";
+                continue;
+            }
+            //Debug.LogWarning(currentExpression);
             currentExpression += c;
             if (c == '\'') {
                 if (!inStringLiteral) inStringLiteral = true;
                 else if (i > 0 && script[i - 1] != '\\') inStringLiteral = false;
             } else if (c == ';' && !inStringLiteral) {
-                expressionsString.Add(currentExpression.TrimStart());
+                currentExpression = currentExpression.TrimStart();
+                if (currentExpression != ";")
+                    expressionsString.Add(currentExpression.TrimStart());
                 currentExpression = "";
             }
         }
@@ -114,12 +142,12 @@ public class Executable {
         if (expressionsString.Length == 0) {
             returnType = SymbolType.Void;
             expressions.Add(new SymbolExpression<Void>(new VoidSymbol()));
+            Debug.LogWarning("Executable.ParseExpressionSequence(...) : empty sequence.");
             return expressions;
         }
         for (int i = 0; i < expressionsString.Length; i++) {
             string expressionString = expressionsString[i];
-            IExpression expression = Parser.ParseExpression(expressionString,
-                context);
+            IExpression expression = Parser.ParseExpression(expressionString, context);
             if (expression == null) {
                 Debug.LogError( "Executable.ParseExpressionSequence(...) : parsing error at " +
                                 $"expression n°{i+1} \"{expressionString}\".");

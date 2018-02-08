@@ -64,7 +64,7 @@ public class JsonFormatter {
 
             // Process multi-lines string literals
             int multistringDelimiterIndex =
-                lineTrimmed.IndexOf("\"\"\"", StringComparison.Ordinal); // NB : position of last double quote
+                lineTrimmed.IndexOf("\"\"\"", StringComparison.Ordinal);
             if (multistringStart == -1 && multistringDelimiterIndex != -1) { // start
                 multistringStart = multistringDelimiterIndex;
                 multistrings.Add(lineTrimmed.Substring(0, multistringStart - 1));

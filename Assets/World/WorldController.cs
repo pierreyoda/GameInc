@@ -103,7 +103,9 @@ public class WorldController : MonoBehaviour, IScriptContext {
         const string script = @"
             let a: float = 2.5 * 2.0;
             let b: int[] = [1, 2, a.ToInt()];
+            // this is a comment !
             b
+            // comments do not affect an Executable's return type
         ";
         Executable executable = Executable.FromScript(script, parserContext);
         int[] result;
