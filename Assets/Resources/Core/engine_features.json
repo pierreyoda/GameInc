@@ -8,6 +8,16 @@
         "disables": [],
         "requirement": "true",
         "effect": "CurrentGame.ModifyScore(@Graphics2D, 5.0)",
+        "expectedYear": 1983,
+    },
+    {
+        "id": "Graphics_2D_2",
+        "name": "2D Graphics V2",
+        "descriptionEnglish": "Basic 2D graphics.",
+        "disables": [],
+        "requirement": "Company.Projects.CompletedGames.WithEngineFeatureCount(@Graphics_2D_1) >= 3",
+        "effect": "CurrentGame.ModifyScore(@Graphics2D, 15.0)",
+        "expectedYear": 1985,
     },
 
     // AUDIO
@@ -18,6 +28,7 @@
         "disables": ["Audio_Stereo"],
         "requirement": "true",
         "effect": "CurrentGame.ModifyScore(@SoundFX, 5.0)",
+        "expectedYear": 1983,
     },
     {
         "id": "Audio_Stereo",
@@ -26,6 +37,7 @@
         "disables": ["Audio_Mono"],
         "requirement": "Company.Projects.CompletedGames.WithEngineFeatureCount(@Audio_Mono) >= 5",
         "effect": "CurrentGame.ModifyScore(@SoundFX, 10.0)",
+        "expectedYear": 1983,
     },
     {
         "id": "Audio_Soundtrack",
@@ -34,6 +46,7 @@
         "disables": [],
         "requirement": "Company.Projects.CompletedGames.WithEngineFeatureCount(@Audio_Mono) >= 3",
         "effect": "CurrentGame.ModifyScore(@Soundtrack, 15.0)",
+        "expectedYear": 1983,
     },
 ],
 }

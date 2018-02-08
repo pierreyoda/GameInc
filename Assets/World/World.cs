@@ -98,6 +98,9 @@ public class World : MonoBehaviour {
         basicEngine.AddFeature("Audio_Mono");
         playerCompany.AddGameEngine(basicEngine);
 
+        globalMarket.ReleaseGameEngine(gameDateTime, basicEngine,
+            database.EngineFeatures);
+
         for (int i = 1; i <= 5; i++) {
             GameProject previousGame = new GameProject($"Previous Game {i}",
                 database.Genres.FindById("RPG"),

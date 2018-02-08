@@ -5,6 +5,8 @@ namespace Database {
 
 [Serializable]
 public class EngineFeature : DatabaseElement {
+    private const int MinExpectedYear = 1970;
+
     [SerializeField] private string descriptionEnglish;
     public string DescriptionEnglish => descriptionEnglish;
 
@@ -21,12 +23,23 @@ public class EngineFeature : DatabaseElement {
     [SerializeField] private string effect;
     public string Effect => effect;
 
+    [SerializeField] private int expectedYear;
+    public int ExpectedYear => expectedYear;
+
     public EngineFeature(string id, string name, string descriptionEnglish,
         string[] disables, string requirement, string effect) : base(id, name) {
         this.descriptionEnglish = descriptionEnglish;
         this.disables = disables;
         this.requirement = requirement;
         this.effect = effect;
+    }
+
+    public override bool IsValid() {
+        if (expectedYear < MinExpectedYear) {
+            Debug.LogError($"EngineFeature with ID = {Id} : invalid expected year {expectedYear}.");
+            return false;
+        }
+        return base.IsValid();
     }
 }
 
