@@ -61,12 +61,16 @@ public class Building : MonoBehaviour {
         var wallsParentObject = transform.Find("Walls").gameObject;
         for (int y = 0; y < height; y++) {
             var wallLeft = Instantiate(wallModelGameObject);
+            wallLeft.GetComponent<SpriteRenderer>().sortingOrder = LayerMask.NameToLayer("Building");
             wallLeft.transform.position = new Vector3(-1, 2 * y, 0);
             wallLeft.transform.parent = wallsParentObject.transform;
+            wallLeft.name = $"Wall_Left_{y}";
 
             var wallRight = Instantiate(wallModelGameObject);
+            wallRight.GetComponent<SpriteRenderer>().sortingOrder = LayerMask.NameToLayer("Building");
             wallRight.transform.position = new Vector3(width, 2 * y, 0);
             wallRight.transform.parent = wallsParentObject.transform;
+            wallRight.name = $"Wall_Right_{y}";
         }
         wallModelGameObject.SetActive(false);
 
@@ -77,8 +81,10 @@ public class Building : MonoBehaviour {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 var ceiling = Instantiate(ceilingModelGameObject);
+                ceiling.GetComponent<SpriteRenderer>().sortingOrder = LayerMask.NameToLayer("Building");
                 ceiling.transform.position = new Vector3(x, 2 * y + 1 + 1/2 * y * ceilingHeight / 50, 0);
                 ceiling.transform.parent = ceilingsParentObject.transform;
+                ceiling.name = $"Ceiling_{x}_{y}";
             }
         }
         ceilingModelGameObject.SetActive(false);
