@@ -81,7 +81,7 @@ public class GameHudController : MonoBehaviour {
 
     public void OnCompanyChanged(GameDevCompany playerCompany) {
         playerCompanyNameText.text = $"{playerCompany.CompanyName}";
-        playerCompanyMoneyText.text = $"{playerCompany.Money} k";
+        playerCompanyMoneyText.text = $"{playerCompany.Money:0.#} k";
     }
 
     public void OnDateChanged(DateTime currentDate) {
