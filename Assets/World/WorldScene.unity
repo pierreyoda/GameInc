@@ -138,6 +138,7 @@ Transform:
   m_LocalPosition: {x: -10, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
+  - {fileID: 914295940}
   - {fileID: 1082710080}
   m_Father: {fileID: 0}
   m_RootOrder: 3
@@ -879,10 +880,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a53b08a459d247e42b67b7c57ab4d112, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  marketSize: 100000
-  minimumWeeksOnSale: 4
+  gameMarketSize: 100000
+  gameMinimumWeeksOnSale: 4
   salesCutOffPercentage: 0.2
   popularityFromScoreFactor: 0.0125
+  enginesMarketSize: 1000
   competitorSeries: []
   activeProducts: []
 --- !u!1 &174410829
@@ -1630,8 +1632,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1877568626}
   m_HandleRect: {fileID: 1877568625}
   m_Direction: 2
-  m_Value: 0.9999994
-  m_Size: 0.6666665
+  m_Value: 1
+  m_Size: 0.66666657
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -3496,6 +3498,51 @@ CanvasRenderer:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 875590759}
+--- !u!1 &914295939
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 914295940}
+  - component: {fileID: 914295941}
+  m_Layer: 5
+  m_Name: UserInterfaceTheme
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &914295940
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 914295939}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 13206133}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &914295941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 914295939}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58f20e402c1a42d5b10acfe887658097, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  BuildColor: {r: 1, g: 0.8757606, b: 0.74264705, a: 1}
+  ProjectColor: {r: 1, g: 0.99215686, b: 0.7490196, a: 1}
+  StaffColor: {r: 1, g: 0.78255576, b: 0.50735295, a: 1}
+  InfoColor: {r: 0.6838235, g: 1, b: 0.68600404, a: 1}
+  SystemColor: {r: 1, g: 0.77205884, b: 0.993712, a: 1}
 --- !u!1 &933728182
 GameObject:
   m_ObjectHideFlags: 0
@@ -4620,7 +4667,7 @@ RectTransform:
   - {fileID: 1424912737}
   - {fileID: 1340581640}
   m_Father: {fileID: 13206133}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -5402,6 +5449,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   worldController: {fileID: 1068444075}
   newProjectButton: {fileID: 1016783446}
+  theme: {fileID: 914295941}
+  menu: {fileID: 1775206632}
   currentDateText: {fileID: 2056878335}
   playerCompanyNameText: {fileID: 742201695}
   playerCompanyMoneyText: {fileID: 1542816736}
@@ -6075,8 +6124,10 @@ MonoBehaviour:
     active: 0
     onInit:
       type: 0
+      arrayType: 0
     action:
       type: 0
+      arrayType: 0
     cachedTitle: 
     cachedDescription: 
   dialogTitle: {fileID: 779727030}
@@ -8143,6 +8194,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7ca7d32daaa8b9b49815d70fd3168bb4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  buildButton: {fileID: 1420685488}
+  projectButton: {fileID: 1016783446}
+  staffButton: {fileID: 1180512303}
+  infoButton: {fileID: 1379682033}
+  systemButton: {fileID: 1942888004}
 --- !u!1 &1783861623
 GameObject:
   m_ObjectHideFlags: 0

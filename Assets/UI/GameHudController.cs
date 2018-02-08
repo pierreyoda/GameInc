@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Database;
 using NUnit.Framework;
 using UnityEngine;
@@ -11,6 +10,12 @@ public class GameHudController : MonoBehaviour {
     [Header("Control")]
     [SerializeField] private WorldController worldController;
     [SerializeField] private Button newProjectButton;
+
+    [Header("Theme")]
+    [SerializeField] private UserInterfaceTheme theme;
+
+    [Header("Menu")]
+    [SerializeField] private GameMenu menu;
 
     [Header("Company Summary")]
     [SerializeField] private Text currentDateText;
@@ -35,6 +40,8 @@ public class GameHudController : MonoBehaviour {
     private void Start() {
         Assert.IsNotNull(worldController);
         Assert.IsNotNull(newProjectButton);
+        Assert.IsNotNull(theme);
+        Assert.IsNotNull(menu);
         Assert.IsNotNull(currentDateText);
         Assert.IsNotNull(playerCompanyMoneyText);
         Assert.IsNotNull(playerCompanyMoneyText);
@@ -50,6 +57,8 @@ public class GameHudController : MonoBehaviour {
             newsBarPanels.Add(newsBarPanel);
         }
         newsBarPanelModel.gameObject.SetActive(false);
+
+        menu.ApplyTheme(theme);
     }
 
     public void CanStartNewProject(bool allowed) {
