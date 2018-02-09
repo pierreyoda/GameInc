@@ -211,4 +211,4 @@ public class NewGameDialog : MonoBehaviour {
         return dropdown.options.Count == 0 ? "" :
             dropdown.options[dropdown.value].text;
     }
-}       
+}
