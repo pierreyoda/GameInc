@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Script;
 using UnityEngine;
 using Event = Database.Event;
 
+[Serializable]
 public class EventsController : MonoBehaviour {
+    [SerializeField] private DialogsController dialogsController;
     [SerializeField] private List<WorldEvent> worldEvents = new List<WorldEvent>();
 
     public void CreateEvents(List<Event> events,
@@ -51,15 +54,13 @@ public class EventsController : MonoBehaviour {
         return noErrors;
     }
 
-    public List<WorldEvent> OnGameDateChanged(IScriptContext context) {
-        List<WorldEvent> triggeredEvents = new List<WorldEvent>();
+    public void OnGameDateChanged(IScriptContext context) {
         foreach (WorldEvent we in worldEvents) {
             if (!we.Active) continue;
             bool triggered;
             we.CheckEvent(context, out triggered);
-            if (triggered) triggeredEvents.Add(we);
+            if (triggered) dialogsController.PushTriggeredEvent(we);
         }
-        return triggeredEvents;
     }
 
     public void OnPlayerCompanyChanged(IScriptContext context) {
@@ -67,6 +68,7 @@ public class EventsController : MonoBehaviour {
             if (!we.Active) continue;
             bool triggered;
             we.CheckEvent(context, out triggered);
+            if (triggered) dialogsController.PushTriggeredEvent(we);
         }
     }
 }

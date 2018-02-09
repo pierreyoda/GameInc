@@ -21,12 +21,14 @@ public class WorldController : MonoBehaviour, IScriptContext {
     [SerializeField] private List<LocalVariable> scriptVariables = new List<LocalVariable>();
     [SerializeField] private List<GlobalVariable> scriptGlobalVariables;
 
-    public void ToggleSimulationPause() {
-        world.ToggleSimulation();
+    public bool IsSimulationRunning => world.IsSimulationRunning;
+
+    public void SetSimulationStatus(bool running) {
+        world.SetSimulationStatus(running);
     }
 
-    public void ToggleSimulationSpeed() {
-        world.ToggleSimulationSpeed();
+    public void SetSimulationSpeed(int multiplier) {
+        world.SetSimulationSpeed(multiplier);
     }
 
     public void BuildRoom(string roomId) {
@@ -126,13 +128,14 @@ public class WorldController : MonoBehaviour, IScriptContext {
         Debug.Log($"Generated Random Employee : hiring cost = {hiringCost}.");
     }
 
+    public void OnSimulationStarted() {
+        hudController.OnSimulationStarted();
+    }
+
     public void OnDateModified(DateTime gameDateTime) {
         this.gameDateTime = gameDateTime;
         // World Events
-        List<WorldEvent> triggeredEvents = eventsController.OnGameDateChanged(this);
-        foreach (WorldEvent triggeredEvent in triggeredEvents) {
-            hudController.OnEventTriggered(triggeredEvent);
-        }
+        eventsController.OnGameDateChanged(this);
         // World News
         News latestNews = newsController.OnGameDateChanged(gameDateTime);
         if (latestNews != null)

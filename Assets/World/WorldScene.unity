@@ -138,6 +138,8 @@ Transform:
   m_LocalPosition: {x: -10, y: 1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
+  - {fileID: 1288497912}
+  - {fileID: 1134896791}
   - {fileID: 914295940}
   - {fileID: 1082710080}
   m_Father: {fileID: 0}
@@ -1632,8 +1634,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1877568626}
   m_HandleRect: {fileID: 1877568625}
   m_Direction: 2
-  m_Value: 1
-  m_Size: 0.66666657
+  m_Value: 0.9999994
+  m_Size: 0.6666665
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -3102,7 +3104,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1068444075}
+      - m_Target: {fileID: 1288497913}
         m_MethodName: ToggleSimulationPause
         m_Mode: 1
         m_Arguments:
@@ -3525,7 +3527,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 13206133}
-  m_RootOrder: 0
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &914295941
 MonoBehaviour:
@@ -4427,7 +4429,6 @@ Transform:
   - {fileID: 2047731770}
   - {fileID: 1730790484}
   - {fileID: 1514514858}
-  - {fileID: 1288497912}
   m_Father: {fileID: 0}
   m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -4667,7 +4668,7 @@ RectTransform:
   - {fileID: 1424912737}
   - {fileID: 1340581640}
   m_Father: {fileID: 13206133}
-  m_RootOrder: 1
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -4730,9 +4731,7 @@ MonoBehaviour:
   previousDayMonth: 0
   dayPercentage: 0
   simulationRunning: 0
-  pauseButton: {fileID: 761103752}
   simulationSpeedMultiplier: 4
-  speedButton: {fileID: 1756391265}
   gameMenu: {fileID: 1775206632}
   buildRoomSelectionMenu: {fileID: 1229371446}
 --- !u!1 &1088450789
@@ -4911,6 +4910,51 @@ Transform:
   m_Father: {fileID: 2069030190}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1134896790
+GameObject:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  serializedVersion: 5
+  m_Component:
+  - component: {fileID: 1134896791}
+  - component: {fileID: 1134896792}
+  m_Layer: 5
+  m_Name: DialogsController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1134896791
+Transform:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1134896790}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 13206133}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1134896792
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1134896790}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 937a8741d8124bb8a8747024ae681cac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hudController: {fileID: 1288497913}
+  pauseOnNewProjectDialog: 0
+  pauseOnTriggeredEventDialog: 1
+  newGameDialog: {fileID: 1434735895}
+  triggeredEventDialog: {fileID: 1424912738}
 --- !u!1 &1140919003
 GameObject:
   m_ObjectHideFlags: 0
@@ -5429,12 +5473,12 @@ Transform:
   m_PrefabParentObject: {fileID: 0}
   m_PrefabInternal: {fileID: 0}
   m_GameObject: {fileID: 1288497911}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
-  m_Father: {fileID: 1068444074}
-  m_RootOrder: 3
+  m_Father: {fileID: 13206133}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1288497913
 MonoBehaviour:
@@ -5451,12 +5495,15 @@ MonoBehaviour:
   newProjectButton: {fileID: 1016783446}
   theme: {fileID: 914295941}
   menu: {fileID: 1775206632}
+  pauseButton: {fileID: 761103752}
+  speedButton: {fileID: 1756391265}
+  speedIsNormal: 1
+  speedMultiplier: 5
   currentDateText: {fileID: 2056878335}
   playerCompanyNameText: {fileID: 742201695}
   playerCompanyMoneyText: {fileID: 1542816736}
   pauseGameInDialog: 1
-  newGameDialog: {fileID: 1434735895}
-  eventTriggeredDialog: {fileID: 1424912738}
+  dialogsController: {fileID: 1134896792}
   maximumNewsCount: 3
   marginBetweenPanels: 2
   newsBarPanelsParent: {fileID: 1340581640}
@@ -6111,6 +6158,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c05bd4607e4068f4583ffc39e2231666, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dialogsController: {fileID: 1134896792}
   triggeredEvent:
     info:
       id: 
@@ -6372,6 +6420,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f679dc20e6874a3e89e46349862edd7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dialogsController: {fileID: 1134896792}
   choosePlatformText: Choose a Platform.
   chooseEngineText: Choose a Game Engine.
 --- !u!1 &1449439300
@@ -7679,6 +7728,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4a1b0e6b370452d880d61c3dc7ec85d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  dialogsController: {fileID: 1134896792}
   worldEvents: []
 --- !u!1 &1756391263
 GameObject:
@@ -7756,7 +7806,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1068444075}
+      - m_Target: {fileID: 1288497913}
         m_MethodName: ToggleSimulationSpeed
         m_Mode: 1
         m_Arguments:

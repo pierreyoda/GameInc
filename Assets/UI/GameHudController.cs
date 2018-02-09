@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using Database;
-using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UI;
-using Debug = UnityEngine.Debug;
 
+[Serializable]
 public class GameHudController : MonoBehaviour {
     [Header("Control")]
     [SerializeField] private WorldController worldController;
@@ -17,6 +17,12 @@ public class GameHudController : MonoBehaviour {
     [Header("Menu")]
     [SerializeField] private GameMenu menu;
 
+    [Header("Simulation Speed")]
+    [SerializeField] private Button pauseButton;
+    [SerializeField] private Button speedButton;
+    [SerializeField, HideInInspector] private bool speedIsNormal = true;
+    [SerializeField, Range(1, 50)] private int speedMultiplier = 5;
+
     [Header("Company Summary")]
     [SerializeField] private Text currentDateText;
     [SerializeField] private Text playerCompanyNameText;
@@ -26,12 +32,11 @@ public class GameHudController : MonoBehaviour {
     [SerializeField] private bool pauseGameInDialog = true;
     public bool PauseGameInDialog => pauseGameInDialog;
 
-    [SerializeField] private NewGameDialog newGameDialog;
-    [SerializeField] private EventTriggeredDialog eventTriggeredDialog;
+    [SerializeField] private DialogsController dialogsController;
 
     [Header("News Prompter")]
-    [SerializeField] [UnityEngine.Range(1, 10)] private int maximumNewsCount = 3;
-    [SerializeField] [UnityEngine.Range(1f, 50f)] private float marginBetweenPanels = 2f;
+    [SerializeField] [Range(1, 10)] private int maximumNewsCount = 3;
+    [SerializeField] [Range(1f, 50f)] private float marginBetweenPanels = 2f;
     [SerializeField] private Transform newsBarPanelsParent;
     [SerializeField] private NewsBarPanel newsBarPanelModel;
     [SerializeField] private List<NewsBarPanel> newsBarPanels = new List<NewsBarPanel>();
@@ -42,13 +47,14 @@ public class GameHudController : MonoBehaviour {
         Assert.IsNotNull(newProjectButton);
         Assert.IsNotNull(theme);
         Assert.IsNotNull(menu);
+        Assert.IsNotNull(pauseButton);
+        Assert.IsNotNull(speedButton);
         Assert.IsNotNull(currentDateText);
         Assert.IsNotNull(playerCompanyMoneyText);
         Assert.IsNotNull(playerCompanyMoneyText);
         Assert.IsNotNull(newsBarPanelModel);
         Assert.IsNotNull(newsBarPanelsParent);
 
-        eventTriggeredDialog.gameObject.SetActive(false);
         for (int i = 0; i < maximumNewsCount; i++) {
             NewsBarPanel newsBarPanel = Instantiate(newsBarPanelModel);
             newsBarPanel.transform.SetParent(newsBarPanelsParent, false);
@@ -61,21 +67,20 @@ public class GameHudController : MonoBehaviour {
         menu.ApplyTheme(theme);
     }
 
+    public void OnSimulationStarted() {
+        UpdateSimulationButtons();
+    }
+
     public void CanStartNewProject(bool allowed) {
         newProjectButton.interactable = allowed;
     }
 
     public void ShowNewProjectDialog(DateTime gameDate, Project.ProjectType type,
         Database.Database database, IEnumerable<GameEngine> gameEngines) {
-        switch (type) {
-            case Project.ProjectType.GameProject:
-                newGameDialog.ShowDialog(gameDate, database, gameEngines, SubmitNewProjectDialog);
-                break;
-        }
+        dialogsController.ShowNewProjectDialog(gameDate, type, database, gameEngines);
     }
 
-    public void SubmitNewProjectDialog(GameProject newGameProject) {
-        newGameDialog.HideDialog();
+    public void SubmitNewProjectDialog(Project newGameProject) {
         worldController.OnProjectStarted(newGameProject);
     }
 
@@ -94,11 +99,6 @@ public class GameHudController : MonoBehaviour {
                 currentNewsBarPanelIndex -= 1;
         }
         UpdateNewsBarPanelPositions();
-    }
-
-    public void OnEventTriggered(WorldEvent triggeredEvent) {
-        eventTriggeredDialog.gameObject.SetActive(true);
-        eventTriggeredDialog.ShowEventDialog(triggeredEvent);
     }
 
     public void PushLatestNews(News latestNews) {
@@ -126,7 +126,40 @@ public class GameHudController : MonoBehaviour {
             if (!newsBarPanel.gameObject.activeSelf) continue;
             float positionY = ++visiblesCount * (panelHeight + marginBetweenPanels);
             newsBarPanel.GetComponent<RectTransform>().anchoredPosition  =
-                new Vector3(Screen.width / 2f + 10f, positionY, 0); // TODO : resolution independant
+                new Vector3(Screen.width / 2f + 10f, positionY, 0); // TODO : resolution independent
+        }
+    }
+
+    private void UpdateSimulationButtons() {
+        pauseButton.GetComponentInChildren<Text>().text = worldController.IsSimulationRunning ?
+            "Pause" : "Resume";
+        speedButton.GetComponentInChildren<Text>().text = speedIsNormal ?
+            $"x{speedMultiplier}" : "x1";
+    }
+
+    public void ToggleSimulationPause() {
+        bool running = worldController.IsSimulationRunning;
+        worldController.SetSimulationStatus(!running);
+        UpdateSimulationButtons();
+    }
+
+    public void ToggleSimulationSpeed() {
+        worldController.SetSimulationSpeed(speedIsNormal ? speedMultiplier : 1);
+        speedIsNormal = !speedIsNormal;
+        UpdateSimulationButtons();
+    }
+
+    /// <summary>
+    /// Pause or resume the game upon opening or closing a Dialog.
+    /// </summary>
+    public void SetDialogPause(bool pause) {
+        bool running = worldController.IsSimulationRunning;
+        if (running && pause) {
+            worldController.SetSimulationStatus(false);
+            UpdateSimulationButtons();
+        } else if (!running && !pause) {
+            worldController.SetSimulationStatus(true);
+            UpdateSimulationButtons();
         }
     }
 }

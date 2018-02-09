@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.UI;
 using static Database.Database;
 
@@ -24,10 +25,10 @@ public class World : MonoBehaviour {
 
     [Header("Simulation Speed")]
     [SerializeField] private bool simulationRunning = false;
-    [SerializeField] private Button pauseButton;
+    public bool IsSimulationRunning => simulationRunning;
 
     [SerializeField] private int simulationSpeedMultiplier = 1;
-    [SerializeField] private Button speedButton;
+    public int SimulationSpeedMultiplier => simulationSpeedMultiplier;
 
     [Header("User Interface")]
     [SerializeField] private GameMenu gameMenu;
@@ -123,6 +124,7 @@ public class World : MonoBehaviour {
 
         firstDay = false;
         simulationRunning = true;
+        worldController.OnSimulationStarted();
     }
 
     private void Update() {
@@ -162,15 +164,14 @@ public class World : MonoBehaviour {
         worldController.OnDateModified(gameDateTime);
     }
 
-    public void ToggleSimulation() {
-        dayPercentage = 0f;
-        simulationRunning = !simulationRunning;
-        pauseButton.GetComponentInChildren<Text>().text = simulationRunning ? "Pause" : "Resume";
+    public void SetSimulationStatus(bool running) {
+        //dayPercentage = 0f;
+        simulationRunning = running;
     }
 
-    public void ToggleSimulationSpeed() {
-        speedButton.GetComponentInChildren<Text>().text = $"x{simulationSpeedMultiplier}";
-        simulationSpeedMultiplier = simulationSpeedMultiplier == 1 ? 2 : 1;
+    public void SetSimulationSpeed(int multiplier) {
+        Assert.IsTrue(multiplier > 0);
+        simulationSpeedMultiplier = multiplier;
     }
 
     public void ShowBuildRoomSelectionMenu() {
