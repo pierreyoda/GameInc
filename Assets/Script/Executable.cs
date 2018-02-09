@@ -99,8 +99,7 @@ public class Executable {
                     }
                 }
                 currentExpression = currentExpression.Trim();
-                if (currentExpression != "")
-                    expressionsString.Add(currentExpression.Trim());
+                expressionsString.Add(currentExpression.Trim());
                 currentExpression = "";
                 continue;
             }
@@ -147,10 +146,11 @@ public class Executable {
         }
         for (int i = 0; i < expressionsString.Length; i++) {
             string expressionString = expressionsString[i];
+            if (expressionString == "") continue;
             IExpression expression = Parser.ParseExpression(expressionString, context);
             if (expression == null) {
                 Debug.LogError( "Executable.ParseExpressionSequence(...) : parsing error at " +
-                                $"expression n°{i+1} \"{expressionString}\".");
+                                $"line {i+1} \"{expressionString}\".");
                 return null;
             }
             if (i == expressionsString.Length - 1) {
