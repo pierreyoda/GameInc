@@ -114,19 +114,6 @@ public abstract class Symbol<T> : ISymbol {
         }
     }
 
-    public static Symbol<T> SymbolFromValue(T value, SymbolType type) {
-        switch (type) {
-            case SymbolType.Void: return new VoidSymbol() as Symbol<T>;
-            case SymbolType.Boolean: return new BooleanSymbol(Convert.ToBoolean(value)) as Symbol<T>;
-            case SymbolType.Integer: return new IntegerSymbol(Convert.ToInt32(value)) as Symbol<T>;
-            case SymbolType.Float: return new FloatSymbol(Convert.ToSingle(value)) as Symbol<T>;
-            case SymbolType.Id: return new IdSymbol(value.ToString()) as Symbol<T>; // TODO : find better way ?
-            case SymbolType.String: return new StringSymbol(value as string) as Symbol<T>;
-            case SymbolType.Date: return new DateSymbol(Convert.ToDateTime(value)) as Symbol<T>;
-            default: return null;
-        }
-    }
-
     public static string FunctionNameFromInvocation(string invocationName,
         SymbolType type) {
         switch (invocationName) {

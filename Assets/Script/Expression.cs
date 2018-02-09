@@ -236,11 +236,14 @@ public class FunctionExpression<T> : Expression<T> {
             }
             symbols.Add(symbol);
         }
-        T resultValue = metadata.Lambda(c, symbols.ToArray());
-        Symbol<T> result = Symbol<T>.SymbolFromValue(resultValue,
-            metadata.ReturnType());
-        if (result != null) return result;
-        Debug.LogError($"Script : Function Call \"{metadata.Name()}\" : type error.");
+        Symbol<T> result = metadata.Lambda(c, symbols.ToArray());
+        if (result == null) {
+            Debug.LogError($"Script : Function Call \"{metadata.Name()}\" : evaluation error.");
+            return null;
+        }
+        if (result.Type() == metadata.ReturnType()) return result;
+        Debug.LogError($"Script : Function Call \"{metadata.Name()}\" : type error " +
+                       $"({result.Type()} returned instead of the expected {metadata.ReturnType()}).");
         return null;
     }
 }

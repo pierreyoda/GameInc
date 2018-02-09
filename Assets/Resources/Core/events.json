@@ -35,5 +35,16 @@ let Engine_CanDevelop_MinDate: date = 1984/02/01;
         "triggerAction": "Company.SetFeature(@Engine.CanDevelop, true)",
         "triggerLimit": "1",
     },
+
+    // Test events
+    {
+        "id": "Test",
+        "name": "Script System Test Event",
+        "descriptionEnglish": "test = {constant.ToFloat() * 2.5}",
+        "onInit": "const constant: int = 2;",
+        "triggerCondition": "$World.CurrentDate.DayOfWeek == 4",
+        "triggerAction": "",
+        "triggerLimit": "1",
+    },
 ],
 }

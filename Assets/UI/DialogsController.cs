@@ -44,7 +44,6 @@ public class DialogsController: MonoBehaviour {
 
     private void OnEventDialogDismissed(WorldEvent worldEvent) {
         if (triggeredEvents.Count > 0) {
-            Debug.LogWarning("====="+triggeredEvents.Count);
             ShowNextTriggeredEventDialog();
             return;
         }
