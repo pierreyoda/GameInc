@@ -39,26 +39,34 @@ public class WorldController : MonoBehaviour, IScriptContext {
             playerCompany.GameEngines);
     }
 
-    private List<GlobalVariable> GameVariables() {
+    private static List<GlobalVariable> GameVariables() {
         return new List<GlobalVariable> {
             // World
-            new GlobalVariable("World.CurrentDate", SymbolType.Date,
-                c => new DateSymbol(c.D())),
-            new GlobalVariable("World.CurrentDate.Year", SymbolType.Integer,
-            c => new IntegerSymbol(c.D().Year)),
-            new GlobalVariable("World.CurrentDate.Month", SymbolType.Integer,
-                c => new IntegerSymbol(c.D().Month)),
-            new GlobalVariable("World.CurrentDate.Day", SymbolType.Integer,
-                c => new IntegerSymbol(c.D().Day)),
-            new GlobalVariable("World.CurrentDate.DayOfWeek", SymbolType.Integer,
-                c => new IntegerSymbol((int) c.D().DayOfWeek)),
+            new GlobalVariable("World.CurrentDate",
+                c => new DateSymbol(c.D()),
+                SymbolType.Date),
+            new GlobalVariable("World.CurrentDate.Year",
+            c => new IntegerSymbol(c.D().Year),
+                SymbolType.Integer),
+            new GlobalVariable("World.CurrentDate.Month",
+                c => new IntegerSymbol(c.D().Month),
+                SymbolType.Integer),
+            new GlobalVariable("World.CurrentDate.Day",
+                c => new IntegerSymbol(c.D().Day),
+                SymbolType.Integer),
+            new GlobalVariable("World.CurrentDate.DayOfWeek",
+                c => new IntegerSymbol((int) c.D().DayOfWeek),
+                SymbolType.Integer),
             // Company
-            new GlobalVariable("Company.Money", SymbolType.Float,
-                c => new FloatSymbol(c.C().Money)),
-            new GlobalVariable("Company.NeverBailedOut", SymbolType.Boolean,
-                c => new BooleanSymbol(c.C().NeverBailedOut)),
-            new GlobalVariable("Company.Projects.CompletedGames.Count", SymbolType.Integer,
-                c => new IntegerSymbol(c.C().CompletedProjects.Games.Count)),
+            new GlobalVariable("Company.Money",
+                c => new FloatSymbol(c.C().Money),
+                SymbolType.Float),
+            new GlobalVariable("Company.NeverBailedOut",
+                c => new BooleanSymbol(c.C().NeverBailedOut),
+                SymbolType.Boolean),
+            new GlobalVariable("Company.Projects.CompletedGames.Count",
+                c => new IntegerSymbol(c.C().CompletedProjects.Games.Count),
+                SymbolType.Integer),
         };
     }
 
@@ -71,24 +79,11 @@ public class WorldController : MonoBehaviour, IScriptContext {
         // load script functions
         scriptFunctions = Function<bool>.DefaultFunctions();
         scriptGlobalVariables = GameVariables();
-        // set initial global variables values
-        foreach (GlobalVariable globalVariable in scriptGlobalVariables) {
-            ISymbol value = globalVariable.FromContext(this);
-            if (value == null) {
-                Debug.LogError($"WorldController.OnGameStarted : error while evaluating global variable \"${globalVariable.Name}\".");
-                continue;
-            }
-            if (value.Type() != globalVariable.Type) {
-                Debug.LogError($"WorldController.OnGameStarted : \"${globalVariable.Name}\" must be of type {globalVariable.Type} instead of {value.Type()}.");
-                continue;
-            }
-            globalVariable.Value = value;
-        }
         // additional local variables
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
-            "Employee_HiringCost", new FloatSymbol(0)));
+            "Employee_HiringCost", new FloatSymbol(0), true));
         Assert.IsTrue(ScriptContext.AddLocalVariable(this,
-            "Employee_Salary", new FloatSymbol(0)));
+            "Employee_Salary", new FloatSymbol(0), true));
         // parser context
         ParserContext parserContext = new ParserContext {
             Grammar = Grammar.DefaultGrammar(),
@@ -98,19 +93,16 @@ public class WorldController : MonoBehaviour, IScriptContext {
         };
 
         // test
-        Assert.IsTrue(ScriptContext.AddLocalVariable(this,
-            "testVariable", new FloatSymbol(0f)));
         const string script = @"
-            let a: float = 2.5 * 2.0;
-            let b: int[] = [1, 2, a.ToInt()];
-            // this is a comment !
+            //{
+                let b: int = 2;
+            //}
             b
-            // comments do not affect an Executable's return type
         ";
         Executable executable = Executable.FromScript(script, parserContext);
-        int[] result;
-        executable.ExecuteExpectingArray(this, out result);
-        Debug.LogWarning($"===> executable result = [{string.Join(", ", result)}]");
+        int result;
+        executable.ExecuteExpecting(this, out result);
+        Debug.LogWarning($"===> executable result = {result}");
 
         // scripts parsing
         eventsController.CreateEvents(db.Events.Collection, parserContext);
@@ -188,24 +180,28 @@ public class WorldController : MonoBehaviour, IScriptContext {
                            $"({value.Type()} instead of {globalVariable.Type}).");
             return false;
         }
-
-        bool assigned = false;
-        switch (variableName) {
-            case "Company.Money":
-                assigned = true;
-                playerCompany.SetMoney((value as FloatSymbol).Value);
-                break;
-            case "Company.NeverBailedOut":
-                assigned = true;
-                playerCompany.NeverBailedOut = (value as BooleanSymbol).Value;
-                break;
-        }
-        if (!assigned) {
-            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : illegal assignment.");
+        if (value.Type() == SymbolType.Array &&
+            value.ArrayType() != globalVariable.ArrayType) {
+            Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : array type mismatch " +
+                           $"({value.ArrayType()} instead of {globalVariable.ArrayType}).");
             return false;
         }
-        globalVariable.Value = value;
-        return true;
+
+        bool assigned = true;
+        switch (variableName) {
+            case "Company.Money":
+                playerCompany.SetMoney(((FloatSymbol) value).Value);
+                break;
+            case "Company.NeverBailedOut":
+                playerCompany.NeverBailedOut = ((BooleanSymbol) value).Value;
+                break;
+            default:
+                assigned = false;
+                break;
+        }
+        if (assigned) return true;
+        Debug.LogError($"WorldController.GetGlobalVariable(\"{variableName}\") : illegal assignment.");
+        return false;
     }
 
     public DateTime D() {

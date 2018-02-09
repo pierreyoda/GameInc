@@ -8,59 +8,6 @@ using UnityEngine.Assertions;
 namespace Script {
 
 [Serializable]
-public class LocalVariable {
-    [SerializeField] private string name;
-    public string Name => name;
-
-    public SymbolType Type => value.Type();
-    public SymbolType ArrayType => value.ArrayType();
-
-    [SerializeField] private ISymbol value;
-    public ISymbol Value {
-        get { return value; }
-        set { this.value = value; }
-    }
-
-    public LocalVariable(string name, ISymbol value) {
-        this.name = name;
-        this.value = value;
-    }
-}
-
-public delegate ISymbol GlobalVariableFromContext(IScriptContext context);
-
-[Serializable]
-public class GlobalVariable {
-    [SerializeField] private string name;
-    public string Name => name;
-
-    [SerializeField] private SymbolType type;
-    public SymbolType Type => type;
-
-    [SerializeField] private SymbolType arrayType = SymbolType.Invalid;
-    public SymbolType ArrayType {
-        get { return arrayType; }
-        set { arrayType = value; }
-    }
-
-    [SerializeField] private GlobalVariableFromContext fromContext;
-    public GlobalVariableFromContext FromContext => fromContext;
-
-    [SerializeField] private ISymbol value;
-    public ISymbol Value {
-        get { return value; }
-        set { this.value = value; }
-    }
-
-    public GlobalVariable(string name, SymbolType type,
-        GlobalVariableFromContext fromContext) {
-        this.name = name;
-        this.type = type;
-        this.fromContext = fromContext;
-    }
-}
-
-[Serializable]
 public class Parser : MonoBehaviour {
     private static readonly CultureInfo DateCultureInfo = CultureInfo.InvariantCulture;
     public const NumberStyles NumberStyleInteger = NumberStyles.Integer;
@@ -81,8 +28,9 @@ public class Parser : MonoBehaviour {
             return null;
         }
 
-        // Sanity checks
-        bool declaration = tokens[0] == context.Grammar.VariableDeclarator;
+        // Identification
+        bool declaration = tokens[0] == context.Grammar.VariableDeclarator ||
+                           tokens[0] == context.Grammar.ConstantDeclarator;
         string variable = tokens[declaration ? 1 : 0];
         bool global = variable.StartsWith("$");
         string variableName = global ? variable.Substring(1) : variable;
@@ -118,10 +66,15 @@ public class Parser : MonoBehaviour {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported Type \"{typeString}\".");
                 return null;
             }
-        } else if (!global) { // local variable
+        } else if (!global) { // assignment on existing local variable
             localVariable = context.LocalVariables.Find(lv => lv.Name == variableName);
             if (localVariable == null) {
                 Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unknown local Variable \"{variableName}\"");
+                return null;
+            }
+            if (!localVariable.Mutable) {
+                Debug.LogError($"Parser.ParseAssignment(\"{a}\") : local Variable " +
+                               $"\"{variableName}\" is immutable and cannot be re-assigned.");
                 return null;
             }
             type = localVariable.Type;
@@ -141,32 +94,9 @@ public class Parser : MonoBehaviour {
         }
         Assert.IsFalse(type == SymbolType.Invalid);
 
-        // Assignment type
-        string operation = tokens[1 + decl];
-        AssignmentType assignmentType;
-        if (!Operations.AssignmentTypeFromString(operation, out assignmentType)) {
-            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported assignment \"{operation}\".");
-            return null;
-        }
-        if (assignmentType == AssignmentType.Assign && !global && !declaration) {
-            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : variable declaration for \"${variableName}\" must define a type.");
-            return null;
-        }
-
-        // Right expression
-        //Debug.LogWarning($"==> parse assignment \"{a}\" => right expr tokens = {string.Join(" --- ", tokens.Skip(2+decl))}");
-        IExpression rightExpression = ParseExpression(tokens.Skip(2 + decl).ToArray(),
-            context);
-        if (rightExpression == null) {
-            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : parsing error in declaration.");
-            return null;
-        }
-        if (rightExpression.Type() != type) {
-            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : right expression {rightExpression.Type()} " +
-                           $"instead of {type} (\"{rightExpression.Script()}\").");
-            return null;
-        }
+        // Variable creation for declarations
         if (declaration) {
+            bool mutable = tokens[0] == context.Grammar.VariableDeclarator;
             Assert.IsTrue(localVariable == null && globalVariable == null);
             if (type == SymbolType.Array) {
                 ISymbol symbol;
@@ -196,14 +126,38 @@ public class Parser : MonoBehaviour {
                         Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported Array type \"{arrayType}[]\".");
                         return null;
                 }
-                localVariable = new LocalVariable(variableName, symbol);
-            }
-            else
-                localVariable = new LocalVariable(variableName, GetDefaultValue(type));
+                localVariable = new LocalVariable(variableName, symbol, mutable);
+            } else
+                localVariable = new LocalVariable(variableName, GetDefaultValue(type), mutable);
             context.LocalVariables.Add(localVariable);
         }
         if (global) Assert.IsNotNull(globalVariable);
         else Assert.IsNotNull(localVariable);
+
+        // Assignment type
+        string operation = tokens[1 + decl];
+        AssignmentType assignmentType;
+        if (!Operations.AssignmentTypeFromString(operation, out assignmentType)) {
+            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : unsupported assignment \"{operation}\".");
+            return null;
+        }
+        if (assignmentType == AssignmentType.Assign && !global && !declaration) {
+            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : variable declaration for \"${variableName}\" must define a type.");
+            return null;
+        }
+
+        // Right expression
+        IExpression rightExpression = ParseExpression(tokens.Skip(2 + decl).ToArray(),
+            context);
+        if (rightExpression == null) {
+            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : parsing error in declaration.");
+            return null;
+        }
+        if (rightExpression.Type() != type) {
+            Debug.LogError($"Parser.ParseAssignment(\"{a}\") : right expression {rightExpression.Type()} " +
+                           $"instead of {type} (\"{rightExpression.Script()}\").");
+            return null;
+        }
 
         // Return type : if ends with ';' void, else returns the computed value
         bool returnsType = tokens.Last() != ";";
@@ -410,8 +364,8 @@ public class Parser : MonoBehaviour {
             if (token == ";") {
                 if (i + 1 < tokens.Length)
                     Debug.LogWarning(
-                        $"Parser.ParseExpression(\"{expressionString}\") :';' before the expression ends, ignoring the " +
-                        $"remaining tokens \"{string.Join(" ", tokens.Skip(i + 1))}\".");
+                        $"Parser.ParseExpression(\"{expressionString}\") : ';' before the expression ends, " +
+                        $"ignoring the remaining tokens \"{string.Join(" ", tokens.Skip(i + 1))}\".");
                 break;
             }
             // is token the start of an array '[' ?

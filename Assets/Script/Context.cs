@@ -18,14 +18,14 @@ public interface IScriptContext {
 
 public abstract class ScriptContext {
     public static bool AddLocalVariable(IScriptContext context, string name,
-        ISymbol value) {
+        ISymbol value, bool mutable) {
         List<LocalVariable> localVariables = context.LocalVariables();
         if (localVariables.Find(lv => lv.Name == name) != null) {
             Debug.LogError(
                 $"ScriptContext.AddVariable : \"{name}\" already exists.");
             return false;
         }
-        LocalVariable localVariable = new LocalVariable(name, value);
+        LocalVariable localVariable = new LocalVariable(name, value, mutable);
         localVariables.Add(localVariable);
         return true;
     }

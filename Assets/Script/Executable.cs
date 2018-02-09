@@ -123,9 +123,13 @@ public class Executable {
         List<IExpression> expressions = ParseExpressionSequence(
             expressionsString.ToArray(), parserContext, out returnType,
             out returnArrayType);
+        if (expressions == null) {
+            Debug.LogError("Executable.FromScript(...) : parsing error.");
+            return null;
+        }
         if (returnType == SymbolType.Invalid) {
             Debug.LogError( "Executable.FromScript(...) : could not determing Type " +
-                           $"from last expression \"{expressions.Last()}\".");
+                           $"from last expression \"{expressions.Last().Script()}\".");
             return null;
         }
 
