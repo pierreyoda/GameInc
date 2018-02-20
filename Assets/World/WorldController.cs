@@ -97,14 +97,16 @@ public class WorldController : MonoBehaviour, IScriptContext {
         // test
         const string script = @"
             //{
-                let b: int = 2;
+                let b: int = b;
             //}
             b
         ";
         Executable executable = Executable.FromScript(script, parserContext);
-        int result;
-        executable.ExecuteExpecting(this, out result);
-        Debug.LogWarning($"===> executable result = {result}");
+        if (executable != null) {
+            int result;
+            executable.ExecuteExpecting(this, out result);
+            Debug.LogWarning($"===> executable result = {result}");
+        }
 
         // scripts parsing
         eventsController.CreateEvents(db.Events.Collection, parserContext);
