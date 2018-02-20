@@ -159,6 +159,12 @@ public class Parser : MonoBehaviour {
             return null;
         }
 
+        // Initial referencement on declaration :
+        // this is done *after* parsing the right expression, in order to forbid
+        // using the variable being declared in it
+        if (declaration)
+            localVariable.Reference();
+
         // Return type : if ends with ';' void, else returns the computed value
         bool returnsType = tokens.Last() != ";";
 
@@ -925,6 +931,10 @@ public class Parser : MonoBehaviour {
         LocalVariable localVariable = context.LocalVariables.Find(
             lv => lv.Name == expression);
         if (localVariable != null) {
+            if (localVariable.References < 1) { // avoid cyclic references in declarations TODO : better way ?
+                Debug.LogError($"Script : local Variable \"{expression}\" does not exist at this point.");
+                return null;
+            }
             switch (localVariable.Type) {
                 case SymbolType.Void: return new LocalVariableExpression<Void>(localVariable);
                 case SymbolType.Boolean: return new LocalVariableExpression<bool>(localVariable);

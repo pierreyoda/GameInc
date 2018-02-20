@@ -101,7 +101,8 @@ public class Function<T> : IFunction {
                     case SymbolType.String: count = ((ArraySymbol<string>) p[0]).Value.Elements.Count; break;
                     case SymbolType.Date: count = ((ArraySymbol<DateTime>) p[0]).Value.Elements.Count; break;
                     default:
-                        Debug.LogError($"Function array.Count : invalid Array type {p[0].ArrayType()}.");
+                        Debug.LogError( "Function array.Count : unsupported Array " +
+                                       $"type \"{p[0].ArrayType()}\".");
                         return null;
                 }
                 return new IntegerSymbol(count);

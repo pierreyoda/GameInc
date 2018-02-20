@@ -21,6 +21,12 @@ public class LocalVariable {
         set { this.value = value; }
     }
 
+    [SerializeField] private int references = 0;
+    public int References => references;
+
+    public void Reference() { references++; }
+    public void Dereference() { references--; }
+
     public LocalVariable(string name, ISymbol value, bool mutable = false) {
         this.name = name;
         this.mutable = mutable;
