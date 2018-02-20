@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Script;
 
 public class MockWorldController : IScriptContext {
-	private List<IFunction> functions = new List<IFunction>();
+	private List<IFunction> functions = Function<bool>.DefaultFunctions();
 	private List<LocalVariable> localVariables = new List<LocalVariable>();
 	private List<GlobalVariable> globalVariables = new List<GlobalVariable>();
 

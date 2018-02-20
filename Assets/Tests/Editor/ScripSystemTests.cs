@@ -44,4 +44,26 @@ public class ScripSystemTests {
 			b + 'g'
 		");
 	}
+
+	[Test]
+	public void ScriptSystemOperatorsPriority() {
+		AssertScriptResult(new IntegerSymbol(8), @"
+			const a: int = (2 - 3) * -4; // 4
+			a * 4 / (3 - 1)
+		");
+		AssertScriptResult(new FloatSymbol(2f), @"
+			const a: float = 2.0 ^ 2.0 * 2.0; // 8
+			a / 2.0 ^ 2.0
+		");
+	}
+
+	[Test]
+	public void ScriptSystemPredefinedFunctions() {
+		AssertScriptResult(new IntegerSymbol(4), @"
+			const a: string = '3.0';
+			const b: float = a.ToFloat();
+			const c: string = '1';
+			b.ToInt() + c.ToInt()
+		");
+	}
 }
