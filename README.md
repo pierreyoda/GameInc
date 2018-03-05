@@ -26,9 +26,10 @@ Implemented so as to enable regional-specific market tendencies in the future.
 
 - Building management: the player can build new rooms, stairs or elevators.
 
-## Example of a JSON-defined game event
+## Example of a JSON-defined object
 
 ```
+// Event example (the custom JSON also supports comments)
 {
     "id": "Company_Engine_CanDevelop",
     "titleEnglish": "Custom Engine development unlocked!",
@@ -58,8 +59,8 @@ Implemented so as to enable regional-specific market tendencies in the future.
     "triggerLimit": """
         // must return an integer
         1 // no ";" : the expression returns its result
-    """,
-},
+    """, // trailing commas are allowed but optional
+},  // this avoids additional noise in the source control diffs 
 ```
 
 
