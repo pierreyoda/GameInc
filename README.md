@@ -2,7 +2,10 @@
 
 A Game development studio management game made with Unity and C#6, inspired by the likes of Game Dev Story and Game Dev Tycoon.
 
-Implemented Features (WIP) :
+## Status
+Currently in pause while considering a port to Godot 3 since this projet is still in its infancy (this is my first Unity project anyway).
+
+## Implemented Features (WIP)
 - Database System loading custom JSON files (supporting comments and multi-line strings) into game objects at runtime. 
 The entire game is intended to be described by these files : gaming platforms, random names generation, employee skill sets, game features, events, world news...
 The base game module is in the Assets/Core module.
