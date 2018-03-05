@@ -19,7 +19,10 @@ Implemented in about 2500 lines of C#6 in the Assets/Script module.
 
 - Staff: random employee generation.
 
-- User Interface: start new game projects, pause or speed up the simulation.
+- User Interface:<br/>
+New games can be started with a dialog offering choices populated from the database (genre, theme, game engine).<br/>
+News prompts loaded from the database are displayed as stacked dismissable pop-ups on the day they occur.<br/>
+A script event triggering will cause a dialog to show and the game to pause while waiting for player interaction.   
 
 - Market simulation: dynamic sales of released products (game or game engines only for now) with scoring and hype.<br/>
 Implemented so as to enable regional-specific market tendencies in the future.
@@ -29,11 +32,19 @@ Implemented so as to enable regional-specific market tendencies in the future.
 ## Example of a JSON-defined object
 
 ```
-// Event example (the custom JSON also supports comments)
+// Event example
 {
     "id": "Company_Engine_CanDevelop",
+    // Every string displayed in-game can be formatted with the { expression } syntax,
+    // where the 'expression' will be evaluated to retrieve its string representation
     "titleEnglish": "Custom Engine development unlocked!",
-    "descriptionEnglish": "Having completed {Engine_CanDevelop_MinGames} games, you can now develop your own game engine!",
+    "descriptionEnglish":
+    """
+        Having completed {Engine_CanDevelop_MinGames} games,
+        you can now develop your own game engine!
+        
+        2 * test = { 2 * test.ToInt() }
+    """,
     "onInit": """
         // comments will not be removed in a JSON multi-string
         let Engine_CanDevelop_MinGames: int = 3; // statically-typed constant
