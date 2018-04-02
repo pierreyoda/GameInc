@@ -350,6 +350,9 @@ public class Parser : MonoBehaviour {
             Debug.LogError($"Parser.ParseExpression(\"{expression}\") : tokenization error.");
             return null;
         }
+        // loops => special handling
+        if (tokens[0] == context.Grammar.RangedLoopDeclarator)
+            return Control.ParseRangedLoopExpression(tokens.ToArray(), context);
         // assignment => special handling to simplify the algorithm
         if (isAssignment)
             return ParseAssignment(expression, context);
@@ -896,7 +899,7 @@ public class Parser : MonoBehaviour {
         }
     }
 
-    private static List<string> ProcessList(string listString, char openingChar,
+    public static List<string> ProcessList(string listString, char openingChar,
         char closingChar, char separator) {
         int startIndex = listString.IndexOf(openingChar);
         int endIndex = listString.LastIndexOf(closingChar);

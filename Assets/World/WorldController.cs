@@ -97,7 +97,7 @@ public class WorldController : MonoBehaviour, IScriptContext {
         // test
         const string script = @"
             //{
-                let b: int = b;
+                let b: int = 2;
             //}
             b
         ";
@@ -166,13 +166,10 @@ public class WorldController : MonoBehaviour, IScriptContext {
         world.OnConstructionStarted(constructionCost);
     }
 
-    public List<IFunction> Functions() {
-        return scriptFunctions;
-    }
+    public int LoopsMaximumIterations() => 1000;
 
-    public List<LocalVariable> LocalVariables() {
-        return scriptVariables;
-    }
+    public List<IFunction> Functions() => scriptFunctions;
+    public List<LocalVariable> LocalVariables() => scriptVariables;
 
     public bool SetGlobalVariable(string variableName, ISymbol value) {
         GlobalVariable globalVariable = scriptGlobalVariables.Find(gv => gv.Name == variableName);

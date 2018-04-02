@@ -22,17 +22,22 @@ public class Grammar {
     [SerializeField] private string functionTypeDeclarator;
     public string FunctionTypeDeclarator => functionTypeDeclarator;
 
+    [SerializeField] private string rangedLoopDeclarator;
+    public string RangedLoopDeclarator => rangedLoopDeclarator;
+
     public static Grammar DefaultGrammar() {
         return new Grammar {
             reservedKeywords = new [] {
                 "void", "bool", "int", "float", "id", "string", "date", "array",
                 "let", "const", "fn",
+                "for", "if", "else",
             },
             variableDeclarator = "let",
             constantDeclarator = "const",
             typeDeclarator = ":",
             functionDeclarator = "fn",
             functionTypeDeclarator = "->",
+            rangedLoopDeclarator = "for",
         };
     }
 

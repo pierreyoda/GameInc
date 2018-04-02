@@ -10,6 +10,7 @@ public class MockWorldController : IScriptContext {
 	private DateTime date = new DateTime(1980, 1, 1);
 	private Employee currentEmployee = null;
 
+	public int LoopsMaximumIterations() => 100;
 	public List<IFunction> Functions() => functions;
 	public List<LocalVariable> LocalVariables() => localVariables;
 	public List<GlobalVariable> GlobalVariables() => globalVariables;

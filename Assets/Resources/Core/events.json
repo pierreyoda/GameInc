@@ -40,10 +40,16 @@ let Engine_CanDevelop_MinDate: date = 1984/02/01;
     {
         "id": "Test",
         "name": "Script System Test Event",
-        "descriptionEnglish": "test = {constant.ToFloat() * 2.5}",
-        "onInit": "const constant: int = 2;",
+        "descriptionEnglish": """
+loop test = {count}
+""",
+        "onInit": "let count: int = 0;",
         "triggerCondition": "$World.CurrentDate.DayOfWeek == 4",
-        "triggerAction": "",
+        "triggerAction": """
+for i in Range(0, 10) { // i: int
+    count += 1;
+}
+""",
         "triggerLimit": "1",
     },
 ],

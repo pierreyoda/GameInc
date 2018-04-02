@@ -5,6 +5,8 @@ using UnityEngine;
 namespace Script {
 
 public interface IScriptContext {
+    int LoopsMaximumIterations();
+
     List<IFunction> Functions();
     List<LocalVariable> LocalVariables();
     bool SetGlobalVariable(string name, ISymbol value);
