@@ -12,7 +12,7 @@ Currently in pause while considering a port to C#7 and Godot 3 since this projet
 The entire game is intended to be described by these files : gaming platforms, random names generation, employee skill sets, game features, events, world news...
 The base game is in the Assets/Resources/Core folder.
 
-- Script System: statically typed embedded toy language heavily inspired by Rust for its syntax and some of its concepts, with some Typescript and Python influence. The current lexer is currently very error-prone and difficult to extend.<br/>
+- Script System: statically typed embedded toy language heavily inspired by Rust for its syntax and some of its concepts, with some Typescript and Python influence. The lexer and parser are currently very error-prone and difficult to extend.<br/>
 Expression parsing is done with the [Shunting-Yard algorithm] to build an AST that can be evaluated recursively (no bytecode VM yet).<br/><br/>
 Currently supports primitives (boolean, integer, float, string, Database ID, Date), algebra with parentheses support, constants and variables, function calls, and arrays. All type errors are caught on parsing.<br/><br/>
 Implemented in about 2500 lines of C#6 in the Assets/Script module.
@@ -38,8 +38,7 @@ Implemented so as to enable regional-specific market tendencies in the future.
     // Every string displayed in-game can be formatted with the { expression } syntax,
     // where the 'expression' will be evaluated to retrieve its string representation
     "titleEnglish": "Custom Engine development unlocked!",
-    "descriptionEnglish":
-    """
+    "descriptionEnglish": """
         Having completed {Engine_CanDevelop_MinGames} games,
         you can now develop your own game engine!
         
