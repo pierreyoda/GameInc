@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 [Serializable]
 public class DialogsController: MonoBehaviour {
